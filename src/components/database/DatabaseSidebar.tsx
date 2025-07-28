@@ -23,6 +23,7 @@ interface DatabaseSidebarProps {
   onSelectTable?: (table: DatabaseTable) => void;
   onDeleteTable?: (tableId: string) => void;
   onSaveProject?: () => void;
+  onShare?: () => void;
 }
 export function DatabaseSidebar({
   tables,
@@ -34,7 +35,8 @@ export function DatabaseSidebar({
   onAddFunction,
   onSelectTable,
   onDeleteTable,
-  onSaveProject
+  onSaveProject,
+  onShare
 }: DatabaseSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [projectName, setProjectName] = useState('Database Schema');
@@ -224,13 +226,30 @@ export function DatabaseSidebar({
 
       <ExportModal tables={tables} open={showExportModal} onOpenChange={setShowExportModal} projectName={projectName} />
 
-      <TriggerFunctionModal type="trigger" open={showTriggerModal} onOpenChange={setShowTriggerModal} tables={tables} onAdd={trigger => {
-      onAddTrigger?.(trigger as Omit<DatabaseTrigger, 'id'>);
+      <TriggerFunctionModal mode="trigger" open={showTriggerModal} onOpenChange={setShowTriggerModal} tables={tables} functions={[]} onSave={trigger => {
+      const modalTrigger = trigger as any;
+      const dbTrigger: Omit<DatabaseTrigger, 'id'> = {
+        name: modalTrigger.name,
+        table: modalTrigger.table_name,
+        event: modalTrigger.trigger_event,
+        timing: modalTrigger.trigger_timing,
+        code: modalTrigger.function_body || '',
+        description: modalTrigger.description
+      };
+      onAddTrigger?.(dbTrigger);
       setShowTriggerModal(false);
     }} />
 
-      <TriggerFunctionModal type="function" open={showFunctionModal} onOpenChange={setShowFunctionModal} tables={tables} onAdd={func => {
-      onAddFunction?.(func as Omit<DatabaseFunction, 'id'>);
+      <TriggerFunctionModal mode="function" open={showFunctionModal} onOpenChange={setShowFunctionModal} tables={tables} functions={[]} onSave={func => {
+      const modalFunc = func as any;
+      const dbFunc: Omit<DatabaseFunction, 'id'> = {
+        name: modalFunc.name,
+        returnType: modalFunc.return_type || 'TRIGGER',
+        parameters: modalFunc.parameters || [],
+        code: modalFunc.function_body || '',
+        description: modalFunc.description
+      };
+      onAddFunction?.(dbFunc);
       setShowFunctionModal(false);
     }} />
     </Card>;
