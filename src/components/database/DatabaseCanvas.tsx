@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -72,9 +72,9 @@ export function DatabaseCanvas({
   }));
 
   // Update nodes when tables change
-  useState(() => {
+  React.useEffect(() => {
     setNodes(tableNodes);
-  });
+  }, [tables, selectedTable]);
 
   const onConnect = useCallback(
     (params: any) => {

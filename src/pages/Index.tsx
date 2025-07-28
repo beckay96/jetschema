@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
+import { DatabaseTableView } from '@/components/database/DatabaseTableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
@@ -13,7 +14,9 @@ import {
   Palette, 
   Download, 
   Share,
-  Sparkles
+  Sparkles,
+  Grid3X3,
+  Network
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +25,7 @@ const Index = () => {
   const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
+  const [viewMode, setViewMode] = useState<'canvas' | 'table'>('canvas');
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     setTables(importedTables);
@@ -107,13 +111,37 @@ const Index = () => {
 
         {/* Main Canvas */}
         <div className="flex-1 flex flex-col">
+          <div className="p-3 border-b bg-card/30 backdrop-blur">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'canvas' | 'table')} className="w-fit">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="canvas" className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  Canvas View
+                </TabsTrigger>
+                <TabsTrigger value="table" className="flex items-center gap-2">
+                  <Grid3X3 className="h-4 w-4" />
+                  Table View
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
           <div className="flex-1">
-            <DatabaseCanvas
-              tables={tables}
-              onTableUpdate={setTables}
-              onTableSelect={setSelectedTable}
-              selectedTable={selectedTable}
-            />
+            {viewMode === 'canvas' ? (
+              <DatabaseCanvas
+                tables={tables}
+                onTableUpdate={setTables}
+                onTableSelect={setSelectedTable}
+                selectedTable={selectedTable}
+              />
+            ) : (
+              <DatabaseTableView
+                tables={tables}
+                onTableUpdate={setTables}
+                onTableSelect={setSelectedTable}
+                selectedTable={selectedTable}
+              />
+            )}
           </div>
         </div>
 

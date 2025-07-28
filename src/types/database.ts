@@ -62,16 +62,22 @@ export type DataType =
   | 'UUID'
   | 'SERIAL'
   | 'INTEGER'
+  | 'INT'
+  | 'INT4'
+  | 'INT8'
   | 'BIGINT'
   | 'SMALLINT'
   | 'DECIMAL'
   | 'NUMERIC'
   | 'REAL'
+  | 'FLOAT'
   | 'DOUBLE PRECISION'
   | 'VARCHAR'
   | 'CHAR'
   | 'TEXT'
+  | 'STRING'
   | 'BOOLEAN'
+  | 'BOOL'
   | 'DATE'
   | 'TIME'
   | 'TIMESTAMP'
@@ -82,7 +88,9 @@ export type DataType =
   | 'BYTEA'
   | 'INET'
   | 'CIDR'
-  | 'MACADDR';
+  | 'MACADDR'
+  | 'EMAIL'
+  | 'ENUM';
 
 export const DATA_TYPE_CATEGORIES = {
   STRING: ['VARCHAR', 'CHAR', 'TEXT'],
@@ -105,16 +113,40 @@ export function getDataTypeCategory(type: DataType): keyof typeof DATA_TYPE_CATE
 }
 
 export function getDataTypeColor(type: DataType): string {
-  const category = getDataTypeCategory(type);
-  switch (category) {
-    case 'STRING': return 'type-string';
-    case 'NUMBER': return 'type-number';
-    case 'BOOLEAN': return 'type-boolean';
-    case 'DATE': return 'type-date';
-    case 'UUID': return 'type-uuid';
-    case 'JSON': return 'type-json';
-    case 'BINARY': return 'type-binary';
-    case 'NETWORK': return 'type-binary';
-    default: return 'type-string';
-  }
+  const colorMap: Record<DataType, string> = {
+    UUID: 'color-uuid',
+    TEXT: 'color-text',
+    VARCHAR: 'color-varchar',
+    STRING: 'color-string',
+    CHAR: 'color-string',
+    INT: 'color-int',
+    INTEGER: 'color-integer',
+    INT4: 'color-int4',
+    INT8: 'color-int8',
+    BIGINT: 'color-bigint',
+    SMALLINT: 'color-int',
+    SERIAL: 'color-serial',
+    BOOLEAN: 'color-boolean',
+    BOOL: 'color-bool',
+    TIMESTAMP: 'color-timestamp',
+    TIMESTAMPTZ: 'color-timestamptz',
+    DATE: 'color-date',
+    TIME: 'color-time',
+    JSON: 'color-json',
+    JSONB: 'color-jsonb',
+    DECIMAL: 'color-decimal',
+    NUMERIC: 'color-numeric',
+    FLOAT: 'color-float',
+    REAL: 'color-real',
+    'DOUBLE PRECISION': 'color-real',
+    EMAIL: 'color-email',
+    ENUM: 'color-enum',
+    ARRAY: 'color-array',
+    BYTEA: 'color-bytea',
+    INET: 'color-inet',
+    CIDR: 'color-cidr',
+    MACADDR: 'color-macaddr',
+  };
+  
+  return colorMap[type] || 'color-string';
 }

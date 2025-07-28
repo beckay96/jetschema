@@ -9,63 +9,83 @@ Database Design Tool Color System
 
 @layer base {
   :root {
-    --background: 220 13% 99%;
-    --foreground: 220 13% 9%;
+    --background: 220 15% 98%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 9%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 9%;
+    --popover-foreground: 222.2 84% 4.9%;
 
     --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220 13% 9%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
 
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220 13% 9%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 262 83% 58%;
 
-    /* Database specific colors */
-    --db-canvas: 220 13% 98%;
-    --db-table-bg: 0 0% 100%;
+    /* Vibrant Database Theme Colors */
+    --db-canvas: 220 20% 97%;
+    --db-table: 0 0% 100%;
     --db-table-header: 262 83% 58%;
-    --db-table-border: 220 13% 85%;
-    
-    /* Data type colors */
-    --type-string: 142 71% 45%;
-    --type-number: 213 94% 68%;
-    --type-boolean: 267 84% 81%;
-    --type-date: 339 82% 51%;
-    --type-uuid: 48 96% 53%;
-    --type-json: 25 95% 53%;
-    --type-binary: 0 0% 45%;
-    
-    /* Relationship colors */
-    --relation-one-to-one: 142 71% 45%;
-    --relation-one-to-many: 213 94% 68%;
-    --relation-many-to-many: 267 84% 81%;
-    
+    --db-table-border: 220 13% 88%;
+    --shadow-table: 0 8px 32px -8px hsl(262 83% 58% / 0.2);
+
+    /* Data Type Colors - More Vibrant */
+    --color-uuid: 280 100% 70%;
+    --color-text: 340 100% 65%;
+    --color-varchar: 340 100% 65%;
+    --color-string: 340 100% 65%;
+    --color-int: 220 100% 65%;
+    --color-integer: 220 100% 65%;
+    --color-int4: 220 100% 65%;
+    --color-int8: 220 100% 65%;
+    --color-bigint: 220 100% 65%;
+    --color-serial: 200 100% 60%;
+    --color-boolean: 120 100% 50%;
+    --color-bool: 120 100% 50%;
+    --color-timestamp: 45 100% 60%;
+    --color-timestamptz: 45 100% 60%;
+    --color-date: 30 100% 65%;
+    --color-time: 30 100% 65%;
+    --color-json: 160 100% 45%;
+    --color-jsonb: 160 100% 45%;
+    --color-decimal: 270 100% 65%;
+    --color-numeric: 270 100% 65%;
+    --color-float: 270 100% 65%;
+    --color-real: 270 100% 65%;
+    --color-email: 310 100% 60%;
+    --color-enum: 60 100% 55%;
+    --color-array: 180 100% 50%;
+    --color-bytea: 15 100% 60%;
+    --color-inet: 195 100% 55%;
+    --color-cidr: 195 100% 55%;
+    --color-macaddr: 195 100% 55%;
+
+    /* Status Colors */
+    --status-primary-key: 45 100% 55%;
+    --status-foreign-key: 220 100% 65%;
+    --status-unique: 280 100% 65%;
+    --status-nullable: 0 60% 70%;
+    --status-not-null: 120 60% 45%;
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 83% 68%));
-    --gradient-canvas: linear-gradient(135deg, hsl(220 13% 99%), hsl(220 13% 96%));
+    --gradient-canvas: linear-gradient(135deg, hsl(220 15% 98%), hsl(220 13% 96%));
     --gradient-table: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 98%));
-    
-    /* Shadows */
-    --shadow-table: 0 4px 12px -2px hsl(220 13% 9% / 0.08);
-    --shadow-table-hover: 0 8px 25px -5px hsl(220 13% 9% / 0.15);
-    --shadow-field: 0 2px 8px -2px hsl(220 13% 9% / 0.05);
 
     --radius: 0.5rem;
 

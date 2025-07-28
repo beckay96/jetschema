@@ -21,21 +21,22 @@ export function DatabaseField({ field, onEdit, onDelete, compact = false }: Data
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="flex items-center gap-1">
           {field.primaryKey && (
-            <Key className="h-3 w-3 text-yellow-500" />
+            <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
           )}
           {field.foreignKey && (
-            <Link className="h-3 w-3 text-blue-500" />
+            <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
           )}
           {field.unique && !field.primaryKey && (
-            <Star className="h-3 w-3 text-purple-500" />
+            <Star className="h-3 w-3" style={{ color: 'hsl(var(--status-unique))' }} />
           )}
         </div>
         
         <span className={cn(
           "font-medium truncate",
           compact ? "text-sm" : "text-base",
-          field.primaryKey && "text-yellow-700 font-semibold"
-        )}>
+          field.primaryKey && "font-semibold"
+        )}
+        style={field.primaryKey ? { color: 'hsl(var(--status-primary-key))' } : {}}>
           {field.name}
         </span>
         
@@ -43,12 +44,20 @@ export function DatabaseField({ field, onEdit, onDelete, compact = false }: Data
         
         <div className="flex gap-1">
           {!field.nullable && (
-            <Badge variant="outline" className="text-xs border-red-200 text-red-600">
+            <Badge 
+              variant="outline" 
+              className="text-xs"
+              style={{
+                borderColor: 'hsl(var(--status-not-null) / 0.3)',
+                color: 'hsl(var(--status-not-null))',
+                backgroundColor: 'hsl(var(--status-not-null) / 0.1)'
+              }}
+            >
               NOT NULL
             </Badge>
           )}
           {field.defaultValue && (
-            <Badge variant="outline" className="text-xs border-gray-200 text-gray-600">
+            <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
               DEFAULT
             </Badge>
           )}
