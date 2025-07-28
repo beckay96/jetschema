@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, Code, Palette, Download, Share, Sparkles, Menu, X, PanelLeft, PanelRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 const Index = () => {
   const [tables, setTables] = useState<DatabaseTable[]>([]);
   const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);

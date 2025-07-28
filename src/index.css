@@ -2,52 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-Database Design Tool Color System
-*/
-
 @layer base {
   :root {
     --background: 220 15% 98%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
     --primary: 262 83% 58%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 220 14% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
-
     --muted: 220 14% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
     --accent: 262 83% 58%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 262 83% 58%;
-
+    --radius: 0.75rem;
+    
+    /* Enhanced shadows and glows */
+    --shadow-card: 0 4px 6px -1px hsl(217.2 32.6% 17.5% / 0.1), 0 2px 4px -1px hsl(217.2 32.6% 17.5% / 0.06);
+    --shadow-card-hover: 0 10px 15px -3px hsl(217.2 32.6% 17.5% / 0.1), 0 4px 6px -2px hsl(217.2 32.6% 17.5% / 0.05);
+    --shadow-glow-success: 0 0 20px hsl(142.1 76.2% 36.3% / 0.3);
+    --shadow-glow-warning: 0 0 20px hsl(38.5 92.1% 50.2% / 0.3);
+    --shadow-glow-error: 0 0 20px hsl(0 62.8% 30.6% / 0.3);
+    
     /* Vibrant Database Theme Colors */
     --db-canvas: 220 20% 97%;
     --db-table: 0 0% 100%;
     --db-table-header: 262 83% 58%;
     --db-table-border: 220 13% 88%;
     --shadow-table: 0 8px 32px -8px hsl(262 83% 58% / 0.2);
+  }
 
-    /* Data Type Colors - More Vibrant */
-    --color-uuid: 280 100% 70%;
-    --color-text: 340 100% 65%;
-    --color-varchar: 340 100% 65%;
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.0%;
+  }
+}
+
+@layer components {
+  .card-enhanced {
+    @apply bg-card text-card-foreground border border-border rounded-xl transition-all duration-300 ease-out;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .card-enhanced:hover {
+    box-shadow: var(--shadow-card-hover);
+    @apply -translate-y-0.5;
+  }
+  
+  .resizer {
+    @apply w-1 bg-border hover:bg-primary cursor-col-resize transition-colors duration-200;
+  }
+}
     --color-string: 340 100% 65%;
     --color-int: 220 100% 65%;
     --color-integer: 220 100% 65%;
