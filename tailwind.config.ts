@@ -61,7 +61,23 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				'db-canvas': 'hsl(var(--db-canvas))',
+				'db-table': {
+					DEFAULT: 'hsl(var(--db-table-bg))',
+					header: 'hsl(var(--db-table-header))',
+					border: 'hsl(var(--db-table-border))'
+				},
+				'type-string': 'hsl(var(--type-string))',
+				'type-number': 'hsl(var(--type-number))',
+				'type-boolean': 'hsl(var(--type-boolean))',
+				'type-date': 'hsl(var(--type-date))',
+				'type-uuid': 'hsl(var(--type-uuid))',
+				'type-json': 'hsl(var(--type-json))',
+				'type-binary': 'hsl(var(--type-binary))',
+				'relation-one-to-one': 'hsl(var(--relation-one-to-one))',
+				'relation-one-to-many': 'hsl(var(--relation-one-to-many))',
+				'relation-many-to-many': 'hsl(var(--relation-many-to-many))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

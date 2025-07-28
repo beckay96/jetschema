@@ -4,37 +4,68 @@
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
+Database Design Tool Color System
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 13% 99%;
+    --foreground: 220 13% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 13% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 13% 9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220 13% 9%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220 13% 9%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
+
+    /* Database specific colors */
+    --db-canvas: 220 13% 98%;
+    --db-table-bg: 0 0% 100%;
+    --db-table-header: 262 83% 58%;
+    --db-table-border: 220 13% 85%;
+    
+    /* Data type colors */
+    --type-string: 142 71% 45%;
+    --type-number: 213 94% 68%;
+    --type-boolean: 267 84% 81%;
+    --type-date: 339 82% 51%;
+    --type-uuid: 48 96% 53%;
+    --type-json: 25 95% 53%;
+    --type-binary: 0 0% 45%;
+    
+    /* Relationship colors */
+    --relation-one-to-one: 142 71% 45%;
+    --relation-one-to-many: 213 94% 68%;
+    --relation-many-to-many: 267 84% 81%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 83% 68%));
+    --gradient-canvas: linear-gradient(135deg, hsl(220 13% 99%), hsl(220 13% 96%));
+    --gradient-table: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 98%));
+    
+    /* Shadows */
+    --shadow-table: 0 4px 12px -2px hsl(220 13% 9% / 0.08);
+    --shadow-table-hover: 0 8px 25px -5px hsl(220 13% 9% / 0.15);
+    --shadow-field: 0 2px 8px -2px hsl(220 13% 9% / 0.05);
 
     --radius: 0.5rem;
 
