@@ -115,15 +115,6 @@ const Index = () => {
                     <PanelRight className="h-4 w-4" />
                   </Button>
                 </>}
-              
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
             </div>
           </div>
         </div>
