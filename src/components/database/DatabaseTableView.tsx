@@ -182,7 +182,7 @@ export function DatabaseTableView({
                     )}
                   </Button>
                   <CardTitle 
-                    className="text-lg bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent"
+                    className="text-lg text-card-foreground"
                   >
                     {table.name}
                   </CardTitle>
