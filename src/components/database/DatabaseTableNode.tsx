@@ -5,7 +5,8 @@ import { TableEditModal } from './TableEditModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, Maximize2, Minimize2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Settings, Maximize2, Minimize2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -37,6 +38,21 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   const isMobile = useIsMobile();
   const [isCompact, setIsCompact] = useState(initialCompact || isMobile);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(table.name);
+  
+  const handleNameSave = () => {
+    if (tempName.trim() && tempName !== table.name) {
+      onEditTable?.({ ...table, name: tempName.trim() });
+    }
+    setIsEditingName(false);
+    setTempName(table.name);
+  };
+
+  const handleNameCancel = () => {
+    setTempName(table.name);
+    setIsEditingName(false);
+  };
   
   const primaryKeyFields = table.fields.filter(f => f.primaryKey);
   const foreignKeyFields = table.fields.filter(f => f.foreignKey);
@@ -60,13 +76,51 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
       )}>
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h3 className={cn(
-              "font-bold truncate",
-              (isCompact || isMobile) ? "text-sm" : "text-lg"
-            )}>
-              {table.name}
-            </h3>
-            {!(isCompact || isMobile) && table.comment && (
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  className={cn(
+                    "bg-white/20 border-white/30 text-white placeholder:text-white/60",
+                    (isCompact || isMobile) ? "text-sm h-7" : "text-lg h-8"
+                  )}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleNameSave();
+                    if (e.key === 'Escape') handleNameCancel();
+                  }}
+                  autoFocus
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                  onClick={handleNameSave}
+                >
+                  <Check className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                  onClick={handleNameCancel}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <h3 
+                className={cn(
+                  "font-bold truncate cursor-pointer hover:bg-white/10 px-2 py-1 rounded",
+                  (isCompact || isMobile) ? "text-sm" : "text-lg"
+                )}
+                onClick={() => setIsEditingName(true)}
+                title="Click to edit table name"
+              >
+                {table.name}
+              </h3>
+            )}
+            {!(isCompact || isMobile) && !isEditingName && table.comment && (
               <p className="text-sm text-white/80 mt-1 truncate">
                 {table.comment}
               </p>

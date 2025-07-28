@@ -11,7 +11,7 @@ import {
   Edge
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { DatabaseTable } from '@/types/database';
+import { DatabaseTable, DataType } from '@/types/database';
 import { DatabaseTableNode } from './DatabaseTableNode';
 
 interface DatabaseCanvasProps {
@@ -108,7 +108,27 @@ export function DatabaseCanvas({
       },
       onAddField: (tableId: string) => {
         // Handle adding new field
-        console.log('Add field to table:', tableId);
+        const updatedTables = tables.map(t => {
+          if (t.id === tableId) {
+            const newField = {
+              id: `field-${Date.now()}`,
+              name: `new_field_${t.fields.length + 1}`,
+              type: 'VARCHAR' as DataType,
+              nullable: true,
+              primaryKey: false,
+              unique: false,
+              foreignKey: null,
+              defaultValue: null,
+              comment: null
+            };
+            return {
+              ...t,
+              fields: [...t.fields, newField]
+            };
+          }
+          return t;
+        });
+        onTableUpdate?.(updatedTables);
       }
     },
     dragHandle: '.table-drag-handle'
