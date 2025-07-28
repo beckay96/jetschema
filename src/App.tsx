@@ -3,9 +3,10 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-ro
 import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import { Auth } from "./pages/Auth";
+import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Users, Share } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 function AuthenticatedApp() {
@@ -33,7 +34,8 @@ function AuthenticatedApp() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
-      <Route 
+      <Route path="/team" element={<Team />} />
+      <Route
         path="/" 
         element={
           user ? (
@@ -60,11 +62,20 @@ function AuthenticatedApp() {
                   </div>
                   
                   <div className="flex items-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/team')}
+                      className="hover:bg-primary/10 hover:text-primary hover:border-primary/20"
+                    >
+                      <Users className="h-4 w-4 mr-1" />
+                      Team
+                    </Button>
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">{user.email}</span>
                     </div>
-                    <Button 
+                    <Button
                       variant="outline" 
                       size="sm"
                       onClick={signOut}
