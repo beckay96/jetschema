@@ -69,7 +69,7 @@ export function DatabaseSidebar({
 
       <CardContent className="flex-1 py-5">
         <Tabs defaultValue="tables" className="h-full flex flex-col">
-          <TabsList className="mb-2 w-full mx-0">
+          <TabsList className="mb-2 w-full mx-0 flex flex-wrap">
             <TabsTrigger value="tables" className="flex-1">
               <Table className="h-3 w-3 mr-1" />
               Tables
@@ -81,6 +81,14 @@ export function DatabaseSidebar({
             <TabsTrigger value="functions" className="flex-1">
               <Code className="h-3 w-3 mr-1" />
               Functions
+            </TabsTrigger>
+            <TabsTrigger value="rls" className="flex-1">
+              <Settings className="h-3 w-3 mr-1" />
+              RLS
+            </TabsTrigger>
+            <TabsTrigger value="indexes" className="flex-1">
+              <Database className="h-3 w-3 mr-1" />
+              Indexes
             </TabsTrigger>
           </TabsList>
 
@@ -217,6 +225,46 @@ export function DatabaseSidebar({
                       <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">No functions defined</p>
                     </div>}
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="rls" className="flex-1 mx-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">RLS Policies</Label>
+                <Button size="sm" className="h-8">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-2">
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No RLS policies defined</p>
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="indexes" className="flex-1 mx-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Database Indexes</Label>
+                <Button size="sm" className="h-8">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-2">
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No indexes defined</p>
+                  </div>
                 </div>
               </ScrollArea>
             </div>
