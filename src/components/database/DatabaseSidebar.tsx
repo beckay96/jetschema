@@ -12,6 +12,7 @@ import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/databa
 import { ExportModal } from './ExportModal';
 import { TriggerFunctionModal } from './TriggerFunctionModal';
 import { DataTypePill } from './DataTypePill';
+import { ProjectTitleIcons } from './MicrointeractionIcons';
 interface DatabaseSidebarProps {
   tables: DatabaseTable[];
   triggers: DatabaseTrigger[];
@@ -48,7 +49,8 @@ export function DatabaseSidebar({
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Database className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Database Design</CardTitle>
+          <CardTitle className="text-lg">DataBlaze</CardTitle>
+          <ProjectTitleIcons onOpenSettings={() => {/* TODO: Project settings */}} />
         </div>
         
         <div className="space-y-2">
@@ -116,39 +118,53 @@ export function DatabaseSidebar({
 
             <ScrollArea className="flex-1">
               <div className="space-y-2">
-                {filteredTables.map(table => <Card key={table.id} className={`cursor-pointer transition-all hover:shadow-md ${selectedTable?.id === table.id ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => onSelectTable?.(table)}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-sm truncate">{table.name}</h4>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100" onClick={e => {
-                        e.stopPropagation();
-                        // Handle table settings
-                      }}>
-                            <Settings className="h-3.5 w-auto px-[57px] mx-[25px] my-[15px] py-[7px] rounded-md" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive" onClick={e => {
-                        e.stopPropagation();
-                        onDeleteTable?.(table.id);
-                      }}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                {filteredTables.map(table => {
+                  const hasWarnings = table.fields.length < 2 || !table.fields.some(f => f.primaryKey);
+                  const isValidated = table.fields.length >= 2 && table.fields.some(f => f.primaryKey) && 
+                                     table.fields.every(f => f.name && f.type);
+                  
+                  return (
+                    <Card 
+                      key={table.id} 
+                      className={`card-enhanced cursor-pointer group ${
+                        selectedTable?.id === table.id ? 'ring-2 ring-primary bg-primary/5' : ''
+                      } ${isValidated ? 'card-validated' : hasWarnings ? 'card-warning' : ''}`}
+                      onClick={() => onSelectTable?.(table)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-sm truncate">{table.name}</h4>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon" onClick={e => {
+                          e.stopPropagation();
+                          // Handle table settings
+                        }}>
+                              <Settings className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon text-destructive" onClick={e => {
+                          e.stopPropagation();
+                          onDeleteTable?.(table.id);
+                        }}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        {table.fields.slice(0, 3).map(field => <div key={field.id} className="flex items-center gap-2 text-xs">
-                            <span className="text-muted-foreground truncate flex-1 mx-0">
-                              {field.name}
-                            </span>
-                            <DataTypePill type={field.type} size="sm" />
-                          </div>)}
-                        {table.fields.length > 3 && <div className="text-xs text-muted-foreground">
-                            +{table.fields.length - 3} more fields
-                          </div>}
-                      </div>
-                    </CardContent>
-                  </Card>)}
+                        
+                        <div className="space-y-1">
+                          {table.fields.slice(0, 3).map(field => <div key={field.id} className="flex items-center gap-2 text-xs">
+                              <span className="text-muted-foreground truncate flex-1 mx-0">
+                                {field.name}
+                              </span>
+                              <DataTypePill type={field.type} size="sm" />
+                            </div>)}
+                          {table.fields.length > 3 && <div className="text-xs text-muted-foreground">
+                              +{table.fields.length - 3} more fields
+                            </div>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
 
                 {filteredTables.length === 0 && <div className="text-center py-8 text-muted-foreground">
                     <Table className="h-8 w-8 mx-auto mb-2 opacity-50" />
