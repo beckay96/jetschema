@@ -178,8 +178,8 @@ export function DatabaseSidebar({
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="triggers" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="triggers" className="flex-1 space-y-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Triggers</Label>
                 <Button size="sm" onClick={() => setShowTriggerModal(true)} className="h-8">
@@ -212,8 +212,8 @@ export function DatabaseSidebar({
             </div>
           </TabsContent>
 
-          <TabsContent value="functions" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="functions" className="flex-1 space-y-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Functions</Label>
                 <Button size="sm" onClick={() => setShowFunctionModal(true)} className="h-8">
@@ -246,8 +246,8 @@ export function DatabaseSidebar({
             </div>
           </TabsContent>
 
-          <TabsContent value="rls" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="rls" className="flex-1 space-y-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">RLS Policies</Label>
                 <Button size="sm" className="h-8">
@@ -266,8 +266,8 @@ export function DatabaseSidebar({
             </div>
           </TabsContent>
 
-          <TabsContent value="indexes" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="indexes" className="flex-1 space-y-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Indexes</Label>
                 <Button size="sm" className="h-8">
