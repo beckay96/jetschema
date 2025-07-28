@@ -154,3 +154,17 @@ Database Design Tool Color System
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-canvas {
+    background: var(--gradient-canvas);
+  }
+  
+  .bg-gradient-table {
+    background: var(--gradient-table);
+  }
+}
