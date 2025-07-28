@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
@@ -13,7 +13,11 @@ import {
   Palette, 
   Download, 
   Share,
-  Sparkles
+  Sparkles,
+  Menu,
+  X,
+  PanelLeft,
+  PanelRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +26,37 @@ const Index = () => {
   const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
+  
+  // Panel state management
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile view
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close other panel when opening one
+  const toggleLeftPanel = () => {
+    if (!leftPanelOpen && rightPanelOpen) {
+      setRightPanelOpen(false);
+    }
+    setLeftPanelOpen(!leftPanelOpen);
+  };
+
+  const toggleRightPanel = () => {
+    if (!rightPanelOpen && leftPanelOpen) {
+      setLeftPanelOpen(false);
+    }
+    setRightPanelOpen(!rightPanelOpen);
+  };
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     setTables(importedTables);
@@ -84,6 +119,29 @@ const Index = () => {
                 <Sparkles className="h-3 w-3 mr-1" />
                 {tables.length} tables
               </Badge>
+              
+              {/* Mobile toggle buttons */}
+              {isMobile && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={toggleLeftPanel}
+                    className="lg:hidden"
+                  >
+                    <PanelLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={toggleRightPanel}
+                    className="lg:hidden"
+                  >
+                    <PanelRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              
               <Button variant="outline" size="sm">
                 <Share className="h-4 w-4 mr-2" />
                 Share
@@ -98,9 +156,30 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Sidebar */}
-        <div className="w-80 border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
+      <div className="flex h-[calc(100vh-80px)] relative">
+        {/* Left Sidebar - Desktop always visible, Mobile slide-in */}
+        <div className={`
+          ${isMobile 
+            ? `fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${
+                leftPanelOpen ? 'translate-x-0' : '-translate-x-full'
+              }` 
+            : `w-80 ${leftPanelOpen || !isMobile ? 'block' : 'hidden'}`
+          }
+          border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
+        `}>
+          {/* Close button for mobile */}
+          {isMobile && leftPanelOpen && (
+            <div className="absolute top-4 right-4 z-10">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setLeftPanelOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           <DatabaseSidebar
             tables={tables}
             triggers={triggers}
@@ -116,6 +195,33 @@ const Index = () => {
 
         {/* Main Canvas */}
         <div className="flex-1 flex flex-col">
+          {/* Desktop toggle buttons */}
+          {!isMobile && (
+            <div className="absolute top-4 left-4 z-10 flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={toggleLeftPanel}
+                className={leftPanelOpen ? 'bg-muted' : ''}
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
+          {!isMobile && (
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={toggleRightPanel}
+                className={rightPanelOpen ? 'bg-muted' : ''}
+              >
+                <PanelRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           <div className="flex-1">
             <DatabaseCanvas
               tables={tables}
@@ -126,8 +232,29 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Right Panel */}
-        <div className="w-96 border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
+        {/* Right Panel - Desktop toggleable, Mobile slide-in */}
+        <div className={`
+          ${isMobile 
+            ? `fixed inset-y-0 right-0 z-50 w-96 transform transition-transform duration-300 ease-in-out ${
+                rightPanelOpen ? 'translate-x-0' : 'translate-x-full'
+              }` 
+            : `w-96 ${rightPanelOpen || !isMobile ? 'block' : 'hidden'}`
+          }
+          border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
+        `}>
+          {/* Close button for mobile */}
+          {isMobile && rightPanelOpen && (
+            <div className="absolute top-4 left-4 z-10">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setRightPanelOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           <Tabs defaultValue="sql" className="h-full flex flex-col">
             <div className="p-4 pb-0">
               <TabsList className="w-full">
@@ -173,6 +300,17 @@ const Index = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Mobile backdrop */}
+        {isMobile && (leftPanelOpen || rightPanelOpen) && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => {
+              setLeftPanelOpen(false);
+              setRightPanelOpen(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );
