@@ -38,16 +38,14 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
 
   return (
     <Card className={cn(
-      "w-80 transition-all duration-200 hover:shadow-lg cursor-grab active:cursor-grabbing",
-      "bg-gradient-to-br from-card to-card/95 border-2",
-      selected && "ring-2 ring-primary ring-offset-2 border-primary/30",
+      "w-80 transition-all duration-200 hover:shadow-lg text-white",
+      "bg-gradient-to-br from-db-table to-db-table/95 text-white",
+      "border-db-table-border shadow-table text-white",
+      selected && "ring-2 ring-primary ring-offset-2 text-white",
       isCompact && "w-64"
-    )}
-    style={{
-      boxShadow: 'var(--shadow-table)'
-    }}>
+    )}>
       <CardHeader className={cn(
-        "pb-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-t-lg table-drag-handle",
+        "pb-3 bg-gradient-to-r from-db-table-header to-db-table-header/90 text-white rounded-t-lg",
         isCompact && "pb-2"
       )}>
         <div className="flex items-center justify-between">
