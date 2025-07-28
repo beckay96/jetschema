@@ -116,7 +116,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
-              onEdit={onEditField}
+              onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
               compact={isCompact}
             />
@@ -127,7 +127,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
-              onEdit={onEditField}
+              onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
               compact={isCompact}
             />
@@ -138,7 +138,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
-              onEdit={onEditField}
+              onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
               compact={isCompact}
             />
