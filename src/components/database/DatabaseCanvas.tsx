@@ -41,10 +41,12 @@ export function DatabaseCanvas({
     position: table.position,
     data: {
       table,
+      allTables: tables,
       selected: selectedTable?.id === table.id,
       onEditTable: (updatedTable: DatabaseTable) => {
         // Handle table editing
-        console.log('Edit table:', updatedTable);
+        const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
+        onTableUpdate?.(updatedTables);
       },
       onEditField: (field: any) => {
         // Handle field editing

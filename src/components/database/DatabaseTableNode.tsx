@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DatabaseTable } from '@/types/database';
 import { DatabaseField } from './DatabaseField';
+import { TableEditModal } from './TableEditModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 interface DatabaseTableNodeProps {
   data: {
     table: DatabaseTable;
+    allTables?: DatabaseTable[];
     onEditTable?: (table: DatabaseTable) => void;
     onEditField?: (field: any) => void;
     onDeleteField?: (tableId: string, fieldId: string) => void;
@@ -22,6 +24,7 @@ interface DatabaseTableNodeProps {
 export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   const { 
     table, 
+    allTables = [],
     onEditTable, 
     onEditField, 
     onDeleteField, 
@@ -31,6 +34,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   } = data;
   
   const [isCompact, setIsCompact] = useState(initialCompact);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   const primaryKeyFields = table.fields.filter(f => f.primaryKey);
   const foreignKeyFields = table.fields.filter(f => f.foreignKey);
@@ -76,7 +80,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0 text-white hover:bg-white/20"
-              onClick={() => onEditTable?.(table)}
+              onClick={() => setShowEditModal(true)}
             >
               <Settings className="h-3 w-3" />
             </Button>
@@ -155,6 +159,17 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
           </Button>
         </div>
       </CardContent>
+
+      <TableEditModal
+        table={table}
+        allTables={allTables}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onTableUpdate={(updatedTable) => {
+          onEditTable?.(updatedTable);
+          setShowEditModal(false);
+        }}
+      />
     </Card>
   );
 }
