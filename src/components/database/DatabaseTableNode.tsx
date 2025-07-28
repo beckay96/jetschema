@@ -42,7 +42,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
 
   return (
     <Card className={cn(
-      "w-80 transition-all duration-200 hover:shadow-lg text-white",
+      "w-80 transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move",
       "bg-gradient-to-br from-db-table to-db-table/95 text-white",
       "border-db-table-border shadow-table text-white",
       selected && "ring-2 ring-primary ring-offset-2 text-white",

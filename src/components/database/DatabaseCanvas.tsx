@@ -34,6 +34,47 @@ export function DatabaseCanvas({
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Generate foreign key edges between tables
+  const generateForeignKeyEdges = (tables: DatabaseTable[]): Edge[] => {
+    const fkEdges: Edge[] = [];
+    
+    tables.forEach(table => {
+      table.fields.forEach(field => {
+        if (field.foreignKey) {
+          const sourceTableId = table.id;
+          const targetTableId = tables.find(t => t.name === field.foreignKey?.table)?.id;
+          
+          if (targetTableId) {
+            fkEdges.push({
+              id: `fk-${sourceTableId}-${field.id}-${targetTableId}`,
+              source: sourceTableId,
+              target: targetTableId,
+              type: 'smoothstep',
+              animated: true,
+              style: { 
+                stroke: 'hsl(var(--status-foreign-key))', 
+                strokeWidth: 2,
+                strokeDasharray: '5,5'
+              },
+              label: `${field.name} → ${field.foreignKey.field}`,
+              labelStyle: { 
+                fill: 'hsl(var(--foreground))', 
+                fontSize: 12,
+                fontWeight: 500
+              },
+              labelBgStyle: { 
+                fill: 'hsl(var(--background))', 
+                fillOpacity: 0.9 
+              }
+            });
+          }
+        }
+      });
+    });
+    
+    return fkEdges;
+  };
+
   // Convert tables to nodes
   const tableNodes: Node[] = tables.map(table => ({
     id: table.id,
@@ -76,7 +117,31 @@ export function DatabaseCanvas({
   // Update nodes when tables change
   React.useEffect(() => {
     setNodes(tableNodes);
+    // Generate and set foreign key edges
+    const fkEdges = generateForeignKeyEdges(tables);
+    setEdges(fkEdges);
   }, [tables, selectedTable]);
+
+  // Handle node position changes to update table positions
+  const handleNodesChange = useCallback((changes: any[]) => {
+    onNodesChange(changes);
+    
+    // Update table positions when nodes are moved
+    const positionChanges = changes.filter(change => change.type === 'position' && change.position);
+    if (positionChanges.length > 0 && onTableUpdate) {
+      const updatedTables = tables.map(table => {
+        const positionChange = positionChanges.find(change => change.id === table.id);
+        if (positionChange) {
+          return {
+            ...table,
+            position: positionChange.position
+          };
+        }
+        return table;
+      });
+      onTableUpdate(updatedTables);
+    }
+  }, [onNodesChange, tables, onTableUpdate]);
 
   const onConnect = useCallback(
     (params: any) => {
@@ -108,7 +173,7 @@ export function DatabaseCanvas({
       <ReactFlow
         nodes={tableNodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
