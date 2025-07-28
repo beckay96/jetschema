@@ -3,84 +3,125 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2 } from 'lucide-react';
+import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, Shield, ArrowUpDown, Share2 } from 'lucide-react';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { ExportModal } from './ExportModal';
 import { TriggerFunctionModal } from './TriggerFunctionModal';
+import { RLSPolicyModal } from './RLSPolicyModal';
+import { IndexModal } from './IndexModal';
+import { useRLSPolicies } from '@/hooks/useRLSPolicies';
+import { useIndexes } from '@/hooks/useIndexes';
 import { DataTypePill } from './DataTypePill';
 interface DatabaseSidebarProps {
   tables: DatabaseTable[];
   triggers: DatabaseTrigger[];
   functions: DatabaseFunction[];
   selectedTable?: DatabaseTable | null;
+  projectId?: string;
   onAddTable?: () => void;
   onAddTrigger?: (trigger: Omit<DatabaseTrigger, 'id'>) => void;
   onAddFunction?: (func: Omit<DatabaseFunction, 'id'>) => void;
   onSelectTable?: (table: DatabaseTable) => void;
   onDeleteTable?: (tableId: string) => void;
   onSaveProject?: () => void;
+  onReorderTables?: (tables: DatabaseTable[]) => void;
 }
 export function DatabaseSidebar({
   tables,
   triggers,
   functions,
   selectedTable,
+  projectId,
   onAddTable,
   onAddTrigger,
   onAddFunction,
   onSelectTable,
   onDeleteTable,
-  onSaveProject
+  onSaveProject,
+  onReorderTables
 }: DatabaseSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [projectName, setProjectName] = useState('Database Schema');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
+  const [showRLSModal, setShowRLSModal] = useState(false);
+  const [showIndexModal, setShowIndexModal] = useState(false);
+
+  // RLS and Index hooks
+  const { policies, savePolicy, updatePolicy, deletePolicy } = useRLSPolicies(projectId);
+  const { indexes, saveIndex, updateIndex, deleteIndex } = useIndexes(projectId);
   
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     table.fields.some(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-  return <Card className="h-full flex flex-col">
+  return <Card className="h-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5 border border-primary/20">
       <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Database Design</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
+              <Database className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                DataBlaze
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Database design but FAST!</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onReorderTables?.(tables)}>
+              <ArrowUpDown className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+              <Share2 className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setShowExportModal(true)}>
+              <FileText className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
         
         <div className="space-y-2">
-          <Input placeholder="Project name" value={projectName} onChange={e => setProjectName(e.target.value)} className="h-8 text-sm" />
+          <Input 
+            placeholder="Project name" 
+            value={projectName} 
+            onChange={e => setProjectName(e.target.value)} 
+            className="h-8 text-sm bg-background/50 border-primary/20 focus:border-primary/40" 
+          />
           
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1 h-8" onClick={onSaveProject}>
-              <Save className="h-3 w-3 mr-1" />
-              Save
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1 h-8" onClick={() => setShowExportModal(true)}>
-              <FileText className="h-3 w-3 mr-1" />
-              Export
-            </Button>
-          </div>
+          <Button size="sm" variant="default" className="w-full h-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70" onClick={onSaveProject}>
+            <Save className="h-3 w-3 mr-1" />
+            Save Project
+          </Button>
         </div>
       </CardHeader>
 
       <CardContent className="flex-1 p-0">
         <Tabs defaultValue="tables" className="h-full flex flex-col">
-          <TabsList className="mb-2 w-full mx-0">
-            <TabsTrigger value="tables" className="flex-1">
+          <TabsList className="mb-2 w-full mx-0 bg-gradient-to-r from-muted/50 to-muted/30">
+            <TabsTrigger value="tables" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Table className="h-3 w-3 mr-1" />
               Tables
             </TabsTrigger>
-            <TabsTrigger value="triggers" className="flex-1">
+            <TabsTrigger value="rls" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Shield className="h-3 w-3 mr-1" />
+              RLS
+            </TabsTrigger>
+            <TabsTrigger value="indexes" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Database className="h-3 w-3 mr-1" />
+              Indexes
+            </TabsTrigger>
+            <TabsTrigger value="triggers" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Zap className="h-3 w-3 mr-1" />
               Triggers
             </TabsTrigger>
-            <TabsTrigger value="functions" className="flex-1">
+            <TabsTrigger value="functions" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Code className="h-3 w-3 mr-1" />
               Functions
             </TabsTrigger>
@@ -91,18 +132,23 @@ export function DatabaseSidebar({
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Search tables..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="h-8 pl-7 text-sm" />
+                  <Input 
+                    placeholder="Search tables..." 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                    className="h-8 pl-7 text-sm bg-background/50 border-primary/20 focus:border-primary/40" 
+                  />
                 </div>
-                <Button size="sm" onClick={onAddTable} className="h-8">
+                <Button size="sm" onClick={onAddTable} className="h-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
 
-              <div className="flex gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline" className="text-xs">
+              <div className="flex gap-2 text-xs">
+                <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30 text-primary">
                   {tables.length} tables
                 </Badge>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-secondary/10 border-secondary/30 text-secondary-foreground">
                   {tables.reduce((acc, table) => acc + table.fields.length, 0)} fields
                 </Badge>
               </div>
@@ -110,18 +156,18 @@ export function DatabaseSidebar({
 
             <ScrollArea className="flex-1">
               <div className="space-y-2">
-                {filteredTables.map(table => <Card key={table.id} className={`cursor-pointer transition-all hover:shadow-md ${selectedTable?.id === table.id ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => onSelectTable?.(table)}>
+                {filteredTables.map(table => <Card key={table.id} className={`group cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 ${selectedTable?.id === table.id ? 'ring-2 ring-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-md' : 'hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 border-primary/10'}`} onClick={() => onSelectTable?.(table)}>
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-sm truncate">{table.name}</h4>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100" onClick={e => {
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
                         e.stopPropagation();
                         // Handle table settings
                       }}>
                             <Settings className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive" onClick={e => {
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity" onClick={e => {
                         e.stopPropagation();
                         onDeleteTable?.(table.id);
                       }}>
@@ -145,9 +191,11 @@ export function DatabaseSidebar({
                   </Card>)}
 
                 {filteredTables.length === 0 && <div className="text-center py-8 text-muted-foreground">
-                    <Table className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No tables found</p>
-                    <Button variant="outline" size="sm" className="mt-2" onClick={onAddTable}>
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                      <Table className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No tables found</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="mt-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10" onClick={onAddTable}>
                       <Plus className="h-3 w-3 mr-1" />
                       Add Table
                     </Button>
@@ -156,18 +204,111 @@ export function DatabaseSidebar({
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="triggers" className="flex-1 mx-4 mb-4">
+          {/* RLS Policies Tab */}
+          <TabsContent value="rls" className="flex-1 mx-4 mb-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Database Triggers</Label>
-                <Button size="sm" onClick={() => setShowTriggerModal(true)} className="h-8">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Row Level Security
+                </Label>
+                <Button size="sm" onClick={() => setShowRLSModal(true)} className="h-8 bg-gradient-to-r from-primary to-primary/80">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
 
               <ScrollArea className="flex-1">
                 <div className="space-y-2">
-                  {triggers.map(trigger => <Card key={trigger.id} className="cursor-pointer hover:bg-muted/50">
+                  {policies.map(policy => (
+                    <Card key={policy.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium text-sm">{policy.name}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {policy.command}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {policy.table_name} • {policy.is_permissive ? 'PERMISSIVE' : 'RESTRICTIVE'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {policies.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                        <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No RLS policies defined</p>
+                        <p className="text-xs mt-1">Secure your data with access policies</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          {/* Indexes Tab */}
+          <TabsContent value="indexes" className="flex-1 mx-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Database className="h-4 w-4 text-primary" />
+                  Database Indexes
+                </Label>
+                <Button size="sm" onClick={() => setShowIndexModal(true)} className="h-8 bg-gradient-to-r from-primary to-primary/80">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-2">
+                  {indexes.map(index => (
+                    <Card key={index.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium text-sm">{index.name}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {index.index_type}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {index.table_name} • {index.columns.join(', ')} • {index.is_unique ? 'UNIQUE' : 'NON-UNIQUE'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {indexes.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                        <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No indexes defined</p>
+                        <p className="text-xs mt-1">Speed up queries with indexes</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="triggers" className="flex-1 mx-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Database Triggers
+                </Label>
+                <Button size="sm" onClick={() => setShowTriggerModal(true)} className="h-8 bg-gradient-to-r from-primary to-primary/80">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-2">
+                  {triggers.map(trigger => <Card key={trigger.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-medium text-sm">{trigger.name}</h4>
@@ -182,8 +323,11 @@ export function DatabaseSidebar({
                     </Card>)}
 
                   {triggers.length === 0 && <div className="text-center py-8 text-muted-foreground">
-                      <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No triggers defined</p>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                        <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No triggers defined</p>
+                        <p className="text-xs mt-1">Automate actions with triggers</p>
+                      </div>
                     </div>}
                 </div>
               </ScrollArea>
@@ -193,15 +337,18 @@ export function DatabaseSidebar({
           <TabsContent value="functions" className="flex-1 mx-4 mb-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Database Functions</Label>
-                <Button size="sm" onClick={() => setShowFunctionModal(true)} className="h-8">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Code className="h-4 w-4 text-primary" />
+                  Database Functions
+                </Label>
+                <Button size="sm" onClick={() => setShowFunctionModal(true)} className="h-8 bg-gradient-to-r from-primary to-primary/80">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
 
               <ScrollArea className="flex-1">
                 <div className="space-y-2">
-                  {functions.map(func => <Card key={func.id} className="cursor-pointer hover:bg-muted/50">
+                  {functions.map(func => <Card key={func.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-medium text-sm">{func.name}</h4>
@@ -216,8 +363,11 @@ export function DatabaseSidebar({
                     </Card>)}
 
                   {functions.length === 0 && <div className="text-center py-8 text-muted-foreground">
-                      <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No functions defined</p>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                        <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No functions defined</p>
+                        <p className="text-xs mt-1">Create reusable database logic</p>
+                      </div>
                     </div>}
                 </div>
               </ScrollArea>
@@ -255,6 +405,22 @@ export function DatabaseSidebar({
           onAddFunction?.(func as any);
           setShowFunctionModal(false);
         }}
+      />
+
+      <RLSPolicyModal
+        open={showRLSModal}
+        onOpenChange={setShowRLSModal}
+        onSave={async (policy) => { await savePolicy(policy); }}
+        tables={tables}
+        projectId={projectId || ''}
+      />
+
+      <IndexModal
+        open={showIndexModal}
+        onOpenChange={setShowIndexModal}
+        onSave={async (index) => { await saveIndex(index); }}
+        tables={tables}
+        projectId={projectId || ''}
       />
     </Card>;
 }
