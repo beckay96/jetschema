@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserPlus, Mail, Settings, Trash2, Crown, Shield, Edit, Eye } from 'lucide-react';
+import { Users, UserPlus, Mail, Settings, Trash2, Crown, Shield, Edit, Eye, Plus, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface TeamMember {
   id: string;
@@ -45,12 +46,16 @@ interface TeamManagementProps {
 
 export function TeamManagement({ projectId }: TeamManagementProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showCreateTeamDialog, setShowCreateTeamDialog] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamDescription, setNewTeamDescription] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -152,6 +157,45 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
     }
   };
 
+  const createTeam = async () => {
+    if (!newTeamName || !user) return;
+
+    try {
+      // Create the team
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .insert({
+          name: newTeamName,
+          description: newTeamDescription,
+          created_by: user.id
+        })
+        .select()
+        .single();
+
+      if (teamError) throw teamError;
+
+      // Add the creator as owner
+      const { error: memberError } = await supabase
+        .from('team_members')
+        .insert({
+          team_id: teamData.id,
+          user_id: user.id,
+          role: 'owner'
+        });
+
+      if (memberError) throw memberError;
+
+      toast.success('Team created successfully');
+      setNewTeamName('');
+      setNewTeamDescription('');
+      setShowCreateTeamDialog(false);
+      loadTeamData();
+    } catch (error) {
+      console.error('Error creating team:', error);
+      toast.error('Failed to create team');
+    }
+  };
+
   const updateMemberRole = async (memberId: string, newRole: 'owner' | 'admin' | 'editor' | 'viewer') => {
     try {
       const { error } = await supabase
@@ -208,162 +252,225 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Team Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Loading team data...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Editor
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Team Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Loading team data...</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (!team) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Team Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No team found. Create a team to collaborate with others.</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Editor
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Team Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">No team found. Create a team to collaborate with others.</p>
+            
+            <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Team
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Team</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="teamName">Team Name</Label>
+                    <Input
+                      id="teamName"
+                      placeholder="My Awesome Team"
+                      value={newTeamName}
+                      onChange={(e) => setNewTeamName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="teamDescription">Description (Optional)</Label>
+                    <Input
+                      id="teamDescription"
+                      placeholder="What this team is working on..."
+                      value={newTeamDescription}
+                      onChange={(e) => setNewTeamDescription(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={createTeam} className="w-full" disabled={!newTeamName}>
+                    Create Team
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            {team.name}
-          </CardTitle>
-          <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Invite Team Member</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="colleague@company.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin - Full access</SelectItem>
-                      <SelectItem value="editor">Editor - Can edit everything</SelectItem>
-                      <SelectItem value="viewer">Viewer - Read only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={inviteUser} className="w-full">
-                  Send Invitation
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Editor
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {team.name}
+            </CardTitle>
+            <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-        {team.description && (
-          <p className="text-sm text-muted-foreground">{team.description}</p>
-        )}
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Team Members */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium">Team Members ({members.length})</h3>
-          </div>
-          <ScrollArea className="max-h-64">
-            <div className="space-y-2">
-              {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-                      {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || '?'}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {member.profiles?.full_name || member.profiles?.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.profiles?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={getRoleColor(member.role)}>
-                      {getRoleIcon(member.role)}
-                      <span className="ml-1 capitalize">{member.role}</span>
-                    </Badge>
-                    {member.role !== 'owner' && member.user_id !== user?.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-destructive"
-                        onClick={() => removeMember(member.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Pending Invitations */}
-        {invitations.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Mail className="h-4 w-4" />
-              <h3 className="font-medium">Pending Invitations ({invitations.length})</h3>
-            </div>
-            <div className="space-y-2">
-              {invitations.map((invitation) => (
-                <div key={invitation.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Invite Team Member</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <p className="font-medium text-sm">{invitation.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Invited {new Date(invitation.created_at).toLocaleDateString()}
-                    </p>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="colleague@company.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                    />
                   </div>
-                  <Badge variant="outline" className={getRoleColor(invitation.role)}>
-                    {getRoleIcon(invitation.role)}
-                    <span className="ml-1 capitalize">{invitation.role}</span>
-                  </Badge>
+                  <div>
+                    <Label htmlFor="role">Role</Label>
+                    <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin - Full access</SelectItem>
+                        <SelectItem value="editor">Editor - Can edit everything</SelectItem>
+                        <SelectItem value="viewer">Viewer - Read only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={inviteUser} className="w-full">
+                    Send Invitation
+                  </Button>
                 </div>
-              ))}
-            </div>
+              </DialogContent>
+            </Dialog>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {team.description && (
+            <p className="text-sm text-muted-foreground">{team.description}</p>
+          )}
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Team Members */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium">Team Members ({members.length})</h3>
+            </div>
+            <ScrollArea className="max-h-64">
+              <div className="space-y-2">
+                {members.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                        {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || '?'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {member.profiles?.full_name || member.profiles?.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.profiles?.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={getRoleColor(member.role)}>
+                        {getRoleIcon(member.role)}
+                        <span className="ml-1 capitalize">{member.role}</span>
+                      </Badge>
+                      {member.role !== 'owner' && member.user_id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive"
+                          onClick={() => removeMember(member.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Pending Invitations */}
+          {invitations.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-4 w-4" />
+                <h3 className="font-medium">Pending Invitations ({invitations.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {invitations.map((invitation) => (
+                  <div key={invitation.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{invitation.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Invited {new Date(invitation.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={getRoleColor(invitation.role)}>
+                      {getRoleIcon(invitation.role)}
+                      <span className="ml-1 capitalize">{invitation.role}</span>
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
