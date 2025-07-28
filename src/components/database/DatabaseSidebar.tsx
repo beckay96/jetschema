@@ -69,9 +69,9 @@ export function DatabaseSidebar({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 py-5">
+      <CardContent className="flex-1 py-6 px-6">
         <Tabs defaultValue="tables" className="h-full flex flex-col">
-          <TabsList className="mb-2 w-full mx-0 flex flex-wrap">
+          <TabsList className="mb-4 w-full mx-0 flex flex-wrap">
             <TabsTrigger value="tables" className="flex-1">
               <Table className="h-3 w-3 mr-1" />
               Tables
@@ -94,7 +94,7 @@ export function DatabaseSidebar({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tables" className="flex-1 mx-4 mb-4 space-y-3">
+          <TabsContent value="tables" className="flex-1 space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
