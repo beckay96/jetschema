@@ -87,6 +87,7 @@ export function DatabaseCanvas({
       allTables: tables,
       selected: selectedTable?.id === table.id,
       onEditTable: (updatedTable: DatabaseTable) => {
+        console.log('🔄 Updating table:', updatedTable.name);
         // Handle table editing
         const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
         onTableUpdate?.(updatedTables);
@@ -109,6 +110,7 @@ export function DatabaseCanvas({
         onTableUpdate?.(updatedTables);
       },
       onAddField: (tableId: string) => {
+        console.log('➕ Adding field to table:', tableId);
         // Handle adding new field
         const updatedTables = tables.map(t => {
           if (t.id === tableId) {
@@ -123,6 +125,7 @@ export function DatabaseCanvas({
               defaultValue: null,
               comment: null
             };
+            console.log('📝 New field created:', newField.name, 'for table:', t.name);
             return {
               ...t,
               fields: [...t.fields, newField]
@@ -140,10 +143,8 @@ export function DatabaseCanvas({
   // Update nodes when tables change
   React.useEffect(() => {
     setNodes(tableNodes);
-    // Generate and set foreign key edges
-    const fkEdges = generateForeignKeyEdges(tables);
-    setEdges(fkEdges);
-  }, [tables, selectedTable]);
+    setEdges(generateForeignKeyEdges(tables));
+  }, [tables, selectedTable, setNodes, setEdges]);
 
   // Handle node position changes to update table positions
   const handleNodesChange = useCallback((changes: any[]) => {
@@ -194,7 +195,7 @@ export function DatabaseCanvas({
   return (
     <div className="h-full w-full bg-gradient-to-br from-db-canvas to-background">
       <ReactFlow
-        nodes={tableNodes}
+        nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
