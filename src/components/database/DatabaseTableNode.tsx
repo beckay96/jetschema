@@ -42,11 +42,11 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
 
   return (
     <Card className={cn(
-      "w-80 transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move",
+      "w-80 max-h-96 transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move flex flex-col",
       "bg-gradient-to-br from-db-table to-db-table/95 text-white",
       "border-db-table-border shadow-table text-white",
       selected && "ring-2 ring-primary ring-offset-2 text-white",
-      isCompact && "w-64"
+      isCompact && "w-64 max-h-64"
     )}>
       <CardHeader className={cn(
         "pb-3 bg-gradient-to-r from-db-table-header to-db-table-header/90 text-white rounded-t-lg",
@@ -107,7 +107,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
       </CardHeader>
       
       <CardContent className={cn(
-        "p-0 max-h-96 overflow-y-auto",
+        "p-0 flex-1 min-h-0 overflow-y-auto",
         isCompact && "max-h-48"
       )}>
         <div className="p-3 space-y-1">
