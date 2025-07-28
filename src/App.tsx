@@ -42,7 +42,16 @@ function AuthenticatedApp() {
               <header className="bg-card/50 backdrop-blur border-b px-4 py-3">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                   <div className="flex items-center gap-3">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    <h1 
+                      className="text-xl font-bold"
+                      style={{
+                        background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+                        WebkitBackgroundClip: 'text',
+                        backgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        color: 'transparent'
+                      }}
+                    >
                       Database Designer Pro
                     </h1>
                     <Badge variant="secondary" className="text-xs">
