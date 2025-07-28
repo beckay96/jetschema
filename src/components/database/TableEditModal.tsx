@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { DatabaseTable, DatabaseField, DataType } from '@/types/database';
 import { DataTypePill } from './DataTypePill';
 import { ForeignKeySelector } from './ForeignKeySelector';
+import { FieldCommentButton } from './FieldCommentButton';
+import { CommentModal } from './CommentModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Trash2, Key, Link, Star } from 'lucide-react';
+import { Plus, Trash2, Key, Link, Star, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -40,6 +42,11 @@ export function TableEditModal({
   const [editingTableName, setEditingTableName] = useState(false);
   const [foreignKeySelector, setForeignKeySelector] = useState<string | null>(null);
   const [currentTable, setCurrentTable] = useState(table);
+  const [commentModal, setCommentModal] = useState<{ open: boolean; tableName: string; fieldName: string }>({
+    open: false,
+    tableName: '',
+    fieldName: ''
+  });
 
   const updateField = (fieldId: string, updates: Partial<DatabaseField>) => {
     const updatedTable = {
@@ -89,31 +96,64 @@ export function TableEditModal({
     onTableUpdate(updatedTable);
   };
 
+  const handleAddComment = (tableName: string, fieldName: string) => {
+    setCommentModal({ open: true, tableName, fieldName });
+  };
+
+  const handleCommentSubmit = (comment: string, tagInChat: boolean, mentions: string[]) => {
+    // TODO: Implement comment submission to backend
+    console.log('Comment submitted:', { 
+      comment, 
+      tagInChat, 
+      mentions,
+      table: commentModal.tableName, 
+      field: commentModal.fieldName 
+    });
+    toast.success('Comment added successfully!');
+  };
+
+  const handleTableComment = () => {
+    setCommentModal({ open: true, tableName: currentTable.name, fieldName: '' });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            {editingTableName ? (
-              <Input
-                value={currentTable.name}
-                onChange={(e) => updateTableName(e.target.value)}
-                onBlur={() => setEditingTableName(false)}
-                onKeyDown={(e) => e.key === 'Enter' && setEditingTableName(false)}
-                className="text-lg font-semibold"
-                autoFocus
-              />
-            ) : (
-              <span 
-                className="cursor-pointer hover:bg-muted rounded px-2 py-1"
-                onClick={() => setEditingTableName(true)}
-              >
-                Edit Table: {currentTable.name}
-              </span>
-            )}
-            <Badge variant="secondary">
-              {currentTable.fields.length} fields
-            </Badge>
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {editingTableName ? (
+                <Input
+                  value={currentTable.name}
+                  onChange={(e) => updateTableName(e.target.value)}
+                  onBlur={() => setEditingTableName(false)}
+                  onKeyDown={(e) => e.key === 'Enter' && setEditingTableName(false)}
+                  className="text-lg font-semibold"
+                  autoFocus
+                />
+              ) : (
+                <span 
+                  className="cursor-pointer hover:bg-muted rounded px-2 py-1"
+                  onClick={() => setEditingTableName(true)}
+                >
+                  Edit Table: {currentTable.name}
+                </span>
+              )}
+              <Badge variant="secondary">
+                {currentTable.fields.length} fields
+              </Badge>
+            </div>
+            
+            {/* Table Comment Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleTableComment}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Comment on Table
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
@@ -134,6 +174,7 @@ export function TableEditModal({
                   <TableHead>Field Name</TableHead>
                   <TableHead>Data Type</TableHead>
                   <TableHead>Constraints</TableHead>
+                  <TableHead>Comments</TableHead>
                   <TableHead className="w-8"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -287,6 +328,16 @@ export function TableEditModal({
                       </div>
                     </TableCell>
                     
+                    {/* Comments Cell */}
+                    <TableCell className="p-2">
+                      <FieldCommentButton
+                        tableName={currentTable.name}
+                        fieldName={field.name}
+                        onAddComment={handleAddComment}
+                        compact={true}
+                      />
+                    </TableCell>
+                    
                     <TableCell className="p-2">
                       <Button
                         variant="ghost"
@@ -302,6 +353,15 @@ export function TableEditModal({
               </TableBody>
             </Table>
           </div>
+
+          {/* Comment Modal */}
+          <CommentModal
+            open={commentModal.open}
+            onOpenChange={(open) => setCommentModal(prev => ({ ...prev, open }))}
+            tableName={commentModal.tableName}
+            fieldName={commentModal.fieldName || 'Table'}
+            onSubmit={handleCommentSubmit}
+          />
         </div>
       </DialogContent>
     </Dialog>
