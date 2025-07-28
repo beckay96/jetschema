@@ -60,7 +60,16 @@ const Index = () => {
                   <Database className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gradient-primary">
+                  <h1 
+                    className="text-xl font-bold"
+                    style={{
+                      background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      color: 'transparent'
+                    }}
+                  >
                     Database Designer Pro
                   </h1>
                   <p className="text-sm text-muted-foreground">
