@@ -18,6 +18,7 @@ interface DatabaseCanvasProps {
   tables: DatabaseTable[];
   onTableUpdate?: (tables: DatabaseTable[]) => void;
   onTableSelect?: (table: DatabaseTable | null) => void;
+  onAddComment?: (tableName: string, fieldName: string) => void;
   selectedTable?: DatabaseTable | null;
 }
 
@@ -29,6 +30,7 @@ export function DatabaseCanvas({
   tables, 
   onTableUpdate, 
   onTableSelect,
+  onAddComment,
   selectedTable 
 }: DatabaseCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -129,7 +131,8 @@ export function DatabaseCanvas({
           return t;
         });
         onTableUpdate?.(updatedTables);
-      }
+      },
+      onAddComment: onAddComment
     },
     dragHandle: '.table-drag-handle'
   }));

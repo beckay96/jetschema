@@ -3,6 +3,7 @@ import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
 import { DatabaseTableView } from '@/components/database/DatabaseTableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
+import { CommentModal } from '@/components/database/CommentModal';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,11 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'canvas' | 'table'>('canvas');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [commentModal, setCommentModal] = useState<{
+    open: boolean;
+    tableName: string;
+    fieldName: string;
+  }>({ open: false, tableName: '', fieldName: '' });
   const isMobile = useIsMobile();
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
@@ -65,6 +71,26 @@ const Index = () => {
       setSelectedTable(null);
     }
     toast.success('Table deleted!');
+  };
+
+  const handleAddComment = (tableName: string, fieldName: string) => {
+    setCommentModal({ open: true, tableName, fieldName });
+  };
+
+  const handleCommentSubmit = (comment: string, tagInChat: boolean) => {
+    // TODO: Save comment to database and handle chat tagging
+    console.log('Comment submitted:', { 
+      tableName: commentModal.tableName, 
+      fieldName: commentModal.fieldName, 
+      comment, 
+      tagInChat 
+    });
+    
+    toast.success('Comment added successfully!');
+    
+    if (tagInChat) {
+      toast.info('Field tagged in team chat!');
+    }
   };
 
   return (
@@ -272,6 +298,7 @@ const Index = () => {
                 tables={tables}
                 onTableUpdate={setTables}
                 onTableSelect={setSelectedTable}
+                onAddComment={handleAddComment}
                 selectedTable={selectedTable}
               />
             ) : (
@@ -345,6 +372,14 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      <CommentModal
+        open={commentModal.open}
+        onOpenChange={(open) => setCommentModal(prev => ({ ...prev, open }))}
+        tableName={commentModal.tableName}
+        fieldName={commentModal.fieldName}
+        onSubmit={handleCommentSubmit}
+      />
     </div>
   );
 };

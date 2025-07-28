@@ -1,5 +1,6 @@
 import { DatabaseField as DatabaseFieldType } from '@/types/database';
 import { DataTypePill } from './DataTypePill';
+import { FieldCommentButton } from './FieldCommentButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Key, Link, Star, Edit3, Trash2 } from 'lucide-react';
@@ -7,12 +8,14 @@ import { cn } from '@/lib/utils';
 
 interface DatabaseFieldProps {
   field: DatabaseFieldType;
+  tableName?: string;
   onEdit?: (field: DatabaseFieldType) => void;
   onDelete?: (fieldId: string) => void;
+  onAddComment?: (tableName: string, fieldName: string) => void;
   compact?: boolean;
 }
 
-export function DatabaseField({ field, onEdit, onDelete, compact = false }: DatabaseFieldProps) {
+export function DatabaseField({ field, tableName, onEdit, onDelete, onAddComment, compact = false }: DatabaseFieldProps) {
   return (
     <div className={cn(
       "group flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all",
@@ -65,6 +68,14 @@ export function DatabaseField({ field, onEdit, onDelete, compact = false }: Data
       </div>
       
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {tableName && (
+          <FieldCommentButton
+            tableName={tableName}
+            fieldName={field.name}
+            onAddComment={onAddComment}
+            compact={compact}
+          />
+        )}
         <Button
           variant="ghost"
           size="sm"

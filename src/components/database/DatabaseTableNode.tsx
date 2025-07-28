@@ -18,6 +18,7 @@ interface DatabaseTableNodeProps {
     onEditField?: (field: any) => void;
     onDeleteField?: (tableId: string, fieldId: string) => void;
     onAddField?: (tableId: string) => void;
+    onAddComment?: (tableName: string, fieldName: string) => void;
     selected?: boolean;
     compact?: boolean;
   };
@@ -31,6 +32,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
     onEditField, 
     onDeleteField, 
     onAddField,
+    onAddComment,
     selected = false,
     compact: initialCompact = false
   } = data;
@@ -178,8 +180,10 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
+              tableName={table.name}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
+              onAddComment={onAddComment}
               compact={isCompact || isMobile}
             />
           ))}
@@ -189,8 +193,10 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
+              tableName={table.name}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
+              onAddComment={onAddComment}
               compact={isCompact || isMobile}
             />
           ))}
@@ -200,8 +206,10 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             <DatabaseField
               key={field.id}
               field={field}
+              tableName={table.name}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
+              onAddComment={onAddComment}
               compact={isCompact || isMobile}
             />
           ))}
