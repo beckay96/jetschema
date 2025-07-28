@@ -110,7 +110,7 @@ export function DatabaseSidebar({
 
       <CardContent className="flex-1 p-0">
         <Tabs defaultValue="tables" className="h-full flex flex-col">
-          <TabsList className="mb-2 w-full mx-0 bg-gradient-to-r from-muted/50 to-muted/30">
+          <TabsList className="mb-2 w-full mx-2 bg-gradient-to-r from-muted/50 to-muted/30 flex flex-wrap">
             <TabsTrigger value="tables" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Table className="h-3 w-3 mr-1" />
               Tables
