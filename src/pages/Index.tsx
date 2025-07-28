@@ -16,9 +16,20 @@ import {
   Share,
   Sparkles,
   Grid3X3,
-  Network
+  Network,
+  Menu,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerClose
+} from '@/components/ui/drawer';
 
 const Index = () => {
   const [tables, setTables] = useState<DatabaseTable[]>([]);
@@ -26,6 +37,9 @@ const Index = () => {
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
   const [viewMode, setViewMode] = useState<'canvas' | 'table'>('canvas');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     setTables(importedTables);
@@ -56,36 +70,148 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-        <div className="px-6 py-4">
+        <div className="px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              {isMobile && (
+                <Drawer open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                  <DrawerTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="h-[85vh]">
+                    <DrawerHeader className="text-left">
+                      <DrawerTitle className="flex items-center justify-between">
+                        Database Objects
+                        <DrawerClose asChild>
+                          <Button variant="ghost" size="sm" className="p-1">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </DrawerClose>
+                      </DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4 flex-1 overflow-auto">
+                      <DatabaseSidebar
+                        tables={tables}
+                        triggers={triggers}
+                        functions={functions}
+                        selectedTable={selectedTable}
+                        onAddTable={handleAddTable}
+                        onAddTrigger={() => console.log('Add trigger')}
+                        onAddFunction={() => console.log('Add function')}
+                        onSelectTable={(table) => {
+                          setSelectedTable(table);
+                          setSidebarOpen(false);
+                        }}
+                        onDeleteTable={handleDeleteTable}
+                      />
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              )}
+              
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary/80">
-                  <Database className="h-5 w-5 text-white" />
+                  <Database className="h-4 w-4 md:h-5 md:w-5 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                <div className="hidden sm:block">
+                  <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                     Database Designer Pro
                   </h1>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
                     Visual database design and SQL management tool
                   </p>
+                </div>
+                <div className="sm:hidden">
+                  <h1 className="text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    DB Designer
+                  </h1>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="hidden sm:flex">
+            <div className="flex items-center gap-1 md:gap-2">
+              <Badge variant="secondary" className="hidden sm:flex text-xs">
                 <Sparkles className="h-3 w-3 mr-1" />
                 {tables.length} tables
               </Badge>
-              <Button variant="outline" size="sm">
+              
+              {isMobile && (
+                <Drawer open={rightPanelOpen} onOpenChange={setRightPanelOpen}>
+                  <DrawerTrigger asChild>
+                    <Button variant="outline" size="sm" className="p-2">
+                      <Code className="h-4 w-4" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="h-[85vh]">
+                    <DrawerHeader className="text-left">
+                      <DrawerTitle className="flex items-center justify-between">
+                        SQL & Properties
+                        <DrawerClose asChild>
+                          <Button variant="ghost" size="sm" className="p-1">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </DrawerClose>
+                      </DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4 flex-1 overflow-auto">
+                      <Tabs defaultValue="sql" className="h-full flex flex-col">
+                        <TabsList className="w-full mb-4">
+                          <TabsTrigger value="sql" className="flex-1">
+                            <Code className="h-4 w-4 mr-2" />
+                            SQL
+                          </TabsTrigger>
+                          <TabsTrigger value="properties" className="flex-1">
+                            <Palette className="h-4 w-4 mr-2" />
+                            Properties
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="sql" className="flex-1">
+                          <SQLEditor
+                            onTablesImported={handleTablesImported}
+                            currentTables={tables}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="properties" className="flex-1">
+                          <Card className="h-full">
+                            <div className="p-4">
+                              {selectedTable ? (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold mb-2">Table Properties</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      Configure {selectedTable.name} table settings
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-sm">Select a table to edit properties</p>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              )}
+              
+              <Button variant="outline" size="sm" className="hidden sm:flex">
                 <Share className="h-4 w-4 mr-2" />
                 Share
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="hidden sm:flex">
                 <Download className="h-4 w-4 mr-2" />
                 Export
+              </Button>
+              <Button variant="outline" size="sm" className="sm:hidden p-2">
+                <Share className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -93,34 +219,36 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Sidebar */}
-        <div className="w-80 border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
-          <DatabaseSidebar
-            tables={tables}
-            triggers={triggers}
-            functions={functions}
-            selectedTable={selectedTable}
-            onAddTable={handleAddTable}
-            onAddTrigger={() => console.log('Add trigger')}
-            onAddFunction={() => console.log('Add function')}
-            onSelectTable={setSelectedTable}
-            onDeleteTable={handleDeleteTable}
-          />
-        </div>
+      <div className={`flex ${isMobile ? 'flex-col' : ''} h-[calc(100vh-80px)]`}>
+        {/* Desktop Left Sidebar */}
+        {!isMobile && (
+          <div className="w-80 border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
+            <DatabaseSidebar
+              tables={tables}
+              triggers={triggers}
+              functions={functions}
+              selectedTable={selectedTable}
+              onAddTable={handleAddTable}
+              onAddTrigger={() => console.log('Add trigger')}
+              onAddFunction={() => console.log('Add function')}
+              onSelectTable={setSelectedTable}
+              onDeleteTable={handleDeleteTable}
+            />
+          </div>
+        )}
 
         {/* Main Canvas */}
         <div className="flex-1 flex flex-col">
-          <div className="p-3 border-b bg-card/30 backdrop-blur">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'canvas' | 'table')} className="w-fit">
+          <div className="p-2 md:p-3 border-b bg-card/30 backdrop-blur">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'canvas' | 'table')} className="w-full md:w-fit">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="canvas" className="flex items-center gap-2">
-                  <Network className="h-4 w-4" />
-                  Canvas View
+                <TabsTrigger value="canvas" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <Network className="h-3 w-3 md:h-4 md:w-4" />
+                  {isMobile ? 'Canvas' : 'Canvas View'}
                 </TabsTrigger>
-                <TabsTrigger value="table" className="flex items-center gap-2">
-                  <Grid3X3 className="h-4 w-4" />
-                  Table View
+                <TabsTrigger value="table" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <Grid3X3 className="h-3 w-3 md:h-4 md:w-4" />
+                  {isMobile ? 'Table' : 'Table View'}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -145,53 +273,54 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Right Panel */}
-        <div className="w-96 border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
-          <Tabs defaultValue="sql" className="h-full flex flex-col">
-            <div className="p-4 pb-0">
-              <TabsList className="w-full">
-                <TabsTrigger value="sql" className="flex-1">
-                  <Code className="h-4 w-4 mr-2" />
-                  SQL
-                </TabsTrigger>
-                <TabsTrigger value="properties" className="flex-1">
-                  <Palette className="h-4 w-4 mr-2" />
-                  Properties
-                </TabsTrigger>
-              </TabsList>
-            </div>
+        {/* Desktop Right Panel */}
+        {!isMobile && (
+          <div className="w-96 border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30">
+            <Tabs defaultValue="sql" className="h-full flex flex-col">
+              <div className="p-4 pb-0">
+                <TabsList className="w-full">
+                  <TabsTrigger value="sql" className="flex-1">
+                    <Code className="h-4 w-4 mr-2" />
+                    SQL
+                  </TabsTrigger>
+                  <TabsTrigger value="properties" className="flex-1">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Properties
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-            <TabsContent value="sql" className="flex-1 p-4 pt-2">
-              <SQLEditor
-                onTablesImported={handleTablesImported}
-                currentTables={tables}
-              />
-            </TabsContent>
+              <TabsContent value="sql" className="flex-1 p-4 pt-2">
+                <SQLEditor
+                  onTablesImported={handleTablesImported}
+                  currentTables={tables}
+                />
+              </TabsContent>
 
-            <TabsContent value="properties" className="flex-1 p-4 pt-2">
-              <Card className="h-full">
-                <div className="p-4">
-                  {selectedTable ? (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold mb-2">Table Properties</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Configure {selectedTable.name} table settings
-                        </p>
+              <TabsContent value="properties" className="flex-1 p-4 pt-2">
+                <Card className="h-full">
+                  <div className="p-4">
+                    {selectedTable ? (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="font-semibold mb-2">Table Properties</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Configure {selectedTable.name} table settings
+                          </p>
+                        </div>
                       </div>
-                      {/* Table properties form would go here */}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Select a table to edit properties</p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Select a table to edit properties</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );

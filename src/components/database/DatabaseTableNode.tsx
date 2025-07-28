@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DatabaseTableNodeProps {
   data: {
@@ -33,7 +34,8 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
     compact: initialCompact = false
   } = data;
   
-  const [isCompact, setIsCompact] = useState(initialCompact);
+  const isMobile = useIsMobile();
+  const [isCompact, setIsCompact] = useState(initialCompact || isMobile);
   const [showEditModal, setShowEditModal] = useState(false);
   
   const primaryKeyFields = table.fields.filter(f => f.primaryKey);
@@ -42,25 +44,29 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
 
   return (
     <Card className={cn(
-      "w-80 max-h-96 transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move flex flex-col",
+      "transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move flex flex-col",
       "bg-gradient-to-br from-db-table to-db-table/95 text-white",
       "border-db-table-border shadow-table text-white",
       selected && "ring-2 ring-primary ring-offset-2 text-white",
-      isCompact && "w-64 max-h-64"
+      isMobile 
+        ? "w-72 max-h-80 min-w-[280px]" 
+        : isCompact 
+          ? "w-64 max-h-64" 
+          : "w-80 max-h-96"
     )}>
       <CardHeader className={cn(
         "pb-3 bg-gradient-to-r from-db-table-header to-db-table-header/90 text-white rounded-t-lg",
-        isCompact && "pb-2"
+        (isCompact || isMobile) && "pb-2"
       )}>
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <h3 className={cn(
               "font-bold truncate",
-              isCompact ? "text-sm" : "text-lg"
+              (isCompact || isMobile) ? "text-sm" : "text-lg"
             )}>
               {table.name}
             </h3>
-            {!isCompact && table.comment && (
+            {!(isCompact || isMobile) && table.comment && (
               <p className="text-sm text-white/80 mt-1 truncate">
                 {table.comment}
               </p>
@@ -68,14 +74,16 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
           </div>
           
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-white hover:bg-white/20"
-              onClick={() => setIsCompact(!isCompact)}
-            >
-              {isCompact ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
-            </Button>
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                onClick={() => setIsCompact(!isCompact)}
+              >
+                {isCompact ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -87,7 +95,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
           </div>
         </div>
         
-        {!isCompact && (
+        {!(isCompact || isMobile) && (
           <div className="flex gap-1 mt-2">
             <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
               {table.fields.length} fields
@@ -108,9 +116,9 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
       
       <CardContent className={cn(
         "p-0 flex-1 min-h-0 overflow-y-auto",
-        isCompact && "max-h-48"
+        (isCompact || isMobile) && "max-h-48"
       )}>
-        <div className="p-3 space-y-1">
+        <div className={cn("space-y-1", isMobile ? "p-2" : "p-3")}>
           {/* Primary Key Fields */}
           {primaryKeyFields.map(field => (
             <DatabaseField
@@ -118,7 +126,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
               field={field}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
-              compact={isCompact}
+              compact={isCompact || isMobile}
             />
           ))}
           
@@ -129,7 +137,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
               field={field}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
-              compact={isCompact}
+              compact={isCompact || isMobile}
             />
           ))}
           
@@ -140,7 +148,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
               field={field}
               onEdit={() => setShowEditModal(true)}
               onDelete={(fieldId) => onDeleteField?.(table.id, fieldId)}
-              compact={isCompact}
+              compact={isCompact || isMobile}
             />
           ))}
           
@@ -150,11 +158,11 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             size="sm"
             className={cn(
               "w-full justify-start text-muted-foreground hover:text-foreground",
-              isCompact ? "h-7 text-xs" : "h-8 text-sm"
+              (isCompact || isMobile) ? "h-7 text-xs" : "h-8 text-sm"
             )}
             onClick={() => onAddField?.(table.id)}
           >
-            <Plus className={cn("mr-2", isCompact ? "h-3 w-3" : "h-4 w-4")} />
+            <Plus className={cn("mr-2", (isCompact || isMobile) ? "h-3 w-3" : "h-4 w-4")} />
             Add Field
           </Button>
         </div>
