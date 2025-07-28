@@ -60,7 +60,7 @@ const Index = () => {
                   <Database className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                  <h1 className="text-xl font-bold text-gradient-primary">
                     Database Designer Pro
                   </h1>
                   <p className="text-sm text-muted-foreground">

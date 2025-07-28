@@ -83,7 +83,8 @@ Database Design Tool Color System
     --status-not-null: 120 60% 45%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 83% 68%));
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(280 100% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(340 100% 65%), hsl(280 100% 70%));
     --gradient-canvas: linear-gradient(135deg, hsl(220 15% 98%), hsl(220 13% 96%));
     --gradient-table: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 98%));
 
@@ -160,11 +161,33 @@ Database Design Tool Color System
     background: var(--gradient-primary);
   }
   
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
   .bg-gradient-canvas {
     background: var(--gradient-canvas);
   }
   
   .bg-gradient-table {
     background: var(--gradient-table);
+  }
+  
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 100%;
+    background-repeat: no-repeat;
+  }
+  
+  .text-gradient-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 100%;
+    background-repeat: no-repeat;
   }
 }
