@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2 } from 'lucide-react';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
+import { ExportModal } from './ExportModal';
+import { TriggerFunctionModal } from './TriggerFunctionModal';
 import { DataTypePill } from './DataTypePill';
 interface DatabaseSidebarProps {
   tables: DatabaseTable[];
@@ -16,10 +18,11 @@ interface DatabaseSidebarProps {
   functions: DatabaseFunction[];
   selectedTable?: DatabaseTable | null;
   onAddTable?: () => void;
-  onAddTrigger?: () => void;
-  onAddFunction?: () => void;
+  onAddTrigger?: (trigger: Omit<DatabaseTrigger, 'id'>) => void;
+  onAddFunction?: (func: Omit<DatabaseFunction, 'id'>) => void;
   onSelectTable?: (table: DatabaseTable) => void;
   onDeleteTable?: (tableId: string) => void;
+  onSaveProject?: () => void;
 }
 export function DatabaseSidebar({
   tables,
@@ -30,11 +33,19 @@ export function DatabaseSidebar({
   onAddTrigger,
   onAddFunction,
   onSelectTable,
-  onDeleteTable
+  onDeleteTable,
+  onSaveProject
 }: DatabaseSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [projectName, setProjectName] = useState('Database Schema');
-  const filteredTables = tables.filter(table => table.name.toLowerCase().includes(searchTerm.toLowerCase()) || table.fields.some(field => field.name.toLowerCase().includes(searchTerm.toLowerCase())));
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showTriggerModal, setShowTriggerModal] = useState(false);
+  const [showFunctionModal, setShowFunctionModal] = useState(false);
+  
+  const filteredTables = tables.filter(table => 
+    table.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    table.fields.some(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
   return <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
@@ -46,11 +57,11 @@ export function DatabaseSidebar({
           <Input placeholder="Project name" value={projectName} onChange={e => setProjectName(e.target.value)} className="h-8 text-sm" />
           
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1 h-8">
+            <Button size="sm" variant="outline" className="flex-1 h-8" onClick={onSaveProject}>
               <Save className="h-3 w-3 mr-1" />
               Save
             </Button>
-            <Button size="sm" variant="outline" className="flex-1 h-8">
+            <Button size="sm" variant="outline" className="flex-1 h-8" onClick={() => setShowExportModal(true)}>
               <FileText className="h-3 w-3 mr-1" />
               Export
             </Button>
@@ -149,7 +160,7 @@ export function DatabaseSidebar({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Triggers</Label>
-                <Button size="sm" onClick={onAddTrigger} className="h-8">
+                <Button size="sm" onClick={() => setShowTriggerModal(true)} className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
@@ -183,7 +194,7 @@ export function DatabaseSidebar({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Functions</Label>
-                <Button size="sm" onClick={onAddFunction} className="h-8">
+                <Button size="sm" onClick={() => setShowFunctionModal(true)} className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
@@ -214,5 +225,34 @@ export function DatabaseSidebar({
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <ExportModal
+        tables={tables}
+        open={showExportModal}
+        onOpenChange={setShowExportModal}
+        projectName={projectName}
+      />
+
+      <TriggerFunctionModal
+        type="trigger"
+        open={showTriggerModal}
+        onOpenChange={setShowTriggerModal}
+        tables={tables}
+        onAdd={(trigger) => {
+          onAddTrigger?.(trigger as Omit<DatabaseTrigger, 'id'>);
+          setShowTriggerModal(false);
+        }}
+      />
+
+      <TriggerFunctionModal
+        type="function"
+        open={showFunctionModal}
+        onOpenChange={setShowFunctionModal}
+        tables={tables}
+        onAdd={(func) => {
+          onAddFunction?.(func as Omit<DatabaseFunction, 'id'>);
+          setShowFunctionModal(false);
+        }}
+      />
     </Card>;
 }

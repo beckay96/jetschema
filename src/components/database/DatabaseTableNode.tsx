@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Settings, Maximize2, Minimize2, Check, X } from 'lucide-react';
+import { Plus, Settings, Maximize2, Minimize2, Check, X, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { generateTableSQL, copyToClipboard } from '@/utils/sqlGenerator';
+import { toast } from 'sonner';
 
 interface DatabaseTableNodeProps {
   data: {
@@ -54,6 +56,16 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   const handleNameCancel = () => {
     setTempName(table.name);
     setIsEditingName(false);
+  };
+
+  const handleCopyTableSQL = async () => {
+    try {
+      const sql = generateTableSQL(table);
+      await copyToClipboard(sql);
+      toast.success(`${table.name} SQL copied to clipboard`);
+    } catch (error) {
+      toast.error('Failed to copy SQL');
+    }
   };
   
   const primaryKeyFields = table.fields.filter(f => f.primaryKey);
@@ -130,6 +142,15 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
           </div>
           
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-white hover:bg-white/20"
+              onClick={handleCopyTableSQL}
+              title="Copy Table SQL"
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
             {!isMobile && (
               <Button
                 variant="ghost"

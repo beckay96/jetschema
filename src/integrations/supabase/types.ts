@@ -113,6 +113,8 @@ export type Database = {
           created_at: string
           field_name: string
           id: string
+          is_completed: boolean
+          is_read: boolean
           project_id: string
           table_name: string
           updated_at: string
@@ -123,6 +125,8 @@ export type Database = {
           created_at?: string
           field_name: string
           id?: string
+          is_completed?: boolean
+          is_read?: boolean
           project_id: string
           table_name: string
           updated_at?: string
@@ -133,6 +137,8 @@ export type Database = {
           created_at?: string
           field_name?: string
           id?: string
+          is_completed?: boolean
+          is_read?: boolean
           project_id?: string
           table_name?: string
           updated_at?: string

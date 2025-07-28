@@ -5,6 +5,7 @@ import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { CommentModal } from '@/components/database/CommentModal';
 import { TeamChat } from '@/components/database/TeamChat';
+import { ChatIcon } from '@/components/database/ChatIcon';
 import { ChatProvider, useChat } from '@/hooks/useChat';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { Card } from '@/components/ui/card';
@@ -43,6 +44,7 @@ const IndexContent = () => {
   const [viewMode, setViewMode] = useState<'canvas' | 'table'>('canvas');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [commentModal, setCommentModal] = useState<{
     open: boolean;
     tableName: string;
@@ -97,6 +99,42 @@ const IndexContent = () => {
     toast.info(`${tableName}.${fieldName} tagged in chat!`);
   };
 
+  const handleAddTrigger = (trigger: Omit<DatabaseTrigger, 'id'>) => {
+    const newTrigger: DatabaseTrigger = {
+      ...trigger,
+      id: `trigger-${Date.now()}`
+    };
+    setTriggers([...triggers, newTrigger]);
+    toast.success('Trigger added successfully!');
+  };
+
+  const handleAddFunction = (func: Omit<DatabaseFunction, 'id'>) => {
+    const newFunction: DatabaseFunction = {
+      ...func,
+      id: `function-${Date.now()}`
+    };
+    setFunctions([...functions, newFunction]);
+    toast.success('Function added successfully!');
+  };
+
+  const handleSaveProject = () => {
+    // TODO: Implement actual save functionality
+    toast.success('Project saved successfully!');
+  };
+
+  const handleChatIconClick = () => {
+    if (isMobile) {
+      setRightPanelOpen(true);
+      // Switch to chat tab
+      setTimeout(() => {
+        const chatTab = document.querySelector('[value="properties"]') as HTMLElement;
+        chatTab?.click();
+      }, 100);
+    } else {
+      setChatOpen(!chatOpen);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
@@ -129,8 +167,9 @@ const IndexContent = () => {
                         functions={functions}
                         selectedTable={selectedTable}
                         onAddTable={handleAddTable}
-                        onAddTrigger={() => console.log('Add trigger')}
-                        onAddFunction={() => console.log('Add function')}
+                        onAddTrigger={handleAddTrigger}
+                        onAddFunction={handleAddFunction}
+                        onSaveProject={handleSaveProject}
                         onSelectTable={(table) => {
                           setSelectedTable(table);
                           setSidebarOpen(false);
@@ -281,8 +320,9 @@ const IndexContent = () => {
               functions={functions}
               selectedTable={selectedTable}
               onAddTable={handleAddTable}
-              onAddTrigger={() => console.log('Add trigger')}
-              onAddFunction={() => console.log('Add function')}
+              onAddTrigger={handleAddTrigger}
+              onAddFunction={handleAddFunction}
+              onSaveProject={handleSaveProject}
               onSelectTable={setSelectedTable}
               onDeleteTable={handleDeleteTable}
             />
@@ -403,6 +443,24 @@ const IndexContent = () => {
         onSubmit={handleCommentSubmit}
         onTagField={handleTagField}
       />
+
+      {/* Persistent Chat Icon */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <ChatIcon
+          projectId="demo-project"
+          onClick={handleChatIconClick}
+        />
+      </div>
+
+      {/* Chat Overlay for Desktop */}
+      {!isMobile && chatOpen && (
+        <div className="fixed bottom-20 right-6 z-40 w-96 h-[500px] shadow-2xl rounded-lg overflow-hidden">
+          <TeamChat
+            projectId="demo-project"
+            className="h-full"
+          />
+        </div>
+      )}
     </div>
   );
 };
