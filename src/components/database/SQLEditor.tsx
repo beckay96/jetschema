@@ -8,13 +8,14 @@ import { Play, Download, Upload, Copy, Check } from 'lucide-react';
 import { parseCreateTableStatement, convertParsedTablesToDatabase } from '@/utils/sqlParser';
 import { DatabaseTable } from '@/types/database';
 import { toast } from 'sonner';
-
 interface SQLEditorProps {
   onTablesImported?: (tables: DatabaseTable[]) => void;
   currentTables?: DatabaseTable[];
 }
-
-export function SQLEditor({ onTablesImported, currentTables = [] }: SQLEditorProps) {
+export function SQLEditor({
+  onTablesImported,
+  currentTables = []
+}: SQLEditorProps) {
   const [sqlCode, setSqlCode] = useState(`-- Paste your SQL schema here
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -38,7 +39,6 @@ CREATE TABLE posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );`);
   const [copied, setCopied] = useState(false);
-
   const handleParseSql = () => {
     try {
       const parsedTables = parseCreateTableStatement(sqlCode);
@@ -46,7 +46,6 @@ CREATE TABLE posts (
         toast.error('No CREATE TABLE statements found in the SQL');
         return;
       }
-
       const dbTables = convertParsedTablesToDatabase(parsedTables);
       onTablesImported?.(dbTables);
       toast.success(`Successfully imported ${dbTables.length} tables`);
@@ -55,7 +54,6 @@ CREATE TABLE posts (
       toast.error('Error parsing SQL. Please check your syntax.');
     }
   };
-
   const handleCopyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(sqlCode);
@@ -66,7 +64,6 @@ CREATE TABLE posts (
       toast.error('Failed to copy to clipboard');
     }
   };
-
   const handleLoadExample = () => {
     const exampleSQL = `-- E-commerce Database Schema
 CREATE TABLE categories (
@@ -112,35 +109,19 @@ CREATE TABLE order_items (
     setSqlCode(exampleSQL);
     toast.success('Example schema loaded');
   };
-
-  return (
-    <Card className="h-full flex flex-col">
+  return <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-center justify-between">
           <CardTitle className="text-lg">SQL Editor</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyToClipboard}
-              className="h-8"
-            >
+          <div className="flex md:flex-row  sm:flex-col gap-1">
+            <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="h-8">
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLoadExample}
-              className="h-8"
-            >
+            <Button variant="outline" size="sm" onClick={handleLoadExample} className="h-8">
               <Upload className="h-3 w-3 mr-1" />
               Example
             </Button>
-            <Button
-              size="sm"
-              onClick={handleParseSql}
-              className="h-8"
-            >
+            <Button size="sm" onClick={handleParseSql} className="h-8">
               <Play className="h-3 w-3 mr-1" />
               Parse SQL
             </Button>
@@ -165,48 +146,44 @@ CREATE TABLE order_items (
 
           <TabsContent value="editor" className="flex-1 mx-4 mb-4">
             <div className="h-full border border-border rounded-lg overflow-hidden">
-              <Editor
-                height="100%"
-                language="sql"
-                value={sqlCode}
-                onChange={(value) => setSqlCode(value || '')}
-                theme="vs-light"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineHeight: 20,
-                  padding: { top: 16, bottom: 16 },
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  wordWrap: 'on',
-                  tabSize: 2,
-                  insertSpaces: true
-                }}
-              />
+              <Editor height="100%" language="sql" value={sqlCode} onChange={value => setSqlCode(value || '')} theme="vs-light" options={{
+              minimap: {
+                enabled: false
+              },
+              fontSize: 14,
+              lineHeight: 20,
+              padding: {
+                top: 16,
+                bottom: 16
+              },
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              wordWrap: 'on',
+              tabSize: 2,
+              insertSpaces: true
+            }} />
             </div>
           </TabsContent>
 
           <TabsContent value="generated" className="flex-1 mx-4 mb-4">
             <div className="h-full border border-border rounded-lg overflow-hidden">
-              <Editor
-                height="100%"
-                language="sql"
-                value="-- Generated SQL will appear here when you have tables in the canvas"
-                options={{
-                  readOnly: true,
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineHeight: 20,
-                  padding: { top: 16, bottom: 16 },
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true
-                }}
-                theme="vs-light"
-              />
+              <Editor height="100%" language="sql" value="-- Generated SQL will appear here when you have tables in the canvas" options={{
+              readOnly: true,
+              minimap: {
+                enabled: false
+              },
+              fontSize: 14,
+              lineHeight: 20,
+              padding: {
+                top: 16,
+                bottom: 16
+              },
+              scrollBeyondLastLine: false,
+              automaticLayout: true
+            }} theme="vs-light" />
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
