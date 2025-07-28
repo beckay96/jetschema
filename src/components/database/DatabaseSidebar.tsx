@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, Shield, ArrowUpDown, Share2 } from 'lucide-react';
+import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, Shield, ArrowUpDown, Share2, Lock, Unlock } from 'lucide-react';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { ExportModal } from './ExportModal';
 import { TriggerFunctionModal } from './TriggerFunctionModal';
@@ -31,6 +31,7 @@ interface DatabaseSidebarProps {
   onDeleteTable?: (tableId: string) => void;
   onSaveProject?: () => void;
   onReorderTables?: (tables: DatabaseTable[]) => void;
+  onShare?: () => void;
 }
 export function DatabaseSidebar({
   tables,
@@ -44,7 +45,8 @@ export function DatabaseSidebar({
   onSelectTable,
   onDeleteTable,
   onSaveProject,
-  onReorderTables
+  onReorderTables,
+  onShare
 }: DatabaseSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [projectName, setProjectName] = useState('Database Schema');
@@ -53,6 +55,7 @@ export function DatabaseSidebar({
   const [showFunctionModal, setShowFunctionModal] = useState(false);
   const [showRLSModal, setShowRLSModal] = useState(false);
   const [showIndexModal, setShowIndexModal] = useState(false);
+  const [isDragLocked, setIsDragLocked] = useState(false);
 
   // RLS and Index hooks
   const { policies, savePolicy, updatePolicy, deletePolicy } = useRLSPolicies(projectId);
@@ -65,7 +68,7 @@ export function DatabaseSidebar({
     table.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     table.fields.some(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-  return <Card className="h-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5 border border-primary/20">
+  return <Card className="h-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5 border border-primary/20 overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -81,10 +84,16 @@ export function DatabaseSidebar({
           </div>
           
           <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onReorderTables?.(tables)}>
-              <ArrowUpDown className="h-3 w-3" />
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 w-7 p-0" 
+              onClick={() => setIsDragLocked(!isDragLocked)}
+              title={isDragLocked ? "Unlock drag & drop" : "Lock drag & drop"}
+            >
+              {isDragLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onShare}>
               <Share2 className="h-3 w-3" />
             </Button>
             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setShowExportModal(true)}>
@@ -108,8 +117,8 @@ export function DatabaseSidebar({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0">
-        <Tabs defaultValue="tables" className="h-full flex flex-col">
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <Tabs defaultValue="tables" className="h-full flex flex-col overflow-hidden">
           <TabsList className="mb-2 w-full mx-2 bg-gradient-to-r from-muted/50 to-muted/30 flex flex-wrap">
             <TabsTrigger value="tables" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Table className="h-3 w-3 mr-1" />
@@ -133,7 +142,7 @@ export function DatabaseSidebar({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tables" className="flex-1 mx-4 mb-4 space-y-3">
+          <TabsContent value="tables" className="flex-1 mx-4 mb-4 space-y-3 overflow-hidden flex flex-col">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -160,13 +169,14 @@ export function DatabaseSidebar({
               </div>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-y-auto">
               <div className="space-y-3">
                 <DragDropTableList
                   tables={filteredTables}
                   selectedTable={selectedTable}
                   onSelectTable={onSelectTable}
                   onReorderTables={onReorderTables}
+                  isDragLocked={isDragLocked}
                 />
 
                 {filteredTables.length === 0 && <div className="text-center py-8 text-muted-foreground">
@@ -195,8 +205,8 @@ export function DatabaseSidebar({
           </TabsContent>
 
           {/* RLS Policies Tab */}
-          <TabsContent value="rls" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="rls" className="flex-1 mx-4 mb-4 overflow-hidden flex flex-col">
+            <div className="space-y-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Shield className="h-4 w-4 text-primary" />
@@ -206,42 +216,42 @@ export function DatabaseSidebar({
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-2">
-                  {policies.map(policy => (
-                    <Card key={policy.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{policy.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {policy.command}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {policy.table_name} • {policy.is_permissive ? 'PERMISSIVE' : 'RESTRICTIVE'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {policies.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
-                        <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No RLS policies defined</p>
-                        <p className="text-xs mt-1">Secure your data with access policies</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
             </div>
+
+            <ScrollArea className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {policies.map(policy => (
+                  <Card key={policy.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm">{policy.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {policy.command}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {policy.table_name} • {policy.is_permissive ? 'PERMISSIVE' : 'RESTRICTIVE'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {policies.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                      <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No RLS policies defined</p>
+                      <p className="text-xs mt-1">Secure your data with access policies</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
           {/* Indexes Tab */}
-          <TabsContent value="indexes" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="indexes" className="flex-1 mx-4 mb-4 overflow-hidden flex flex-col">
+            <div className="space-y-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Database className="h-4 w-4 text-primary" />
@@ -251,41 +261,41 @@ export function DatabaseSidebar({
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-2">
-                  {indexes.map(index => (
-                    <Card key={index.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{index.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {index.index_type}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {index.table_name} • {index.columns.join(', ')} • {index.is_unique ? 'UNIQUE' : 'NON-UNIQUE'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {indexes.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
-                        <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No indexes defined</p>
-                        <p className="text-xs mt-1">Speed up queries with indexes</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
             </div>
+
+            <ScrollArea className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {indexes.map(index => (
+                  <Card key={index.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm">{index.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {index.index_type}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {index.table_name} • {index.columns.join(', ')} • {index.is_unique ? 'UNIQUE' : 'NON-UNIQUE'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {indexes.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                      <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No indexes defined</p>
+                      <p className="text-xs mt-1">Speed up queries with indexes</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="triggers" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="triggers" className="flex-1 mx-4 mb-4 overflow-hidden flex flex-col">
+            <div className="space-y-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Zap className="h-4 w-4 text-primary" />
@@ -295,37 +305,37 @@ export function DatabaseSidebar({
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-2">
-                  {triggers.map(trigger => <Card key={trigger.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{trigger.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {trigger.timing}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {trigger.event} on {trigger.table}
-                        </p>
-                      </CardContent>
-                    </Card>)}
-
-                  {triggers.length === 0 && <div className="text-center py-8 text-muted-foreground">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
-                        <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No triggers defined</p>
-                        <p className="text-xs mt-1">Automate actions with triggers</p>
-                      </div>
-                    </div>}
-                </div>
-              </ScrollArea>
             </div>
+
+            <ScrollArea className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {triggers.map(trigger => <Card key={trigger.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm">{trigger.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {trigger.timing}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {trigger.event} on {trigger.table}
+                      </p>
+                    </CardContent>
+                  </Card>)}
+
+                {triggers.length === 0 && <div className="text-center py-8 text-muted-foreground">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                      <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No triggers defined</p>
+                      <p className="text-xs mt-1">Automate actions with triggers</p>
+                    </div>
+                  </div>}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="functions" className="flex-1 mx-4 mb-4">
-            <div className="space-y-2">
+          <TabsContent value="functions" className="flex-1 mx-4 mb-4 overflow-hidden flex flex-col">
+            <div className="space-y-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Code className="h-4 w-4 text-primary" />
@@ -335,33 +345,33 @@ export function DatabaseSidebar({
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-2">
-                  {functions.map(func => <Card key={func.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{func.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {func.returnType}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {func.parameters.length} parameters
-                        </p>
-                      </CardContent>
-                    </Card>)}
-
-                  {functions.length === 0 && <div className="text-center py-8 text-muted-foreground">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
-                        <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No functions defined</p>
-                        <p className="text-xs mt-1">Create reusable database logic</p>
-                      </div>
-                    </div>}
-                </div>
-              </ScrollArea>
             </div>
+
+            <ScrollArea className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {functions.map(func => <Card key={func.id} className="cursor-pointer hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 transition-all">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm">{func.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {func.returnType}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {func.parameters.length} parameters
+                      </p>
+                    </CardContent>
+                  </Card>)}
+
+                {functions.length === 0 && <div className="text-center py-8 text-muted-foreground">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
+                      <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No functions defined</p>
+                      <p className="text-xs mt-1">Create reusable database logic</p>
+                    </div>
+                  </div>}
+              </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </CardContent>

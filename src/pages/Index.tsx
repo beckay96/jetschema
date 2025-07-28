@@ -68,6 +68,23 @@ const Index = () => {
     }
     toast.success('Table deleted!');
   };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: 'DataBlaze Database Schema',
+        text: 'Check out this database schema design',
+        url: url,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        toast.success('Link copied to clipboard!');
+      }).catch(() => {
+        toast.error('Failed to copy link');
+      });
+    }
+  };
   return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
@@ -98,7 +115,7 @@ const Index = () => {
                   </Button>
                 </>}
               
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleShare}>
                 <Share className="h-4 w-4 mr-2" />
                 Share
               </Button>
@@ -116,7 +133,7 @@ const Index = () => {
         {/* Left Sidebar - Desktop always visible, Mobile slide-in */}
         <div className={`
           ${isMobile ? `fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${leftPanelOpen ? 'translate-x-0' : '-translate-x-full'}` : `w-80 ${leftPanelOpen || !isMobile ? 'block' : 'hidden'}`}
-          border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
+          border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30 overflow-hidden
         `}>
           {/* Close button for mobile */}
           {isMobile && leftPanelOpen && <div className="absolute top-4 right-4 z-10">
@@ -125,7 +142,7 @@ const Index = () => {
               </Button>
             </div>}
           
-          <DatabaseSidebar tables={tables} triggers={triggers} functions={functions} selectedTable={selectedTable} onAddTable={handleAddTable} onAddTrigger={() => console.log('Add trigger')} onAddFunction={() => console.log('Add function')} onSelectTable={setSelectedTable} onDeleteTable={handleDeleteTable} />
+          <DatabaseSidebar tables={tables} triggers={triggers} functions={functions} selectedTable={selectedTable} onAddTable={handleAddTable} onAddTrigger={() => console.log('Add trigger')} onAddFunction={() => console.log('Add function')} onSelectTable={setSelectedTable} onDeleteTable={handleDeleteTable} onShare={handleShare} />
         </div>
 
         {/* Main Canvas */}
@@ -151,7 +168,7 @@ const Index = () => {
         {/* Right Panel - Desktop toggleable, Mobile slide-in */}
         <div className={`
           ${isMobile ? `fixed inset-y-0 right-0 z-50 w-96 transform transition-transform duration-300 ease-in-out ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full'}` : `w-96 ${rightPanelOpen || !isMobile ? 'block' : 'hidden'}`}
-          border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
+          border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30 overflow-hidden
         `}>
           {/* Close button for mobile */}
           {isMobile && rightPanelOpen && <div className="absolute top-4 left-4 z-10">

@@ -13,9 +13,10 @@ interface SortableTableItemProps {
   table: DatabaseTable;
   selectedTable?: DatabaseTable | null;
   onSelectTable?: (table: DatabaseTable) => void;
+  isDragLocked?: boolean;
 }
 
-function SortableTableItem({ table, selectedTable, onSelectTable }: SortableTableItemProps) {
+function SortableTableItem({ table, selectedTable, onSelectTable, isDragLocked = false }: SortableTableItemProps) {
   const {
     attributes,
     listeners,
@@ -45,9 +46,13 @@ function SortableTableItem({ table, selectedTable, onSelectTable }: SortableTabl
       <CardContent className="p-3">
         <div className="flex items-center gap-2 mb-2">
           <div 
-            {...attributes} 
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+            {...(isDragLocked ? {} : attributes)} 
+            {...(isDragLocked ? {} : listeners)}
+            className={`transition-opacity ${
+              isDragLocked 
+                ? 'cursor-not-allowed opacity-30' 
+                : 'cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100'
+            }`}
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -82,13 +87,15 @@ interface DragDropTableListProps {
   selectedTable?: DatabaseTable | null;
   onSelectTable?: (table: DatabaseTable) => void;
   onReorderTables?: (tables: DatabaseTable[]) => void;
+  isDragLocked?: boolean;
 }
 
 export function DragDropTableList({ 
   tables, 
   selectedTable, 
   onSelectTable, 
-  onReorderTables 
+  onReorderTables,
+  isDragLocked = false
 }: DragDropTableListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -98,6 +105,8 @@ export function DragDropTableList({
   );
 
   function handleDragEnd(event: any) {
+    if (isDragLocked) return;
+    
     const { active, over } = event;
 
     if (active.id !== over.id) {
@@ -123,6 +132,7 @@ export function DragDropTableList({
               table={table}
               selectedTable={selectedTable}
               onSelectTable={onSelectTable}
+              isDragLocked={isDragLocked}
             />
           ))}
         </div>
