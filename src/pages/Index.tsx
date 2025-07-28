@@ -18,7 +18,8 @@ import {
   Grid3X3,
   Network,
   Menu,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -162,10 +163,10 @@ const Index = () => {
                             <Code className="h-4 w-4 mr-2" />
                             SQL
                           </TabsTrigger>
-                          <TabsTrigger value="properties" className="flex-1">
-                            <Palette className="h-4 w-4 mr-2" />
-                            Properties
-                          </TabsTrigger>
+                  <TabsTrigger value="properties" className="flex-1">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Create
+                  </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="sql" className="flex-1">
@@ -177,22 +178,33 @@ const Index = () => {
 
                         <TabsContent value="properties" className="flex-1">
                           <Card className="h-full">
-                            <div className="p-4">
-                              {selectedTable ? (
-                                <div className="space-y-4">
-                                  <div>
-                                    <h3 className="font-semibold mb-2">Table Properties</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      Configure {selectedTable.name} table settings
-                                    </p>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-center py-8 text-muted-foreground">
-                                  <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                  <p className="text-sm">Select a table to edit properties</p>
-                                </div>
-                              )}
+                            <div className="p-4 space-y-4">
+                              <div>
+                                <h3 className="font-semibold mb-2">Manual Creation</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Create tables, fields, and relationships manually
+                                </p>
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <Button 
+                                  onClick={handleAddTable} 
+                                  className="w-full justify-start"
+                                  variant="outline"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add New Table
+                                </Button>
+                                
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full justify-start" 
+                                  disabled
+                                >
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  AI Chat - Coming Soon!
+                                </Button>
+                              </div>
                             </div>
                           </Card>
                         </TabsContent>
@@ -283,10 +295,10 @@ const Index = () => {
                     <Code className="h-4 w-4 mr-2" />
                     SQL
                   </TabsTrigger>
-                  <TabsTrigger value="properties" className="flex-1">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Properties
-                  </TabsTrigger>
+                          <TabsTrigger value="properties" className="flex-1">
+                            <Palette className="h-4 w-4 mr-2" />
+                            Create
+                          </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -299,22 +311,33 @@ const Index = () => {
 
               <TabsContent value="properties" className="flex-1 p-4 pt-2">
                 <Card className="h-full">
-                  <div className="p-4">
-                    {selectedTable ? (
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-semibold mb-2">Table Properties</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Configure {selectedTable.name} table settings
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Select a table to edit properties</p>
-                      </div>
-                    )}
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Manual Creation</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Create tables, fields, and relationships manually
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Button 
+                        onClick={handleAddTable} 
+                        className="w-full justify-start"
+                        variant="outline"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add New Table
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start" 
+                        disabled
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        AI Chat - Coming Soon!
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </TabsContent>
