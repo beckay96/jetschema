@@ -4,6 +4,8 @@ import { DatabaseTableView } from '@/components/database/DatabaseTableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { CommentModal } from '@/components/database/CommentModal';
+import { TeamChat } from '@/components/database/TeamChat';
+import { ChatProvider, useChat } from '@/hooks/useChat';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +35,7 @@ import {
   DrawerClose
 } from '@/components/ui/drawer';
 
-const Index = () => {
+const IndexContent = () => {
   const [tables, setTables] = useState<DatabaseTable[]>([]);
   const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
@@ -47,6 +49,7 @@ const Index = () => {
     fieldName: string;
   }>({ open: false, tableName: '', fieldName: '' });
   const isMobile = useIsMobile();
+  const { addTaggedField } = useChat();
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     setTables(importedTables);
@@ -78,7 +81,7 @@ const Index = () => {
   };
 
   const handleCommentSubmit = (comment: string, tagInChat: boolean) => {
-    // TODO: Save comment to database and handle chat tagging
+    // TODO: Save comment to database
     console.log('Comment submitted:', { 
       tableName: commentModal.tableName, 
       fieldName: commentModal.fieldName, 
@@ -87,10 +90,11 @@ const Index = () => {
     });
     
     toast.success('Comment added successfully!');
-    
-    if (tagInChat) {
-      toast.info('Field tagged in team chat!');
-    }
+  };
+
+  const handleTagField = (tableName: string, fieldName: string) => {
+    addTaggedField(tableName, fieldName);
+    toast.info(`${tableName}.${fieldName} tagged in chat!`);
   };
 
   return (
@@ -191,7 +195,7 @@ const Index = () => {
                           </TabsTrigger>
                   <TabsTrigger value="properties" className="flex-1">
                     <Palette className="h-4 w-4 mr-2" />
-                    Create
+                    Chat & Tools
                   </TabsTrigger>
                         </TabsList>
 
@@ -203,36 +207,46 @@ const Index = () => {
                         </TabsContent>
 
                         <TabsContent value="properties" className="flex-1">
-                          <Card className="h-full">
-                            <div className="p-4 space-y-4">
-                              <div>
-                                <h3 className="font-semibold mb-2">Manual Creation</h3>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                  Create tables, fields, and relationships manually
-                                </p>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <Button 
-                                  onClick={handleAddTable} 
-                                  className="w-full justify-start"
-                                  variant="outline"
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add New Table
-                                </Button>
+                          <div className="h-full flex flex-col gap-3">
+                            <Card>
+                              <div className="p-3 space-y-3">
+                                <div>
+                                  <h3 className="font-semibold mb-1 text-sm">Quick Actions</h3>
+                                  <p className="text-xs text-muted-foreground mb-3">
+                                    Create and manage your database
+                                  </p>
+                                </div>
                                 
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full justify-start" 
-                                  disabled
-                                >
-                                  <Sparkles className="h-4 w-4 mr-2" />
-                                  AI Chat - Coming Soon!
-                                </Button>
+                                <div className="space-y-2">
+                                  <Button 
+                                    onClick={handleAddTable} 
+                                    className="w-full justify-start"
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <Plus className="h-3 w-3 mr-2" />
+                                    Add Table
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    className="w-full justify-start" 
+                                    size="sm"
+                                    disabled
+                                  >
+                                    <Sparkles className="h-3 w-3 mr-2" />
+                                    AI Chat Soon!
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          </Card>
+                            </Card>
+
+                            {/* Mobile Team Chat */}
+                            <TeamChat 
+                              projectId="demo-project" 
+                              className="flex-1 min-h-[200px]"
+                            />
+                          </div>
                         </TabsContent>
                       </Tabs>
                     </div>
@@ -324,7 +338,7 @@ const Index = () => {
                   </TabsTrigger>
                           <TabsTrigger value="properties" className="flex-1">
                             <Palette className="h-4 w-4 mr-2" />
-                            Create
+                            Chat & Tools
                           </TabsTrigger>
                 </TabsList>
               </div>
@@ -337,36 +351,44 @@ const Index = () => {
               </TabsContent>
 
               <TabsContent value="properties" className="flex-1 p-4 pt-2">
-                <Card className="h-full">
-                  <div className="p-4 space-y-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">Manual Creation</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Create tables, fields, and relationships manually
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <Button 
-                        onClick={handleAddTable} 
-                        className="w-full justify-start"
-                        variant="outline"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add New Table
-                      </Button>
+                <div className="h-full flex flex-col gap-4">
+                  <Card>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <h3 className="font-semibold mb-2">Quick Actions</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Create tables, fields, and manage your database
+                        </p>
+                      </div>
                       
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start" 
-                        disabled
-                      >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        AI Chat - Coming Soon!
-                      </Button>
+                      <div className="space-y-3">
+                        <Button 
+                          onClick={handleAddTable} 
+                          className="w-full justify-start"
+                          variant="outline"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add New Table
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start" 
+                          disabled
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          AI Chat - Coming Soon!
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+
+                  {/* Team Chat */}
+                  <TeamChat 
+                    projectId="demo-project" 
+                    className="flex-1 min-h-[350px]"
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           </div>
@@ -379,8 +401,17 @@ const Index = () => {
         tableName={commentModal.tableName}
         fieldName={commentModal.fieldName}
         onSubmit={handleCommentSubmit}
+        onTagField={handleTagField}
       />
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <ChatProvider>
+      <IndexContent />
+    </ChatProvider>
   );
 };
 

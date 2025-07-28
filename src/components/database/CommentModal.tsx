@@ -17,6 +17,7 @@ interface CommentModalProps {
   tableName: string;
   fieldName: string;
   onSubmit: (comment: string, tagInChat: boolean) => void;
+  onTagField?: (tableName: string, fieldName: string) => void;
 }
 
 export function CommentModal({ 
@@ -24,7 +25,8 @@ export function CommentModal({
   onOpenChange, 
   tableName, 
   fieldName, 
-  onSubmit 
+  onSubmit,
+  onTagField
 }: CommentModalProps) {
   const [comment, setComment] = useState('');
   const [tagInChat, setTagInChat] = useState(true);
@@ -32,6 +34,12 @@ export function CommentModal({
   const handleSubmit = () => {
     if (comment.trim()) {
       onSubmit(comment.trim(), tagInChat);
+      
+      // If tagging in chat, call the tag function
+      if (tagInChat && onTagField) {
+        onTagField(tableName, fieldName);
+      }
+      
       setComment('');
       onOpenChange(false);
     }
