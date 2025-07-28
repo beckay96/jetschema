@@ -234,23 +234,25 @@ export function DatabaseSidebar({
       />
 
       <TriggerFunctionModal
-        type="trigger"
+        mode="trigger"
         open={showTriggerModal}
         onOpenChange={setShowTriggerModal}
         tables={tables}
-        onAdd={(trigger) => {
-          onAddTrigger?.(trigger as Omit<DatabaseTrigger, 'id'>);
+        functions={[]}
+        onSave={(trigger) => {
+          onAddTrigger?.(trigger as any);
           setShowTriggerModal(false);
         }}
       />
 
       <TriggerFunctionModal
-        type="function"
+        mode="function"
         open={showFunctionModal}
         onOpenChange={setShowFunctionModal}
         tables={tables}
-        onAdd={(func) => {
-          onAddFunction?.(func as Omit<DatabaseFunction, 'id'>);
+        functions={[]}
+        onSave={(func) => {
+          onAddFunction?.(func as any);
           setShowFunctionModal(false);
         }}
       />

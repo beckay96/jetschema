@@ -62,6 +62,60 @@ export type Database = {
           },
         ]
       }
+      database_functions: {
+        Row: {
+          author_id: string
+          created_at: string
+          cron_schedule: string | null
+          description: string | null
+          edge_function_name: string | null
+          function_body: string | null
+          function_type: string
+          id: string
+          is_cron_enabled: boolean | null
+          is_edge_function: boolean | null
+          name: string
+          parameters: Json | null
+          project_id: string
+          return_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          cron_schedule?: string | null
+          description?: string | null
+          edge_function_name?: string | null
+          function_body?: string | null
+          function_type: string
+          id?: string
+          is_cron_enabled?: boolean | null
+          is_edge_function?: boolean | null
+          name: string
+          parameters?: Json | null
+          project_id: string
+          return_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          cron_schedule?: string | null
+          description?: string | null
+          edge_function_name?: string | null
+          function_body?: string | null
+          function_type?: string
+          id?: string
+          is_cron_enabled?: boolean | null
+          is_edge_function?: boolean | null
+          name?: string
+          parameters?: Json | null
+          project_id?: string
+          return_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       database_projects: {
         Row: {
           created_at: string
@@ -102,6 +156,59 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      database_triggers: {
+        Row: {
+          author_id: string
+          conditions: string | null
+          created_at: string
+          function_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          project_id: string
+          table_name: string
+          trigger_event: string
+          trigger_timing: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          conditions?: string | null
+          created_at?: string
+          function_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          project_id: string
+          table_name: string
+          trigger_event: string
+          trigger_timing: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          conditions?: string | null
+          created_at?: string
+          function_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          project_id?: string
+          table_name?: string
+          trigger_event?: string
+          trigger_timing?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "database_triggers_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "database_functions"
             referencedColumns: ["id"]
           },
         ]
