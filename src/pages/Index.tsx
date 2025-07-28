@@ -52,14 +52,14 @@ const Index = () => {
 
   // Close other panel when opening one
   const toggleLeftPanel = () => {
-    if (!leftPanelOpen && rightPanelOpen) {
+    if (!leftPanelOpen && rightPanelOpen && isMobile) {
       setRightPanelOpen(false);
     }
     setLeftPanelOpen(!leftPanelOpen);
   };
 
   const toggleRightPanel = () => {
-    if (!rightPanelOpen && leftPanelOpen) {
+    if (!rightPanelOpen && leftPanelOpen && isMobile) {
       setLeftPanelOpen(false);
     }
     setRightPanelOpen(!rightPanelOpen);
@@ -131,18 +131,20 @@ const Index = () => {
               {isMobile && (
                 <>
                   <Button 
-                    variant="outline" 
+                    variant={leftPanelOpen ? "default" : "outline"}
                     size="sm"
                     onClick={toggleLeftPanel}
                     className="lg:hidden"
+                    aria-label="Toggle database sidebar"
                   >
                     <PanelLeft className="h-4 w-4" />
                   </Button>
                   <Button 
-                    variant="outline" 
+                    variant={rightPanelOpen ? "default" : "outline"}
                     size="sm"
                     onClick={toggleRightPanel}
                     className="lg:hidden"
+                    aria-label="Toggle SQL editor panel"
                   >
                     <PanelRight className="h-4 w-4" />
                   </Button>
