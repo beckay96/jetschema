@@ -173,6 +173,17 @@ Database Design Tool Color System
     background: var(--gradient-table);
   }
   
+  /* Fix Tailwind's bg-clip-text utility */
+  .bg-clip-text {
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+  }
+  
+  .text-transparent {
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+  
   .text-gradient-primary {
     background: var(--gradient-primary);
     background-clip: text;
