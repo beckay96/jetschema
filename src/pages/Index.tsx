@@ -35,7 +35,14 @@ const Index = () => {
   // Check if mobile view
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+      const mobile = window.innerWidth < 1024; // lg breakpoint
+      setIsMobile(mobile);
+      
+      // Default to closed panels on mobile
+      if (mobile) {
+        setLeftPanelOpen(false);
+        setRightPanelOpen(false);
+      }
     };
     
     checkMobile();
@@ -163,7 +170,7 @@ const Index = () => {
             ? `fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${
                 leftPanelOpen ? 'translate-x-0' : '-translate-x-full'
               }` 
-            : `w-80 ${leftPanelOpen || !isMobile ? 'block' : 'hidden'}`
+            : `w-80 ${leftPanelOpen ? 'block' : 'hidden'}`
           }
           border-r bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
         `}>
@@ -238,7 +245,7 @@ const Index = () => {
             ? `fixed inset-y-0 right-0 z-50 w-96 transform transition-transform duration-300 ease-in-out ${
                 rightPanelOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : `w-96 ${rightPanelOpen || !isMobile ? 'block' : 'hidden'}`
+            : `w-96 ${rightPanelOpen ? 'block' : 'hidden'}`
           }
           border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30
         `}>
