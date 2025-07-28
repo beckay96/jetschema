@@ -20,12 +20,12 @@ export function DatabaseField({ field, onEdit, onDelete, compact = false }: Data
     )}>
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="flex items-center gap-1">
-          {field.primaryKey && (
-            <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
-          )}
-          {field.foreignKey && (
-            <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
-          )}
+           {field.primaryKey && (
+             <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
+           )}
+           {field.foreignKey && (
+             <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
+           )}
           {field.unique && !field.primaryKey && (
             <Star className="h-3 w-3" style={{ color: 'hsl(var(--status-unique))' }} />
           )}

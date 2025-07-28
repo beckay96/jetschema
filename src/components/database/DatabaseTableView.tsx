@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { DatabaseTable, DatabaseField, DataType } from '@/types/database';
 import { DataTypePill } from './DataTypePill';
+import { HelpPopover } from './HelpPopover';
+import { ForeignKeySelector } from './ForeignKeySelector';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -8,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Key, Link, Star, Eye, EyeOff } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, Trash2, Key, Link, Star, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -34,6 +37,7 @@ export function DatabaseTableView({
 }: DatabaseTableViewProps) {
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
   const [editingField, setEditingField] = useState<{ tableId: string; fieldId: string } | null>(null);
+  const [foreignKeySelector, setForeignKeySelector] = useState<{ tableId: string; fieldId: string } | null>(null);
 
   const toggleTableExpansion = (tableId: string) => {
     const newExpanded = new Set(expandedTables);
@@ -145,10 +149,13 @@ export function DatabaseTableView({
               ClickUp-style database management
             </p>
           </div>
-          <Button onClick={addTable} className="bg-gradient-to-r from-primary to-primary/80">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Table
-          </Button>
+          <div className="flex items-center gap-2">
+            <HelpPopover />
+            <Button onClick={addTable} className="bg-gradient-to-r from-primary to-primary/80">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Table
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -238,17 +245,24 @@ export function DatabaseTableView({
                           field.primaryKey && "bg-gradient-to-r from-yellow-50 to-transparent"
                         )}
                       >
-                        <TableCell className="p-2">
-                          <div className="flex items-center gap-1">
-                            {field.primaryKey && (
-                              <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
-                            )}
-                            {field.foreignKey && (
-                              <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
-                            )}
-                            {field.unique && !field.primaryKey && (
-                              <Star className="h-3 w-3" style={{ color: 'hsl(var(--status-unique))' }} />
-                            )}
+                         <TableCell className="p-2">
+                           <div className="flex items-center gap-1 flex-col">
+                             <div className="flex items-center gap-1">
+                               {field.primaryKey && (
+                                 <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
+                               )}
+                               {field.foreignKey && (
+                                 <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
+                               )}
+                               {field.unique && !field.primaryKey && (
+                                 <Star className="h-3 w-3" style={{ color: 'hsl(var(--status-unique))' }} />
+                               )}
+                             </div>
+                             {field.foreignKey && (
+                               <Badge variant="outline" className="text-xs bg-orange-50 border-orange-200 text-orange-700">
+                                 → {field.foreignKey.table}.{field.foreignKey.field}
+                               </Badge>
+                             )}
                           </div>
                         </TableCell>
                         
@@ -336,6 +350,39 @@ export function DatabaseTableView({
                                 Nullable
                               </label>
                             </div>
+
+                            <Popover 
+                              open={foreignKeySelector?.tableId === table.id && foreignKeySelector?.fieldId === field.id}
+                              onOpenChange={(open) => {
+                                if (!open) setForeignKeySelector(null);
+                              }}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "h-6 px-2 text-xs",
+                                    field.foreignKey 
+                                      ? "bg-gradient-to-r from-orange-100 to-orange-50 border-orange-300 text-orange-700" 
+                                      : "hover:bg-muted"
+                                  )}
+                                  onClick={() => setForeignKeySelector({ tableId: table.id, fieldId: field.id })}
+                                >
+                                  <Link className="h-3 w-3 mr-1" />
+                                  FK
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-0 w-auto" side="left">
+                                <ForeignKeySelector
+                                  tables={tables}
+                                  currentField={field}
+                                  currentTableId={table.id}
+                                  onUpdate={(foreignKey) => updateField(table.id, field.id, { foreignKey })}
+                                  onClose={() => setForeignKeySelector(null)}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </TableCell>
                         
