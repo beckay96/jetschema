@@ -167,7 +167,6 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
         onOpenChange={setShowEditModal}
         onTableUpdate={(updatedTable) => {
           onEditTable?.(updatedTable);
-          setShowEditModal(false);
         }}
       />
     </Card>
