@@ -29,8 +29,14 @@ export function useRLSPolicies(projectId?: string) {
     
     setLoading(true);
     try {
-      // TODO: Implement when database_policies table is created
-      setPolicies([]);
+      const { data, error } = await supabase
+        .from('database_policies')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPolicies((data || []) as RLSPolicy[]);
     } catch (error) {
       console.error('Error fetching policies:', error);
       toast.error('Failed to load RLS policies');
@@ -43,9 +49,20 @@ export function useRLSPolicies(projectId?: string) {
     if (!user) return;
 
     try {
-      // TODO: Implement when database_policies table is created
-      toast.success('RLS policy created successfully (mock)');
-      return { id: Date.now().toString(), ...policy, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const { data, error } = await supabase
+        .from('database_policies')
+        .insert({
+          ...policy,
+          author_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setPolicies(prev => [data as RLSPolicy, ...prev]);
+      toast.success('RLS policy created successfully');
+      return data;
     } catch (error) {
       console.error('Error saving policy:', error);
       toast.error('Failed to create RLS policy');
@@ -55,9 +72,18 @@ export function useRLSPolicies(projectId?: string) {
 
   const updatePolicy = async (id: string, updates: Partial<RLSPolicy>) => {
     try {
-      // TODO: Implement when database_policies table is created
-      toast.success('RLS policy updated successfully (mock)');
-      return { id, ...updates };
+      const { data, error } = await supabase
+        .from('database_policies')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setPolicies(prev => prev.map(p => p.id === id ? data as RLSPolicy : p));
+      toast.success('RLS policy updated successfully');
+      return data;
     } catch (error) {
       console.error('Error updating policy:', error);
       toast.error('Failed to update RLS policy');
@@ -67,9 +93,15 @@ export function useRLSPolicies(projectId?: string) {
 
   const deletePolicy = async (id: string) => {
     try {
-      // TODO: Implement when database_policies table is created
+      const { error } = await supabase
+        .from('database_policies')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
       setPolicies(prev => prev.filter(p => p.id !== id));
-      toast.success('RLS policy deleted successfully (mock)');
+      toast.success('RLS policy deleted successfully');
     } catch (error) {
       console.error('Error deleting policy:', error);
       toast.error('Failed to delete RLS policy');

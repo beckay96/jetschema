@@ -14,6 +14,9 @@ import { RLSPolicyModal } from './RLSPolicyModal';
 import { IndexModal } from './IndexModal';
 import { useRLSPolicies } from '@/hooks/useRLSPolicies';
 import { useIndexes } from '@/hooks/useIndexes';
+import { useValidation } from '@/hooks/useValidation';
+import { DragDropTableList } from './DragDropTableList';
+import { ValidationPanel } from './ValidationPanel';
 import { DataTypePill } from './DataTypePill';
 interface DatabaseSidebarProps {
   tables: DatabaseTable[];
@@ -54,6 +57,9 @@ export function DatabaseSidebar({
   // RLS and Index hooks
   const { policies, savePolicy, updatePolicy, deletePolicy } = useRLSPolicies(projectId);
   const { indexes, saveIndex, updateIndex, deleteIndex } = useIndexes(projectId);
+  
+  // Validation hook
+  const { errors: validationErrors, loading: validationLoading, runValidation } = useValidation(tables, policies, indexes);
   
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -155,40 +161,13 @@ export function DatabaseSidebar({
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="space-y-2">
-                {filteredTables.map(table => <Card key={table.id} className={`group cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 ${selectedTable?.id === table.id ? 'ring-2 ring-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-md' : 'hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/20 border-primary/10'}`} onClick={() => onSelectTable?.(table)}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-sm truncate">{table.name}</h4>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
-                        e.stopPropagation();
-                        // Handle table settings
-                      }}>
-                            <Settings className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity" onClick={e => {
-                        e.stopPropagation();
-                        onDeleteTable?.(table.id);
-                      }}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        {table.fields.slice(0, 3).map(field => <div key={field.id} className="flex items-center gap-2 text-xs">
-                            <span className="text-muted-foreground truncate flex-1">
-                              {field.name}
-                            </span>
-                            <DataTypePill type={field.type} size="sm" />
-                          </div>)}
-                        {table.fields.length > 3 && <div className="text-xs text-muted-foreground">
-                            +{table.fields.length - 3} more fields
-                          </div>}
-                      </div>
-                    </CardContent>
-                  </Card>)}
+              <div className="space-y-3">
+                <DragDropTableList
+                  tables={filteredTables}
+                  selectedTable={selectedTable}
+                  onSelectTable={onSelectTable}
+                  onReorderTables={onReorderTables}
+                />
 
                 {filteredTables.length === 0 && <div className="text-center py-8 text-muted-foreground">
                     <div className="p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted/50 mb-4">
@@ -200,6 +179,17 @@ export function DatabaseSidebar({
                       Add Table
                     </Button>
                   </div>}
+                
+                {/* Validation Panel */}
+                {validationErrors.length > 0 && (
+                  <div className="mt-4">
+                    <ValidationPanel 
+                      errors={validationErrors}
+                      onRefreshValidation={runValidation}
+                      loading={validationLoading}
+                    />
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>

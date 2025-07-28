@@ -3,8 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-// Temporary mock implementation until migration is run
-
 export interface DatabaseIndex {
   id: string;
   name: string;
@@ -31,16 +29,14 @@ export function useIndexes(projectId?: string) {
     
     setLoading(true);
     try {
-      // TODO: Implement when database_indexes table is created
-      // const { data, error } = await supabase
-      //   .from('database_indexes')
-      //   .select('*')
-      //   .eq('project_id', projectId)
-      //   .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('database_indexes')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
 
-      // if (error) throw error;
-      // setIndexes(data || []);
-      setIndexes([]);
+      if (error) throw error;
+      setIndexes((data || []) as DatabaseIndex[]);
     } catch (error) {
       console.error('Error fetching indexes:', error);
       toast.error('Failed to load indexes');
@@ -53,9 +49,20 @@ export function useIndexes(projectId?: string) {
     if (!user) return;
 
     try {
-      // TODO: Implement when database_indexes table is created
-      toast.success('Index created successfully (mock)');
-      return { id: Date.now().toString(), ...index, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const { data, error } = await supabase
+        .from('database_indexes')
+        .insert({
+          ...index,
+          author_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setIndexes(prev => [data as DatabaseIndex, ...prev]);
+      toast.success('Index created successfully');
+      return data;
     } catch (error) {
       console.error('Error saving index:', error);
       toast.error('Failed to create index');
@@ -65,9 +72,18 @@ export function useIndexes(projectId?: string) {
 
   const updateIndex = async (id: string, updates: Partial<DatabaseIndex>) => {
     try {
-      // TODO: Implement when database_indexes table is created
-      toast.success('Index updated successfully (mock)');
-      return { id, ...updates };
+      const { data, error } = await supabase
+        .from('database_indexes')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setIndexes(prev => prev.map(i => i.id === id ? data as DatabaseIndex : i));
+      toast.success('Index updated successfully');
+      return data;
     } catch (error) {
       console.error('Error updating index:', error);
       toast.error('Failed to update index');
@@ -77,15 +93,25 @@ export function useIndexes(projectId?: string) {
 
   const deleteIndex = async (id: string) => {
     try {
-      // TODO: Implement when database_indexes table is created
+      const { error } = await supabase
+        .from('database_indexes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
       setIndexes(prev => prev.filter(i => i.id !== id));
-      toast.success('Index deleted successfully (mock)');
+      toast.success('Index deleted successfully');
     } catch (error) {
       console.error('Error deleting index:', error);
       toast.error('Failed to delete index');
       throw error;
     }
   };
+
+  useEffect(() => {
+    fetchIndexes();
+  }, [projectId, user]);
 
   return {
     indexes,

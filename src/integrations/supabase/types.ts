@@ -116,6 +116,102 @@ export type Database = {
         }
         Relationships: []
       }
+      database_indexes: {
+        Row: {
+          author_id: string
+          columns: string[]
+          created_at: string
+          description: string | null
+          id: string
+          index_type: string
+          is_partial: boolean
+          is_unique: boolean
+          name: string
+          project_id: string
+          table_name: string
+          updated_at: string
+          where_clause: string | null
+        }
+        Insert: {
+          author_id: string
+          columns: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          index_type?: string
+          is_partial?: boolean
+          is_unique?: boolean
+          name: string
+          project_id: string
+          table_name: string
+          updated_at?: string
+          where_clause?: string | null
+        }
+        Update: {
+          author_id?: string
+          columns?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          index_type?: string
+          is_partial?: boolean
+          is_unique?: boolean
+          name?: string
+          project_id?: string
+          table_name?: string
+          updated_at?: string
+          where_clause?: string | null
+        }
+        Relationships: []
+      }
+      database_policies: {
+        Row: {
+          author_id: string
+          command: string
+          created_at: string
+          description: string | null
+          id: string
+          is_permissive: boolean
+          name: string
+          project_id: string
+          role: string | null
+          table_name: string
+          updated_at: string
+          using_expression: string | null
+          with_check_expression: string | null
+        }
+        Insert: {
+          author_id: string
+          command: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_permissive?: boolean
+          name: string
+          project_id: string
+          role?: string | null
+          table_name: string
+          updated_at?: string
+          using_expression?: string | null
+          with_check_expression?: string | null
+        }
+        Update: {
+          author_id?: string
+          command?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_permissive?: boolean
+          name?: string
+          project_id?: string
+          role?: string | null
+          table_name?: string
+          updated_at?: string
+          using_expression?: string | null
+          with_check_expression?: string | null
+        }
+        Relationships: []
+      }
       database_projects: {
         Row: {
           created_at: string
@@ -212,6 +308,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      database_validations: {
+        Row: {
+          affected_element_id: string | null
+          affected_element_name: string | null
+          affected_element_type: string | null
+          created_at: string
+          id: string
+          message: string
+          project_id: string
+          suggestion: string | null
+          updated_at: string
+          validation_type: string
+        }
+        Insert: {
+          affected_element_id?: string | null
+          affected_element_name?: string | null
+          affected_element_type?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          project_id: string
+          suggestion?: string | null
+          updated_at?: string
+          validation_type: string
+        }
+        Update: {
+          affected_element_id?: string | null
+          affected_element_name?: string | null
+          affected_element_type?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          project_id?: string
+          suggestion?: string | null
+          updated_at?: string
+          validation_type?: string
+        }
+        Relationships: []
       }
       field_comments: {
         Row: {
