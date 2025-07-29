@@ -25,6 +25,8 @@ interface DatabaseSidebarProps {
   onDeleteTable?: (tableId: string) => void;
   onSaveProject?: () => void;
   onShare?: () => void;
+  projectName?: string;
+  onProjectNameChange?: (name: string) => void;
 }
 export function DatabaseSidebar({
   tables,
@@ -37,10 +39,12 @@ export function DatabaseSidebar({
   onSelectTable,
   onDeleteTable,
   onSaveProject,
-  onShare
+  onShare,
+  projectName: externalProjectName,
+  onProjectNameChange
 }: DatabaseSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [projectName, setProjectName] = useState('Database Schema');
+  const [projectName, setProjectName] = useState(externalProjectName || 'Database Schema');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
@@ -54,7 +58,15 @@ export function DatabaseSidebar({
         </div>
         
         <div className="space-y-2">
-          <Input placeholder="Project name" value={projectName} onChange={e => setProjectName(e.target.value)} className="h-8 text-sm" />
+          <Input 
+            placeholder="Project name" 
+            value={projectName} 
+            onChange={e => {
+              setProjectName(e.target.value);
+              onProjectNameChange?.(e.target.value);
+            }} 
+            className="h-8 text-sm" 
+          />
           
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="flex-1 h-8" onClick={onSaveProject}>

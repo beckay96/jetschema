@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
+import Projects from "./pages/Projects";
+import ProjectEditor from "./pages/ProjectEditor";
+import Account from "./pages/Account";
 import { Auth } from "./pages/Auth";
 import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
-import { Button } from "@/components/ui/button";
-import { LogOut, User, Users, Share } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { HeaderMenu } from "./components/HeaderMenu";
+import { Database } from "lucide-react";
 function AuthenticatedApp() {
   const {
     user,
@@ -32,11 +34,15 @@ function AuthenticatedApp() {
   return <Routes>
       <Route path="/auth" element={<Auth />} />
       <Route path="/team" element={<Team />} />
+      <Route path="/account" element={<Account />} />
+      <Route path="/projects" element={<Projects />} />
+      <Route path="/project/:id" element={<ProjectEditor />} />
       <Route path="/" element={user ? <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
               {/* Header with user info */}
               <header className="bg-card/50 backdrop-blur px-4 py-3">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                   <div className="flex items-center gap-3">
+                    <Database className="h-6 w-6 text-primary" />
                     <h1 className="text-xl font-bold" style={{
               background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
               WebkitBackgroundClip: 'text',
@@ -44,28 +50,14 @@ function AuthenticatedApp() {
               WebkitTextFillColor: 'transparent',
               color: 'transparent'
             }}>JetSchema</h1>
-                    
                   </div>
                   
-                  <div className="flex flex-col md:flex-row items-center gap-3">
-                    <Button variant="outline" size="sm" onClick={() => navigate('/team')} className="hover:bg-primary/10 hover:text-primary hover:border-primary/20">
-                      <Users className="h-4 w-4 mr-1" />
-                      Team
-                    </Button>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{user.email}</span>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={signOut} className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20">
-                      <LogOut className="h-4 w-4 mr-1" />
-                      Sign Out
-                    </Button>
-                  </div>
+                  <HeaderMenu />
                 </div>
               </header>
 
               {/* Main app content */}
-              <Index />
+              <Projects />
             </div> : null} />
       <Route path="*" element={<NotFound />} />
     </Routes>;
