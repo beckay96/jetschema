@@ -51,12 +51,19 @@ CREATE TABLE posts (
   }, [currentTables]);
   const handleParseSql = () => {
     try {
+      console.log('Starting SQL parse with content:', sqlCode);
       const parsedTables = parseCreateTableStatement(sqlCode);
+      console.log('Parsed tables result:', parsedTables);
+      
       if (parsedTables.length === 0) {
+        console.log('No tables found in SQL');
         toast.error('No CREATE TABLE statements found in the SQL');
         return;
       }
+      
       const dbTables = convertParsedTablesToDatabase(parsedTables);
+      console.log('Converted database tables:', dbTables);
+      
       onTablesImported?.(dbTables);
       toast.success(`Successfully imported ${dbTables.length} tables`);
     } catch (error) {

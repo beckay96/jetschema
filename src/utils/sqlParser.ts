@@ -19,18 +19,26 @@ export interface ParsedTable {
 export function parseCreateTableStatement(sql: string): ParsedTable[] {
   const tables: ParsedTable[] = [];
   
+  console.log('Input SQL:', sql);
+  
   // Clean and normalize the SQL
   const cleanSql = sql.replace(/\s+/g, ' ').trim();
+  console.log('Cleaned SQL:', cleanSql);
   
-  // Find all CREATE TABLE statements
-  const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\((.*?)\);/gi;
+  // Updated regex to be more permissive with multiline statements
+  const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)\s*;?/gi;
   let match;
   
   while ((match = createTableRegex.exec(cleanSql)) !== null) {
+    console.log('Found table match:', match);
     const tableName = match[1];
     const tableContent = match[2];
     
+    console.log(`Parsing table: ${tableName}`);
+    console.log(`Table content: ${tableContent}`);
+    
     const fields = parseTableFields(tableContent);
+    console.log(`Parsed fields:`, fields);
     
     tables.push({
       name: tableName,
@@ -38,6 +46,7 @@ export function parseCreateTableStatement(sql: string): ParsedTable[] {
     });
   }
   
+  console.log('Final tables array:', tables);
   return tables;
 }
 
