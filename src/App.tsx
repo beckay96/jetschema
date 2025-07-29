@@ -34,7 +34,7 @@ function AuthenticatedApp() {
       <Route path="/team" element={<Team />} />
       <Route path="/" element={user ? <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
               {/* Header with user info */}
-              <header className="bg-card/50 backdrop-blur border-b px-4 py-3">
+              <header className="bg-card/50 backdrop-blur px-4 py-3">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                   <div className="flex items-center gap-3">
                     <h1 className="text-xl font-bold" style={{

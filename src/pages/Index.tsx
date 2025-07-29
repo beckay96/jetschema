@@ -88,8 +88,8 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-[5px] py-0 rounded-sm">
+          <div className="flex items-center justify-center">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 
@@ -97,7 +97,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex-row ">
               <Badge variant="secondary" className="hidden sm:flex">
                 <Sparkles className="h-3 w-3 mr-1" />
                 {tables.length} tables
