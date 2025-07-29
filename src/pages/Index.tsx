@@ -161,7 +161,7 @@ const Index = () => {
         `}>
           {/* Close button for mobile */}
           {isMobile && rightPanelOpen && <div className="absolute top-4 left-4 z-10">
-              <Button variant="ghost" size="sm" onClick={() => setRightPanelOpen(false)}>
+              <Button variant="ghost" size="sm" onClick={() => setRightPanelOpen(false)} className="border border-gray hover:border-red-500">
                 <X className="h-4 w-4" />
               </Button>
             </div>}
