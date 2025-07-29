@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Download, Upload, Copy, Check } from 'lucide-react';
 import { parseCreateTableStatement, convertParsedTablesToDatabase } from '@/utils/sqlParser';
+import { generateAllTablesSQL } from '@/utils/sqlGenerator';
 import { DatabaseTable } from '@/types/database';
 import { toast } from 'sonner';
+
 interface SQLEditorProps {
   onTablesImported?: (tables: DatabaseTable[]) => void;
   currentTables?: DatabaseTable[];
@@ -39,6 +41,14 @@ CREATE TABLE posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );`);
   const [copied, setCopied] = useState(false);
+
+  // Generate SQL from current tables
+  const generatedSQL = useMemo(() => {
+    if (currentTables.length === 0) {
+      return '-- No tables in the canvas. Add some tables to see the generated SQL here.';
+    }
+    return generateAllTablesSQL(currentTables);
+  }, [currentTables]);
   const handleParseSql = () => {
     try {
       const parsedTables = parseCreateTableStatement(sqlCode);
@@ -54,15 +64,19 @@ CREATE TABLE posts (
       toast.error('Error parsing SQL. Please check your syntax.');
     }
   };
-  const handleCopyToClipboard = async () => {
+  const handleCopyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(sqlCode);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       toast.success('SQL copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast.error('Failed to copy to clipboard');
     }
+  };
+
+  const handleCopyGenerated = () => {
+    handleCopyToClipboard(generatedSQL);
   };
   const handleLoadExample = () => {
     const exampleSQL = `-- E-commerce Database Schema
@@ -114,7 +128,7 @@ CREATE TABLE order_items (
         <div className="flex flex-col items-center justify-between">
           <CardTitle className="text-lg">SQL Editor</CardTitle>
           <div className="flex md:flex-row  sm:flex-col gap-1">
-            <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="h-8">
+            <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(sqlCode)} className="h-8">
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
             <Button variant="outline" size="sm" onClick={handleLoadExample} className="h-8">
@@ -166,21 +180,27 @@ CREATE TABLE order_items (
           </TabsContent>
 
           <TabsContent value="generated" className="flex-1 mx-4 mb-4">
-            <div className="h-full border border-border rounded-lg overflow-hidden">
-              <Editor height="100%" language="sql" value="-- Generated SQL will appear here when you have tables in the canvas" options={{
-              readOnly: true,
-              minimap: {
-                enabled: false
-              },
-              fontSize: 14,
-              lineHeight: 20,
-              padding: {
-                top: 16,
-                bottom: 16
-              },
-              scrollBeyondLastLine: false,
-              automaticLayout: true
-            }} theme="vs-light" />
+            <div className="h-full border border-border rounded-lg overflow-hidden relative">
+              <div className="absolute top-2 right-2 z-10">
+                <Button variant="outline" size="sm" onClick={handleCopyGenerated} className="h-7 text-xs">
+                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                </Button>
+              </div>
+              <Editor 
+                height="100%" 
+                language="sql" 
+                value={generatedSQL}
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineHeight: 20,
+                  padding: { top: 16, bottom: 16 },
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true
+                }} 
+                theme="vs-light" 
+              />
             </div>
           </TabsContent>
         </Tabs>

@@ -11,6 +11,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
+// Auto-save hook
+function useAutoSave(saveFunction: () => Promise<void>, dependencies: any[], delay = 2000) {
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      saveFunction();
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, dependencies);
+}
+
 const ProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -107,6 +118,9 @@ const ProjectEditor = () => {
       project_data: projectData
     });
   };
+
+  // Auto-save whenever tables, triggers, functions, or project name changes
+  useAutoSave(handleSaveProject, [tables, triggers, functions, projectName]);
 
   if (!currentProject) {
     return (
