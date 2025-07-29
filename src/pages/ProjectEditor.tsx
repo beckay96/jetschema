@@ -126,21 +126,21 @@ const ProjectEditor = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Projects
+        <div className="px-2 sm:px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/projects')} className="shrink-0">
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Projects</span>
               </Button>
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                <h1 className="text-lg font-semibold">{projectName}</h1>
+              <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <Database className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                <h1 className="text-sm sm:text-lg font-semibold truncate">{projectName}</h1>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary">
+            <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+              <Badge variant="secondary" className="hidden sm:flex">
                 {tables.length} tables
               </Badge>
               
