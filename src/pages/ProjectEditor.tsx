@@ -11,17 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-// Auto-save hook
-function useAutoSave(saveFunction: () => Promise<void>, dependencies: any[], delay = 2000) {
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveFunction();
-    }, delay);
-
-    return () => clearTimeout(timeoutId);
-  }, dependencies);
-}
-
 const ProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -78,6 +67,7 @@ const ProjectEditor = () => {
 
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     setTables(importedTables);
+    handleSaveProject(); // Save immediately
     toast.success(`Successfully imported ${importedTables.length} tables!`);
   };
 
@@ -91,16 +81,20 @@ const ProjectEditor = () => {
         y: 100 + tables.length * 50
       }
     };
-    setTables([...tables, newTable]);
+    const updatedTables = [...tables, newTable];
+    setTables(updatedTables);
     setSelectedTable(newTable);
+    handleSaveProject(); // Save immediately
     toast.success('New table added!');
   };
 
   const handleDeleteTable = (tableId: string) => {
-    setTables(tables.filter(t => t.id !== tableId));
+    const updatedTables = tables.filter(t => t.id !== tableId);
+    setTables(updatedTables);
     if (selectedTable?.id === tableId) {
       setSelectedTable(null);
     }
+    handleSaveProject(); // Save immediately
     toast.success('Table deleted!');
   };
 
@@ -119,8 +113,14 @@ const ProjectEditor = () => {
     });
   };
 
-  // Auto-save whenever tables, triggers, functions, or project name changes
-  useAutoSave(handleSaveProject, [tables, triggers, functions, projectName]);
+  // Save immediately when project name changes
+  const handleProjectNameChange = (name: string) => {
+    setProjectName(name);
+    // Debounce name changes slightly to avoid saving on every keystroke
+    setTimeout(() => {
+      handleSaveProject();
+    }, 500);
+  };
 
   if (!currentProject) {
     return (
@@ -202,7 +202,7 @@ const ProjectEditor = () => {
             onDeleteTable={handleDeleteTable}
             onSaveProject={handleSaveProject}
             projectName={projectName}
-            onProjectNameChange={setProjectName}
+            onProjectNameChange={handleProjectNameChange}
           />
         </div>
 
@@ -228,7 +228,10 @@ const ProjectEditor = () => {
           <div className="flex-1">
             <DatabaseCanvas
               tables={tables}
-              onTableUpdate={setTables}
+              onTableUpdate={(updatedTables) => {
+                setTables(updatedTables);
+                handleSaveProject(); // Save immediately when tables are updated
+              }}
               onTableSelect={setSelectedTable}
               selectedTable={selectedTable}
             />
