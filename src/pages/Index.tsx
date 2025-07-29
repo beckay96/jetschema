@@ -69,14 +69,13 @@ const Index = () => {
     }
     toast.success('Table deleted!');
   };
-
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.share) {
       navigator.share({
         title: 'DataBlaze Database Schema',
         text: 'Check out this database schema design',
-        url: url,
+        url: url
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(url).then(() => {
@@ -93,9 +92,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary/80">
-                  <Database className="h-5 w-5 text-white" />
-                </div>
+                
                 
               </div>
             </div>
