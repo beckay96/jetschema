@@ -9,7 +9,8 @@ import { Auth } from "./pages/Auth";
 import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
 import { HeaderMenu } from "./components/HeaderMenu";
-import { Database } from "lucide-react";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { Layout } from "./components/Layout";
 function AuthenticatedApp() {
   const {
     user,
@@ -31,36 +32,33 @@ function AuthenticatedApp() {
         </div>
       </div>;
   }
-  return <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/team" element={<Team />} />
-      <Route path="/account" element={<Account />} />
-      <Route path="/projects" element={<Projects />} />
-      <Route path="/project/:id" element={<ProjectEditor />} />
-      <Route path="/" element={user ? <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-              {/* Header with user info */}
-              <header className="bg-card/50 backdrop-blur px-4 py-3">
-                <div className="flex items-center justify-between max-w-7xl mx-auto">
-                  <div className="flex items-center gap-3">
-                    <Database className="h-6 w-6 text-primary" />
-                    <h1 className="text-xl font-bold" style={{
-              background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              color: 'transparent'
-            }}>JetSchema</h1>
-                  </div>
-                  
-                  <HeaderMenu />
-                </div>
-              </header>
-
-              {/* Main app content */}
+  return (
+    <ThemeProvider>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/team" element={<Team />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/projects" element={
+          <Layout>
+            <Projects />
+          </Layout>
+        } />
+        <Route path="/project/:id" element={
+          <Layout>
+            <ProjectEditor />
+          </Layout>
+        } />
+        <Route path="/" element={
+          user ? (
+            <Layout>
               <Projects />
-            </div> : null} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>;
+            </Layout>
+          ) : null
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ThemeProvider>
+  );
 }
 const App = () => {
   return <BrowserRouter>

@@ -50,7 +50,7 @@ export function useProjects() {
 
       if (error) throw error;
       
-      toast.success('Project saved successfully!');
+
       await fetchProjects(); // Refresh the list
       return data;
     } catch (error: any) {
@@ -74,7 +74,7 @@ export function useProjects() {
 
       if (error) throw error;
       
-      toast.success('Project updated successfully!');
+
       await fetchProjects();
       return data;
     } catch (error: any) {

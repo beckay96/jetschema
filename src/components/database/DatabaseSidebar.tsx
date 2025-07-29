@@ -81,9 +81,9 @@ export function DatabaseSidebar({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 py-6 px-6">
-        <Tabs defaultValue="tables" className="h-full flex flex-col">
-          <TabsList className="mb-4 w-full mx-0 flex flex-wrap">
+      <CardContent className="flex-1 py-6 px-6 overflow-hidden">
+        <Tabs defaultValue="tables" className="h-full flex flex-col overflow-hidden">
+          <TabsList className="w-full mx-0 flex flex-wrap shrink-0">
             <TabsTrigger value="tables" className="flex-1">
               <Table className="h-3 w-3 mr-1" />
               Tables
@@ -106,7 +106,7 @@ export function DatabaseSidebar({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tables" className="flex-1 space-y-4">
+          <TabsContent value="tables" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -190,7 +190,7 @@ export function DatabaseSidebar({
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="triggers" className="flex-1 space-y-4">
+          <TabsContent value="triggers" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Triggers</Label>
@@ -224,7 +224,7 @@ export function DatabaseSidebar({
             </div>
           </TabsContent>
 
-          <TabsContent value="functions" className="flex-1 space-y-4">
+          <TabsContent value="functions" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Functions</Label>

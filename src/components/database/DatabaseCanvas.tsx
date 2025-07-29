@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -8,11 +8,16 @@ import {
   Background,
   ConnectionMode,
   Node,
-  Edge
+  Edge,
+  NodeChange,
+  EdgeChange,
+  Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useTheme } from '@/contexts/ThemeContext';
 import { DatabaseTable, DataType } from '@/types/database';
 import { DatabaseTableNode } from './DatabaseTableNode';
+import './DatabaseCanvas.css';
 
 interface DatabaseCanvasProps {
   tables: DatabaseTable[];
@@ -35,6 +40,7 @@ export function DatabaseCanvas({
 }: DatabaseCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { theme } = useTheme();
 
   // Generate foreign key edges between tables
   const generateForeignKeyEdges = (tables: DatabaseTable[]): Edge[] => {
@@ -140,11 +146,18 @@ export function DatabaseCanvas({
     dragHandle: '.table-drag-handle'
   }));
 
-  // Update nodes when tables change
+  // Update nodes when tables change or theme changes
   React.useEffect(() => {
-    setNodes(tableNodes);
+    const updatedNodes = tableNodes.map(node => ({
+      ...node,
+      style: {
+        ...node.style,
+        '--node-handle-color': theme === 'dark' ? '#ffffff' : '#000000',
+      },
+    }));
+    setNodes(updatedNodes);
     setEdges(generateForeignKeyEdges(tables));
-  }, [tables, selectedTable, setNodes, setEdges]);
+  }, [tables, selectedTable, setNodes, setEdges, theme]);
 
   // Handle node position changes to update table positions
   const handleNodesChange = useCallback((changes: any[]) => {
@@ -192,8 +205,11 @@ export function DatabaseCanvas({
     onTableSelect?.(null);
   }, [onTableSelect]);
 
+  // Apply theme class to the container
+  const themeClass = theme === 'dark' ? 'dark' : 'light';
+  
   return (
-    <div className="h-full w-full bg-gradient-to-br from-db-canvas to-background">
+    <div className={`h-full w-full bg-gradient-to-br from-white to-gray-200 dark:from-gray-900 dark:to-black ${themeClass}`}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -205,7 +221,7 @@ export function DatabaseCanvas({
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
-        className="bg-transparent"
+        className="bg-transparent text-white"
         style={{ background: 'transparent' }}
       >
         <Background 
@@ -214,10 +230,19 @@ export function DatabaseCanvas({
           size={1}
         />
         <Controls 
-          className="bg-card border border-border rounded-lg shadow-lg"
-          showInteractive={false}
+          className="!bg-card/80 dark:!bg-card/80 !border !border-border/50 !rounded-lg !shadow-lg backdrop-blur-sm"
+          style={{
+            '--flow-controls-bg': 'hsl(var(--card))',
+            '--flow-controls-text': 'hsl(var(--card-foreground))',
+            '--flow-controls-border': 'hsl(var(--border))',
+            '--flow-controls-button-hover': 'hsl(var(--muted))',
+            '--flow-controls-button-active': 'hsl(var(--accent))',
+          } as React.CSSProperties}
+          showInteractive={true}
         />
       </ReactFlow>
     </div>
   );
 }
+
+

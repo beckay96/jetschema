@@ -1,0 +1,77 @@
+/* Panel styles for react-resizable-panels */
+:root {
+  --panel-border-color: rgba(128, 128, 128, 0.2);
+  --panel-handle-color: rgba(128, 128, 128, 0.2);
+  --panel-handle-hover-color: rgba(128, 128, 128, 0.4);
+}
+
+[data-theme="dark"] {
+  --panel-border-color: rgba(255, 255, 255, 0.2);
+  --panel-handle-color: rgba(255, 255, 255, 0.2);
+  --panel-handle-hover-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Basic styles for Panel components */
+.Panel {
+  overflow: auto;
+  position: relative;
+}
+
+/* Horizontal resize handle */
+.ResizeHandle-horizontal {
+  width: 8px;
+  cursor: col-resize;
+  background-color: var(--panel-handle-color);
+  transition: background-color 0.2s;
+}
+
+.ResizeHandle-horizontal:hover {
+  background-color: var(--panel-handle-hover-color);
+}
+
+/* Vertical resize handle */
+.ResizeHandle-vertical {
+  height: 8px;
+  cursor: row-resize;
+  background-color: var(--panel-handle-color);
+  transition: background-color 0.2s;
+}
+
+.ResizeHandle-vertical:hover {
+  background-color: var(--panel-handle-hover-color);
+}
+
+/* Panel borders */
+.Panel-border-left {
+  border-left: 1px solid var(--panel-border-color);
+}
+
+.Panel-border-right {
+  border-right: 1px solid var(--panel-border-color);
+}
+
+.Panel-border-top {
+  border-top: 1px solid var(--panel-border-color);
+}
+
+.Panel-border-bottom {
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+/* Handle indicator line */
+.resize-handle-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background-color: var(--panel-handle-hover-color);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 4px;
+}
+
+.ResizeHandle-horizontal:hover .resize-handle-inner {
+  opacity: 1;
+}

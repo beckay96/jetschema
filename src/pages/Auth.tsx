@@ -71,10 +71,6 @@ export function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Database Designer
-          </Link>
           <div className="flex items-center justify-center gap-2">
             <div className="bg-gradient-to-r from-primary to-primary/80 p-3 rounded-xl">
               <Database className="h-8 w-8 text-white" />

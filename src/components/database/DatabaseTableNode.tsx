@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NodeResizer } from '@xyflow/react';
 import { DatabaseTable } from '@/types/database';
 import { DatabaseField } from './DatabaseField';
 import { TableEditModal } from './TableEditModal';
@@ -73,16 +74,23 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   const regularFields = table.fields.filter(f => !f.primaryKey && !f.foreignKey);
 
   return (
-    <Card className={cn(
+    <>
+      {/* Resizer handles appear when node is selected */}
+      <NodeResizer
+        isVisible={selected}
+        minWidth={200}
+        maxWidth={600}
+        minHeight={150}
+        keepAspectRatio={false}
+        lineStyle={{ stroke: 'hsl(var(--primary))' }}
+        handleStyle={{ fill: 'hsl(var(--primary))' }}
+      />
+      <Card className={cn(
       "transition-all duration-200 hover:shadow-lg text-white table-drag-handle cursor-move flex flex-col",
       "bg-gradient-to-br from-db-table to-db-table/95 text-white",
       "border-db-table-border shadow-table text-white",
       selected && "ring-2 ring-primary ring-offset-2 text-white",
-      isMobile 
-        ? "w-72 max-h-80 min-w-[280px]" 
-        : isCompact 
-          ? "w-64 max-h-64" 
-          : "w-80 max-h-96"
+      "w-full max-h-96 min-w-[200px] max-w-[600px]"
     )}>
       <CardHeader className={cn(
         "pb-3 bg-gradient-to-r from-db-table-header to-db-table-header/90 text-white rounded-t-lg",
@@ -261,5 +269,6 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
         }}
       />
     </Card>
+    </>
   );
 }

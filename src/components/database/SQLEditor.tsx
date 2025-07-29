@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,8 @@ CREATE TABLE posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );`);
   const [copied, setCopied] = useState(false);
+
+  const { theme } = useTheme();
 
   // Generate SQL from current tables
   const generatedSQL = useMemo(() => {
@@ -166,8 +169,8 @@ CREATE TABLE order_items (
           </TabsList>
 
           <TabsContent value="editor" className="flex-1 mx-4 mb-4">
-            <div className="h-full border border-border rounded-lg overflow-hidden">
-              <Editor height="100%" language="sql" value={sqlCode} onChange={value => setSqlCode(value || '')} theme="vs-light" options={{
+            <div className="h-full border border-border bg-gray-200 dark:bg-black rounded-lg overflow-hidden">
+              <Editor height="100%" language="sql" value={sqlCode} onChange={value => setSqlCode(value || '')} theme={theme === 'dark' ? 'vs-dark' : 'vs-light'} options={{
               minimap: {
                 enabled: false
               },
@@ -197,6 +200,7 @@ CREATE TABLE order_items (
                 height="100%" 
                 language="sql" 
                 value={generatedSQL}
+                theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
                 options={{
                   readOnly: true,
                   minimap: { enabled: false },
@@ -206,7 +210,6 @@ CREATE TABLE order_items (
                   scrollBeyondLastLine: false,
                   automaticLayout: true
                 }} 
-                theme="vs-light" 
               />
             </div>
           </TabsContent>

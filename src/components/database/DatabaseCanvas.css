@@ -1,0 +1,16 @@
+.react-flow__handle {
+  background-color: var(--node-handle-color, #000000) !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  border: none !important;
+}
+
+/* Handle theming */
+.dark .react-flow__handle {
+  --node-handle-color: #ffffff !important;
+}
+
+.light .react-flow__handle {
+  --node-handle-color: #000000 !important;
+}
