@@ -338,9 +338,9 @@ const ProjectEditor = () => {
 
           {/* Main Canvas - Desktop */}
           <Panel defaultSize={60} minSize={30} className="relative">
-            {/* Desktop toggle buttons - Only shown when panel is collapsed */}
+            {/* Toggle buttons - Only shown when panel is collapsed and only on mobile */}
             {!leftPanelOpen && (
-              <div className="absolute top-4 left-4 z-10">
+              <div className="absolute top-4 left-4 z-10 md:hidden">
                 <Button variant="outline" size="sm" onClick={() => setLeftPanelOpen(true)}>
                   <PanelLeft className="h-4 w-4" />
                 </Button>
@@ -348,7 +348,7 @@ const ProjectEditor = () => {
             )}
             
             {!rightPanelOpen && (
-              <div className="absolute top-4 right-4 z-10">
+              <div className="absolute top-4 right-4 z-10 md:hidden">
                 <Button variant="outline" size="sm" onClick={() => setRightPanelOpen(true)}>
                   <PanelRight className="h-4 w-4" />
                 </Button>

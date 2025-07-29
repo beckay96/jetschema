@@ -128,7 +128,7 @@ export function DatabaseSidebar({
               </div>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 h-[calc(100%-80px)] overflow-y-auto">
               <div className="space-y-2">
                 {filteredTables.map(table => {
                   const hasWarnings = table.fields.length < 2 || !table.fields.some(f => f.primaryKey);
@@ -199,7 +199,7 @@ export function DatabaseSidebar({
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto">
                 <div className="space-y-2">
                   {triggers.map(trigger => <Card key={trigger.id} className="cursor-pointer hover:bg-muted/50">
                       <CardContent className="p-3">
@@ -233,7 +233,7 @@ export function DatabaseSidebar({
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto">
                 <div className="space-y-2">
                   {functions.map(func => <Card key={func.id} className="cursor-pointer hover:bg-muted/50">
                       <CardContent className="p-3">
@@ -267,7 +267,7 @@ export function DatabaseSidebar({
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto">
                 <div className="space-y-2">
                   <div className="text-center py-8 text-muted-foreground">
                     <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -287,7 +287,7 @@ export function DatabaseSidebar({
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto">
                 <div className="space-y-2">
                   <div className="text-center py-8 text-muted-foreground">
                     <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
