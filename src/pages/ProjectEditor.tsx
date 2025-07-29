@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
 import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
+import { TableView } from '@/components/database/TableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X } from 'lucide-react';
+import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SaveStatus } from '@/components/SaveStatus';
@@ -33,6 +34,9 @@ const ProjectEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+  
+  // View mode state - 'diagram' (default) or 'table'
+  const [viewMode, setViewMode] = useState<'diagram' | 'table'>('diagram');
 
   const currentProject = projects.find(p => p.id === id);
   
@@ -203,13 +207,35 @@ const ProjectEditor = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleSaveProject()}
-                disabled={!currentProject || isSaving || !hasUnsavedChanges}
+                className="h-8"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
               <Badge variant="secondary" className="hidden sm:flex">
                 {tables.length} tables
               </Badge>
+              
+              {/* View Mode Toggle */}
+              <div className="border rounded-md flex items-center overflow-hidden">
+                <Button 
+                  variant={viewMode === 'diagram' ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`h-8 rounded-none px-2 ${viewMode === 'diagram' ? 'bg-muted' : ''}`}
+                  onClick={() => setViewMode('diagram')}
+                >
+                  <Layers className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Diagram</span>
+                </Button>
+                <Button 
+                  variant={viewMode === 'table' ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`h-8 rounded-none px-2 ${viewMode === 'table' ? 'bg-muted' : ''}`}
+                  onClick={() => setViewMode('table')}
+                >
+                  <Grid className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Table</span>
+                </Button>
+              </div>
               
               {/* Mobile toggle buttons */}
               {isMobile && (
@@ -356,15 +382,23 @@ const ProjectEditor = () => {
             )}
             
             <div className="h-full">
-              <DatabaseCanvas
-                tables={tables}
-                onTableUpdate={(updatedTables) => {
-                  setTables(updatedTables);
-                  handleSaveProject();
-                }}
-                onTableSelect={setSelectedTable}
-                selectedTable={selectedTable}
-              />
+              {viewMode === 'diagram' ? (
+                <DatabaseCanvas
+                  tables={tables}
+                  onTableUpdate={(updatedTables) => {
+                    setTables(updatedTables);
+                    handleSaveProject();
+                  }}
+                  onTableSelect={setSelectedTable}
+                  selectedTable={selectedTable}
+                />
+              ) : (
+                <TableView
+                  tables={tables}
+                  onTableSelect={setSelectedTable}
+                  selectedTable={selectedTable}
+                />
+              )}
             </div>
           </Panel>
 
