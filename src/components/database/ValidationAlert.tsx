@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import {
   X,
   ExternalLink
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import './ValidationAlert.css';
 
 export interface ValidationAlert {
   id: string;
@@ -34,6 +36,7 @@ interface ValidationAlertProps {
 export function ValidationAlert({ alert, onDismiss, onNavigate }: ValidationAlertProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [shouldPulse, setShouldPulse] = useState(alert.isNew);
+  const alertRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Trigger entrance animation
@@ -48,6 +51,13 @@ export function ValidationAlert({ alert, onDismiss, onNavigate }: ValidationAler
       return () => clearTimeout(timer);
     }
   }, [shouldPulse]);
+  
+  // Add focus to make new alerts more noticeable
+  useEffect(() => {
+    if (alert.isNew && alertRef.current) {
+      alertRef.current.focus();
+    }
+  }, [alert.isNew]);
 
   const getIcon = () => {
     switch (alert.type) {
@@ -59,16 +69,14 @@ export function ValidationAlert({ alert, onDismiss, onNavigate }: ValidationAler
   };
 
   const getCardClass = () => {
-    const baseClass = `card-enhanced transition-all duration-400 ${
-      isVisible ? 'animate-slide-fade-in' : 'opacity-0 translate-y-2'
-    } ${shouldPulse ? 'animate-pulse-subtle' : ''}`;
-    
-    switch (alert.type) {
-      case 'error': return `${baseClass} card-error`;
-      case 'warning': return `${baseClass} card-warning`;
-      case 'success': return `${baseClass} card-validated`;
-      default: return baseClass;
-    }
+    return cn(
+      'validation-alert',
+      'transition-all',
+      isVisible ? 'new' : 'opacity-0',
+      shouldPulse && 'pulsing',
+      alert.type,
+      'border border-border rounded-lg shadow-sm'
+    );
   };
 
   const handleNavigate = () => {
@@ -78,7 +86,11 @@ export function ValidationAlert({ alert, onDismiss, onNavigate }: ValidationAler
   };
 
   return (
-    <Card className={getCardClass()}>
+    <Card 
+      className={getCardClass()} 
+      ref={alertRef} 
+      tabIndex={0}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
@@ -121,7 +133,7 @@ export function ValidationAlert({ alert, onDismiss, onNavigate }: ValidationAler
                   variant="outline"
                   size="sm"
                   onClick={handleNavigate}
-                  className="h-6 text-xs"
+                  className="h-6 text-xs target-element-button"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Go to {alert.targetElement.name}

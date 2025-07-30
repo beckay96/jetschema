@@ -1,0 +1,70 @@
+/* ValidationAlert animations and styling */
+
+@keyframes slideInFade {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSubtle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--highlight-color), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--highlight-color), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--highlight-color), 0);
+  }
+}
+
+.validation-alert {
+  transition: all 0.3s ease-out;
+}
+
+.validation-alert.new {
+  animation: slideInFade 0.3s ease-out forwards;
+}
+
+.validation-alert.error {
+  --highlight-color: 255, 86, 86; /* Red */
+  border-left: 4px solid rgb(var(--highlight-color));
+}
+
+.validation-alert.warning {
+  --highlight-color: 255, 193, 7; /* Yellow */
+  border-left: 4px solid rgb(var(--highlight-color));
+}
+
+.validation-alert.info {
+  --highlight-color: 66, 153, 225; /* Blue */
+  border-left: 4px solid rgb(var(--highlight-color));
+}
+
+.validation-alert.success {
+  --highlight-color: 72, 187, 120; /* Green */
+  border-left: 4px solid rgb(var(--highlight-color));
+}
+
+.validation-alert.pulsing {
+  animation: pulseSubtle 2s infinite;
+}
+
+.target-element-button {
+  transition: transform 0.2s ease;
+}
+
+.target-element-button:hover {
+  transform: translateY(-2px);
+}
+
+/* Focus state styling for accessibility */
+.validation-alert:focus-within {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}

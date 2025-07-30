@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -181,39 +181,9 @@ export function DatabaseSidebar({
   
   const [searchTerm, setSearchTerm] = useState('');
   const [projectName, setProjectName] = useState(externalProjectName || 'Database Schema');
-  const [editedProjectName, setEditedProjectName] = useState(externalProjectName || 'Database Schema');
-  const [isEditingName, setIsEditingName] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
-  
-  // Update local state when external project name changes
-  useEffect(() => {
-    if (externalProjectName) {
-      setProjectName(externalProjectName);
-      // Only update the edited name if we're not currently editing
-      if (!isEditingName) {
-        setEditedProjectName(externalProjectName);
-      }
-    }
-  }, [externalProjectName, isEditingName]);
-  
-  // Function to save project name changes
-  const saveProjectName = () => {
-    // Only update if the name has actually changed
-    if (editedProjectName !== projectName) {
-      setProjectName(editedProjectName);
-      // Call the parent component's handler to persist the change
-      onProjectNameChange?.(editedProjectName);
-    }
-    setIsEditingName(false);
-  };
-  
-  const cancelNameEdit = () => {
-    // Reset to the current project name without saving
-    setEditedProjectName(projectName);
-    setIsEditingName(false);
-  };
   
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -230,97 +200,15 @@ export function DatabaseSidebar({
         </div>
         
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Project name" 
-              value={isEditingName ? editedProjectName : projectName} 
-              onChange={e => {
-                // Only update the local edited name, don't save yet
-                setEditedProjectName(e.target.value);
-                setIsEditingName(true);
-              }}
-              onFocus={() => setIsEditingName(true)}
-              onBlur={(e) => {
-                // Don't save on blur - let the user explicitly click save/cancel
-                e.preventDefault();
-              }}
-              className={`h-8 text-sm ${isEditingName ? 'ring-1 ring-primary' : ''}`}
-            />
-            {isEditingName && (
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0" 
-                  onClick={saveProjectName}
-                  title="Save name"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="14" 
-                    height="14" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-green-500"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0" 
-                  onClick={() => {
-                    setEditedProjectName(projectName);
-                    setIsEditingName(false);
-                  }}
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="14" 
-                    height="14" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-red-500"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0" 
-                  onClick={cancelNameEdit}
-                  title="Cancel"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="14" 
-                    height="14" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-red-500"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </Button>
-              </div>
-            )}
-          </div>
+          <Input 
+            placeholder="Project name" 
+            value={projectName} 
+            onChange={e => {
+              setProjectName(e.target.value);
+              onProjectNameChange?.(e.target.value);
+            }} 
+            className="h-8 text-sm" 
+          />
           
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="flex-1 h-8" onClick={onSaveProject}>

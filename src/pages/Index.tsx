@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 // Container component removed as it's not needed
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Database, Zap, Code2, Github, BarChart3, ArrowRight, PanelRight, Check, Sparkles } from 'lucide-react';
+import { Zap, Code2, Github, BarChart3, ArrowRight, PanelRight, Check, Sparkles } from 'lucide-react';
 /**
  * JetSchema Landing Page
  * Modern and stunning landing page for JetSchema database design tool
@@ -54,7 +54,7 @@ const Index = () => {
       <header className="fixed top-0 w-full z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <Database className="h-6 w-6 text-primary" />
+            <img src="/rocket-logo.svg" alt="JetSchema Logo" className="h-8 w-8" />
             <span className="text-xl font-bold tracking-tight">JetSchema</span>
           </div>
 

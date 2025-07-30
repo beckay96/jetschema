@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertTriangle, Info, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { ValidationError, getValidationSummary } from '@/utils/validationUtils';
+import { ValidationAlert } from './ValidationAlert';
 
 interface ValidationPanelProps {
   errors: ValidationError[];
   onRefreshValidation?: () => void;
+  onNavigateToElement?: (elementType: string, elementId: string) => void;
   loading?: boolean;
 }
 
-export function ValidationPanel({ errors, onRefreshValidation, loading }: ValidationPanelProps) {
+export function ValidationPanel({ errors, onRefreshValidation, onNavigateToElement, loading }: ValidationPanelProps) {
   const [showAll, setShowAll] = useState(false);
   const summary = getValidationSummary(errors);
 
@@ -102,33 +104,27 @@ export function ValidationPanel({ errors, onRefreshValidation, loading }: Valida
 
       <CardContent className="pt-0">
         <ScrollArea className="max-h-64">
-          <div className="space-y-2">
+          <div className="space-y-3">
             {displayedErrors.map((error) => (
-              <Alert key={error.id} className="py-2">
-                <div className="flex items-start gap-2">
-                  {getIcon(error.type)}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{error.message}</span>
-                      <Badge variant={getBadgeVariant(error.type)} className="text-xs">
-                        {error.type}
-                      </Badge>
-                    </div>
-                    
-                    {error.suggestion && (
-                      <p className="text-xs text-muted-foreground mb-1">
-                        <strong>Suggestion:</strong> {error.suggestion}
-                      </p>
-                    )}
-                    
-                    {error.affectedElement && (
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Affects:</strong> {error.affectedElement.type} "{error.affectedElement.name}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Alert>
+              <ValidationAlert
+                key={error.id}
+                alert={{
+                  id: error.id,
+                  type: error.type,
+                  title: error.affectedElement ? `Issue in ${error.affectedElement.type} ${error.affectedElement.name}` : 'Schema issue',
+                  message: error.message,
+                  suggestion: error.suggestion || undefined,
+                  targetElement: error.affectedElement ? {
+                    type: error.affectedElement.type,
+                    id: error.affectedElement.id,
+                    name: error.affectedElement.name
+                  } : undefined,
+                  isNew: false, // Default to false since ValidationError doesn't have isNew property
+                  timestamp: new Date()
+                }}
+                onDismiss={() => {/* Optional: Implement dismiss logic */}}
+                onNavigate={onNavigateToElement}
+              />
             ))}
           </div>
         </ScrollArea>

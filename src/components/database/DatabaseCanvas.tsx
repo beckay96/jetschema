@@ -21,10 +21,19 @@ import './DatabaseCanvas.css';
 
 interface DatabaseCanvasProps {
   tables: DatabaseTable[];
-  onTableUpdate?: (tables: DatabaseTable[]) => void;
-  onTableSelect?: (table: DatabaseTable | null) => void;
-  onAddComment?: (tableName: string, fieldName: string) => void;
+  setTables?: (tables: DatabaseTable[]) => void;
   selectedTable?: DatabaseTable | null;
+  setSelectedTable?: (table: DatabaseTable | null) => void;
+  onAddTable?: () => void;
+  onDeleteTable?: (tableId: string) => void;
+  onEditTable?: (tableId: string, data: Partial<DatabaseTable>) => void;
+  onEditField?: (tableId: string, fieldId: string, fieldData: Partial<any>) => void;
+  onDeleteField?: (tableId: string, fieldId: string) => void;
+  onAddField?: (tableId: string, field?: any) => void;
+  onSave?: (tables: DatabaseTable[]) => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
+  onMarkAsTask?: (elementType: 'table' | 'field', elementId: string, elementName: string, priority: 'low' | 'medium' | 'high') => void;
+  onNavigateToElement?: (elementType: string, elementId: string) => void;
 }
 
 const nodeTypes = {
@@ -33,10 +42,19 @@ const nodeTypes = {
 
 export function DatabaseCanvas({ 
   tables, 
-  onTableUpdate, 
-  onTableSelect,
+  setTables,
+  selectedTable,
+  setSelectedTable,
+  onAddTable,
+  onDeleteTable,
+  onEditTable,
+  onEditField,
+  onDeleteField,
+  onAddField,
+  onSave,
   onAddComment,
-  selectedTable 
+  onMarkAsTask,
+  onNavigateToElement
 }: DatabaseCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -96,7 +114,7 @@ export function DatabaseCanvas({
         console.log('🔄 Updating table:', updatedTable.name);
         // Handle table editing
         const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
-        onTableUpdate?.(updatedTables);
+        setTables?.(updatedTables);
       },
       onEditField: (field: any) => {
         // Handle field editing
@@ -113,7 +131,7 @@ export function DatabaseCanvas({
           }
           return t;
         });
-        onTableUpdate?.(updatedTables);
+        setTables?.(updatedTables);
       },
       onAddField: (tableId: string) => {
         console.log('➕ Adding field to table:', tableId);
@@ -139,7 +157,7 @@ export function DatabaseCanvas({
           }
           return t;
         });
-        onTableUpdate?.(updatedTables);
+        setTables?.(updatedTables);
       },
       onAddComment: onAddComment
     },
@@ -159,15 +177,34 @@ export function DatabaseCanvas({
     setEdges(generateForeignKeyEdges(tables));
   }, [tables, selectedTable, setNodes, setEdges, theme]);
 
+  // Track if a node is being dragged
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
+  
   // Handle node position changes to update table positions
   const handleNodesChange = useCallback((changes: any[]) => {
     onNodesChange(changes);
     
-    // Update table positions when nodes are moved
-    const positionChanges = changes.filter(change => change.type === 'position' && change.position);
-    if (positionChanges.length > 0 && onTableUpdate) {
+    // Check for drag start and end
+    const dragStartChanges = changes.filter(change => change.type === 'position' && change.dragging === true);
+    const dragEndChanges = changes.filter(change => change.type === 'position' && change.dragging === false);
+    
+    // Track drag start
+    if (dragStartChanges.length > 0) {
+      setIsDragging(true);
+      
+      // Save current positions when drag starts
+      tables.forEach(table => {
+        lastPositionsRef.current[table.id] = { ...table.position };
+      });
+    }
+    
+    // Process drag end and update tables only when the drag is finished
+    if (dragEndChanges.length > 0 && isDragging && setTables) {
+      setIsDragging(false);
+      
       const updatedTables = tables.map(table => {
-        const positionChange = positionChanges.find(change => change.id === table.id);
+        const positionChange = dragEndChanges.find(change => change.id === table.id);
         if (positionChange) {
           return {
             ...table,
@@ -176,9 +213,21 @@ export function DatabaseCanvas({
         }
         return table;
       });
-      onTableUpdate(updatedTables);
+      
+      // Only update if positions actually changed
+      const hasPositionChanges = updatedTables.some(table => {
+        const lastPos = lastPositionsRef.current[table.id];
+        return !lastPos || lastPos.x !== table.position.x || lastPos.y !== table.position.y;
+      });
+      
+      if (hasPositionChanges) {
+        setTables(updatedTables);
+        
+        // Also call onSave if provided, for auto-save functionality
+        onSave?.(updatedTables);
+      }
     }
-  }, [onNodesChange, tables, onTableUpdate]);
+  }, [onNodesChange, tables, setTables, onSave, isDragging]);
 
   const onConnect = useCallback(
     (params: any) => {
@@ -196,14 +245,14 @@ export function DatabaseCanvas({
   const onNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
       const table = tables.find(t => t.id === node.id);
-      onTableSelect?.(table || null);
+      setSelectedTable?.(table || null);
     },
-    [tables, onTableSelect]
+    [tables, setSelectedTable]
   );
 
   const onPaneClick = useCallback(() => {
-    onTableSelect?.(null);
-  }, [onTableSelect]);
+    setSelectedTable?.(null);
+  }, [setSelectedTable]);
 
   // Apply theme class to the container
   const themeClass = theme === 'dark' ? 'dark' : 'light';
@@ -216,13 +265,17 @@ export function DatabaseCanvas({
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
-        connectionMode={ConnectionMode.Loose}
         fitView
-        className="bg-transparent text-white"
+        connectionMode={ConnectionMode.Loose}
+        selectNodesOnDrag={false}
+        elevateEdgesOnSelect={true}
+        onNodeClick={(e, node) => onNodeClick(e, node)}
         style={{ background: 'transparent' }}
+        noDragClassName="nodrag"
+        nodesDraggable={true}
+        // The dragHandle functionality will be handled by the data-draghandle attribute
+        // in each node component instead of here
       >
         <Background 
           color="hsl(var(--border))" 
@@ -230,14 +283,7 @@ export function DatabaseCanvas({
           size={1}
         />
         <Controls 
-          className="!bg-card/80 dark:!bg-card/80 !border !border-border/50 !rounded-lg !shadow-lg backdrop-blur-sm"
-          style={{
-            '--flow-controls-bg': 'hsl(var(--card))',
-            '--flow-controls-text': 'hsl(var(--card-foreground))',
-            '--flow-controls-border': 'hsl(var(--border))',
-            '--flow-controls-button-hover': 'hsl(var(--muted))',
-            '--flow-controls-button-active': 'hsl(var(--accent))',
-          } as React.CSSProperties}
+          className="bg-card/80 dark:bg-black/80 text-black dark:text-white border border-border/50 rounded-lg shadow-lg backdrop-blur-sm hover:border-blue-500/50 active:border-blue-500/80"
           showInteractive={true}
         />
       </ReactFlow>

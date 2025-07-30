@@ -146,7 +146,7 @@ export function DatabaseTableView({
           <div>
             <h2 className="text-lg font-semibold">Table View</h2>
             <p className="text-sm text-muted-foreground">
-              ClickUp-style database management
+              Next-level database management
             </p>
           </div>
           <div className="flex items-center gap-2">

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512px" height="512px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>JetSchema Rocket Logo</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="rocketGradient">
+            <stop stop-color="#3B82F6" offset="0%"></stop>
+            <stop stop-color="#1D4ED8" offset="100%"></stop>
+        </linearGradient>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="10" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+    </defs>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Rocket Body -->
+        <path d="M256,64 C362.64,64 448,149.36 448,256 C448,362.64 362.64,448 256,448 C149.36,448 64,362.64 64,256 C64,149.36 149.36,64 256,64 Z" fill="#1E293B" opacity="0.2"></path>
+        <g transform="translate(128, 96)">
+            <!-- Rocket Body -->
+            <path d="M128,32 C180,0 212,0 256,32 C224,96 224,224 256,288 C212,320 180,320 128,288 C160,224 160,96 128,32 Z" fill="url(#rocketGradient)" filter="url(#glow)"></path>
+            
+            <!-- Rocket Window -->
+            <circle cx="192" cy="160" r="24" fill="#FFFFFF" opacity="0.9"></circle>
+            
+            <!-- Rocket Fins -->
+            <path d="M128,288 L96,352 L128,320 L160,352 L128,288 Z" fill="#2563EB"></path>
+            <path d="M256,288 L288,352 L256,320 L224,352 L256,288 Z" fill="#2563EB"></path>
+            
+            <!-- Flame -->
+            <path d="M160,288 C160,288 176,320 192,352 C208,320 224,288 224,288 C208,304 176,304 160,288 Z" fill="#F97316"></path>
+            <path d="M176,320 C176,320 184,336 192,352 C200,336 208,320 208,320 C200,328 184,328 176,320 Z" fill="#FBBF24"></path>
+        </g>
+    </g>
+</svg>

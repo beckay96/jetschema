@@ -6,6 +6,7 @@ import { TableView } from '@/components/database/TableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
+import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/CommentTaskDrawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { SaveStatus } from '@/components/SaveStatus';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
+import { toast } from 'sonner';
 
 const ProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +26,11 @@ const ProjectEditor = () => {
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
   const [projectName, setProjectName] = useState('');
+  
+  // Comments and tasks state
+  const [comments, setComments] = useState<SchemaComment[]>([]);
+  const [tasks, setTasks] = useState<SchemaTask[]>([]);
+  const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
 
   // Panel state management
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
@@ -72,6 +79,10 @@ const ProjectEditor = () => {
       setTriggers(projectData.triggers || []);
       setFunctions(projectData.functions || []);
       setProjectName(currentProject.name);
+      
+      // Load comments and tasks if they exist
+      setComments(projectData.comments || []);
+      setTasks(projectData.tasks || []);
     }
   }, [currentProject]);
 
@@ -90,11 +101,99 @@ const ProjectEditor = () => {
     setRightPanelOpen(!rightPanelOpen);
   };
 
+  // Comment and task management handlers
+  const handleAddComment = (elementType: 'table' | 'field', elementId: string, elementName: string) => {
+    const newComment: SchemaComment = {
+      id: `comment-${Date.now()}`,
+      elementType,
+      elementId,
+      elementName,
+      content: `Add your comment about ${elementName} here...`,
+      createdAt: new Date(),
+      read: false,
+    };
+    
+    const updatedComments = [...comments, newComment];
+    setComments(updatedComments);
+    setCommentDrawerOpen(true);
+    // Also save the project with the new comment
+    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    toast.success(`Added comment for ${elementName}`);
+  };
+
+  const handleMarkAsTask = (elementType: 'table' | 'field', elementId: string, elementName: string, priority: 'low' | 'medium' | 'high') => {
+    const newTask: SchemaTask = {
+      id: `task-${Date.now()}`,
+      elementType,
+      elementId,
+      elementName,
+      description: `Review and complete ${elementName}`,
+      priority,
+      createdAt: new Date(),
+      completed: false,
+    };
+    
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+    setCommentDrawerOpen(true);
+    // Also save the project with the new task
+    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    toast.success(`Marked ${elementName} as ${priority} priority task`);
+  };
+  
+  // Mark comment as read handler
+  const handleMarkCommentRead = (commentId: string) => {
+    const updatedComments = comments.map(comment => 
+      comment.id === commentId ? { ...comment, read: true } : comment
+    );
+    setComments(updatedComments);
+    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    toast.success("Comment marked as read");
+  };
+  
+  // Mark task as complete handler
+  const handleMarkTaskComplete = (taskId: string) => {
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId ? { ...task, completed: true, completedAt: new Date() } : task
+    );
+    setTasks(updatedTasks);
+    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    toast.success("Task marked as complete");
+  };
+  
+  // Navigate to element handler
+  const handleNavigateToElement = (elementType: string, elementId: string) => {
+    // Set view mode to diagram for navigation
+    setViewMode('diagram');
+    
+    // Find the element and select/focus on it
+    if (elementType === 'table') {
+      const table = tables.find(t => t.id === elementId);
+      if (table) {
+        setSelectedTable(table);
+        toast.info(`Navigated to table ${table.name}`);
+      }
+    } else if (elementType === 'field') {
+      // Find which table contains this field
+      for (const table of tables) {
+        const field = table.fields.find(f => f.id === elementId);
+        if (field) {
+          setSelectedTable(table);
+          toast.info(`Navigated to field ${field.name} in table ${table.name}`);
+          break;
+        }
+      }
+    }
+    
+    // Close the drawer after navigation
+    setCommentDrawerOpen(false);
+  };
+
   const handleTablesImported = (importedTables: DatabaseTable[]) => {
     // Update local state first
     setTables(importedTables);
     // Persist using the freshly imported tables to avoid saving an empty array
-    handleSaveProject(importedTables, triggers, functions, true);
+    handleSaveProject(importedTables, triggers, functions, comments, tasks, true);
   };
 
   const handleAddTable = () => {
@@ -121,6 +220,76 @@ const ProjectEditor = () => {
     }
     // Don't auto-save, let the auto-save handle it
   };
+  
+  // Edit an existing table's data
+  const handleEditTable = (tableId: string, data: Partial<DatabaseTable>) => {
+    const updatedTables = tables.map(table => 
+      table.id === tableId ? { ...table, ...data } : table
+    );
+    setTables(updatedTables);
+    // Don't auto-save, let the auto-save handle it
+  };
+  
+  // Edit a field in a table
+  const handleEditField = (tableId: string, fieldId: string, fieldData: Partial<any>) => {
+    const updatedTables = tables.map(table => {
+      if (table.id === tableId) {
+        const updatedFields = table.fields.map(field => 
+          field.id === fieldId ? { ...field, ...fieldData } : field
+        );
+        return { ...table, fields: updatedFields };
+      }
+      return table;
+    });
+    setTables(updatedTables);
+    // Don't auto-save, let the auto-save handle it
+  };
+  
+  // Delete a field from a table
+  const handleDeleteField = (tableId: string, fieldId: string) => {
+    const updatedTables = tables.map(table => {
+      if (table.id === tableId) {
+        return {
+          ...table,
+          fields: table.fields.filter(field => field.id !== fieldId)
+        };
+      }
+      return table;
+    });
+    setTables(updatedTables);
+    // Don't auto-save, let the auto-save handle it
+  };
+  
+  // Add a new field to a table
+  const handleAddField = (tableId: string, field?: any) => {
+    const updatedTables = tables.map(table => {
+      if (table.id === tableId) {
+        const newField = field || {
+          id: `field-${Date.now()}`,
+          name: `new_field_${table.fields.length + 1}`,
+          type: 'VARCHAR',
+          nullable: true,
+          primaryKey: false,
+          unique: false,
+          foreignKey: null,
+          defaultValue: null
+        };
+        return {
+          ...table,
+          fields: [...table.fields, newField]
+        };
+      }
+      return table;
+    });
+    setTables(updatedTables);
+    // Don't auto-save, let the auto-save handle it
+  };
+  
+  // Save canvas changes explicitly
+  const handleSaveCanvasChanges = (updatedTables: DatabaseTable[]) => {
+    setTables(updatedTables);
+    handleSaveProject(updatedTables, triggers, functions, comments, tasks, false);
+  };
 
   // Save project to Supabase. Accepts optional explicit data to avoid
   // stale closures when state updates are asynchronous.
@@ -128,6 +297,8 @@ const ProjectEditor = () => {
     tablesData: DatabaseTable[] = tables,
     triggersData: DatabaseTrigger[] = triggers,
     functionsData: DatabaseFunction[] = functions,
+    commentsData: SchemaComment[] = comments,
+    tasksData: SchemaTask[] = tasks,
     silent: boolean = false
   ) => {
     if (!currentProject) return;
@@ -138,6 +309,8 @@ const ProjectEditor = () => {
       tables: tablesData,
       triggers: triggersData,
       functions: functionsData,
+      comments: commentsData,
+      tasks: tasksData,
     };
 
     try {
@@ -160,10 +333,8 @@ const ProjectEditor = () => {
   // Save immediately when project name changes
   const handleProjectNameChange = (name: string) => {
     setProjectName(name);
-    // Debounce name changes slightly to avoid saving on every keystroke
-    setTimeout(() => {
-      handleSaveProject();
-    }, 500);
+    // Save project name change immediately without debouncing
+    handleSaveProject(tables, triggers, functions, comments, tasks, false);
   };
 
   if (!currentProject) {
@@ -192,7 +363,7 @@ const ProjectEditor = () => {
                 <span className="hidden sm:inline">Projects</span>
               </Button>
               <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                <Database className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                <img src="/rocket-logo.svg" alt="JetSchema Logo" className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
                 <h1 className="text-sm sm:text-lg font-semibold truncate">{projectName}</h1>
               </div>
             </div>
@@ -214,6 +385,17 @@ const ProjectEditor = () => {
               <Badge variant="secondary" className="hidden sm:flex">
                 {tables.length} tables
               </Badge>
+              
+              {/* Comments & Tasks Drawer */}
+              <CommentTaskDrawer 
+                comments={comments}
+                tasks={tasks}
+                onMarkCommentRead={handleMarkCommentRead}
+                onMarkTaskComplete={handleMarkTaskComplete}
+                onNavigateToElement={handleNavigateToElement}
+                open={commentDrawerOpen}
+                onOpenChange={setCommentDrawerOpen}
+              />
               
               {/* View Mode Toggle */}
               <div className="border rounded-md flex items-center overflow-hidden">
@@ -290,12 +472,19 @@ const ProjectEditor = () => {
             <div className="flex-1">
               <DatabaseCanvas
                 tables={tables}
-                onTableUpdate={(updatedTables) => {
-                  setTables(updatedTables);
-                  handleSaveProject(); // Save immediately when tables are updated
-                }}
-                onTableSelect={setSelectedTable}
+                setTables={setTables}
                 selectedTable={selectedTable}
+                setSelectedTable={setSelectedTable}
+                onAddTable={handleAddTable}
+                onDeleteTable={handleDeleteTable}
+                onEditTable={handleEditTable}
+                onEditField={handleEditField}
+                onDeleteField={handleDeleteField}
+                onAddField={handleAddField}
+                onSave={handleSaveCanvasChanges}
+                onAddComment={handleAddComment}
+                onMarkAsTask={handleMarkAsTask}
+                onNavigateToElement={handleNavigateToElement}
               />
             </div>
           </div>
@@ -385,17 +574,35 @@ const ProjectEditor = () => {
               {viewMode === 'diagram' ? (
                 <DatabaseCanvas
                   tables={tables}
-                  onTableUpdate={(updatedTables) => {
-                    setTables(updatedTables);
-                    handleSaveProject();
-                  }}
-                  onTableSelect={setSelectedTable}
+                  setTables={setTables}
                   selectedTable={selectedTable}
+                  setSelectedTable={setSelectedTable}
+                  onAddTable={handleAddTable}
+                  onDeleteTable={handleDeleteTable}
+                  onEditTable={handleEditTable}
+                  onEditField={handleEditField}
+                  onDeleteField={handleDeleteField}
+                  onAddField={handleAddField}
+                  onSave={handleSaveCanvasChanges}
+                  onAddComment={handleAddComment}
+                  onMarkAsTask={handleMarkAsTask}
+                  onNavigateToElement={handleNavigateToElement}
                 />
               ) : (
                 <TableView
                   tables={tables}
                   onTableSelect={setSelectedTable}
+                  onTableUpdate={(updatedTables) => {
+                    setTables(updatedTables);
+                    setHasUnsavedChanges(true);
+                  }}
+                  onAddTable={handleAddTable}
+                  onDeleteTable={handleDeleteTable}
+                  onAddComment={(tableName, fieldName) => {
+                    // Implement comment functionality
+                    console.log(`Add comment for ${tableName}.${fieldName}`);
+                    // This would typically open a comment dialog or similar
+                  }}
                   selectedTable={selectedTable}
                 />
               )}
