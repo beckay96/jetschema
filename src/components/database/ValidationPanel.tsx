@@ -115,7 +115,7 @@ export function ValidationPanel({ errors, onRefreshValidation, onNavigateToEleme
                   message: error.message,
                   suggestion: error.suggestion || undefined,
                   targetElement: error.affectedElement ? {
-                    type: error.affectedElement.type,
+                    type: error.affectedElement.type as "table" | "field",
                     id: error.affectedElement.id,
                     name: error.affectedElement.name
                   } : undefined,

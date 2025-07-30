@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 // Container component removed as it's not needed
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Zap, Code2, Github, BarChart3, ArrowRight, PanelRight, Check, Sparkles } from 'lucide-react';
+import { Zap, Code2, Github, BarChart3, ArrowRight, PanelRight, Check, Sparkles, Database } from 'lucide-react';
 /**
  * JetSchema Landing Page
  * Modern and stunning landing page for JetSchema database design tool
