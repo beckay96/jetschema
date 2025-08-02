@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Settings, Maximize2, Minimize2, Check, X, Copy, MessageCircle, ArrowsOut, ArrowsIn, Pencil, Trash } from 'lucide-react';
+import { Plus, Settings, Maximize2, Minimize2, Check, X, Copy, MessageCircle, MoveHorizontal, MoveVertical, Pencil, Trash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { generateTableSQL, copyToClipboard } from '@/utils/sqlGenerator';
