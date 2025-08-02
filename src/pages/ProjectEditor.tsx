@@ -7,11 +7,13 @@ import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
 import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/CommentTaskDrawer';
+import { ValidationPanel } from '@/components/database/ValidationPanel';
+import { ValidationError } from '@/utils/validationUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers } from 'lucide-react';
+import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SaveStatus } from '@/components/SaveStatus';
+import { SaveStatus, StatusType } from '@/components/SaveStatus';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
 import { toast } from 'sonner';
@@ -31,6 +33,14 @@ const ProjectEditor = () => {
   const [comments, setComments] = useState<SchemaComment[]>([]);
   const [tasks, setTasks] = useState<SchemaTask[]>([]);
   const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
+  
+  /**
+   * Validation state for the project schema
+   * Stores validation errors and loading state for the validation process
+   * ValidationPanel uses these to display validation issues to the user
+   */
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [validationLoading, setValidationLoading] = useState(false);
 
   // Panel state management
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
@@ -74,15 +84,105 @@ const ProjectEditor = () => {
   // Load project data
   useEffect(() => {
     if (currentProject) {
-      const projectData = currentProject.project_data || {};
-      setTables(projectData.tables || []);
-      setTriggers(projectData.triggers || []);
-      setFunctions(projectData.functions || []);
-      setProjectName(currentProject.name);
-      
-      // Load comments and tasks if they exist
-      setComments(projectData.comments || []);
-      setTasks(projectData.tasks || []);
+      try {
+        console.log('Loading project data:', currentProject.name);
+        const projectData = currentProject.project_data || {};
+        
+        // Safely parse and handle tables data
+        const safeTables = Array.isArray(projectData.tables) ? projectData.tables.map(table => ({
+          ...table,
+          project_id: currentProject.id // Ensure project_id is set for all tables
+        })) : [];
+        setTables(safeTables);
+        
+        // Safely parse and handle triggers data
+        const safeTriggers = Array.isArray(projectData.triggers) ? projectData.triggers.map(trigger => {
+          // Convert old format triggers to new format if needed
+          if ('event' in trigger && 'timing' in trigger && 'table' in trigger) {
+            return {
+              id: trigger.id,
+              project_id: currentProject.id,
+              name: trigger.name,
+              table_name: (trigger as any).table,
+              trigger_event: (trigger as any).event,
+              trigger_timing: (trigger as any).timing,
+              function_id: undefined,
+              is_active: true,
+              conditions: undefined,
+              author_id: currentProject.user_id,
+              description: trigger.description
+            };
+          }
+          return { 
+            ...trigger,
+            project_id: currentProject.id // Ensure project_id is set
+          };
+        }) : [];
+        setTriggers(safeTriggers);
+        
+        // Safely parse and handle functions data
+        const safeFunctions = Array.isArray(projectData.functions) ? projectData.functions.map(func => {
+          // Convert old format functions to new format if needed
+          if ('returnType' in func && 'code' in func) {
+            return {
+              id: func.id,
+              project_id: currentProject.id,
+              name: func.name,
+              description: func.description,
+              function_type: 'plpgsql',
+              parameters: func.parameters.map((p: any) => ({
+                name: p.name,
+                type: p.type,
+                default: p.defaultValue
+              })),
+              return_type: (func as any).returnType,
+              function_body: (func as any).code,
+              is_edge_function: false,
+              is_cron_enabled: false,
+              author_id: currentProject.user_id
+            };
+          }
+          return {
+            ...func,
+            project_id: currentProject.id // Ensure project_id is set
+          };
+        }) : [];
+        setFunctions(safeFunctions);
+        
+        setProjectName(currentProject.name);
+        
+        // Safely load comments and tasks if they exist
+        const safeComments = Array.isArray(projectData.comments) ? projectData.comments : [];
+        setComments(safeComments);
+        
+        const safeTasks = Array.isArray(projectData.tasks) ? projectData.tasks : [];
+        setTasks(safeTasks);
+        
+        /**
+         * Load validation errors if they exist in the project data
+         * Otherwise, run initial validation after a short delay
+         * This ensures that the ValidationPanel has data to display when the project loads
+         */
+        if (Array.isArray(projectData.validationErrors)) {
+          setValidationErrors(projectData.validationErrors);
+        } else {
+          // Run initial validation after a short delay to ensure tables are loaded
+          setTimeout(() => handleRefreshValidation(), 500);
+        }
+        
+        console.log('Project data loaded successfully');
+      } catch (error) {
+        console.error('Error loading project data:', error);
+        toast.error('There was an issue loading your project data');
+        
+        // Set safe default values to prevent rendering errors
+        setTables([]);
+        setTriggers([]);
+        setFunctions([]);
+        setComments([]);
+        setTasks([]);
+        setValidationErrors([]);
+      }
     }
   }, [currentProject]);
 
@@ -102,23 +202,64 @@ const ProjectEditor = () => {
   };
 
   // Comment and task management handlers
+  // Handle adding a comment with improved error handling and state management
   const handleAddComment = (elementType: 'table' | 'field', elementId: string, elementName: string) => {
-    const newComment: SchemaComment = {
-      id: `comment-${Date.now()}`,
-      elementType,
-      elementId,
-      elementName,
-      content: `Add your comment about ${elementName} here...`,
-      createdAt: new Date(),
-      read: false,
-    };
-    
-    const updatedComments = [...comments, newComment];
-    setComments(updatedComments);
-    setCommentDrawerOpen(true);
-    // Also save the project with the new comment
-    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
-    toast.success(`Added comment for ${elementName}`);
+    try {
+      // Update status before anything else to provide immediate feedback
+      setStatusMessage({
+        status: 'loading',
+        message: `Adding comment for ${elementName}...`
+      });
+      
+      // Create the new comment with a more reliable ID
+      const commentId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const newComment: SchemaComment = {
+        id: commentId,
+        elementType,
+        elementId,
+        elementName,
+        content: `Add your comment about ${elementName} here...`,
+        createdAt: new Date(),
+        read: false,
+      };
+      
+      // Update local state with functional update to avoid closure issues
+      setComments(prevComments => {
+        const updatedComments = [...prevComments, newComment];
+        
+        // Schedule save operation in the next event loop to avoid state update conflicts
+        requestAnimationFrame(() => {
+          try {
+            // Open the comment drawer safely in the next tick
+            setCommentDrawerOpen(true);
+            
+            // Save the project with the updated comments
+            handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+            
+            // Update status after save
+            setStatusMessage({
+              status: 'success',
+              message: `Added comment for ${elementName}`
+            });
+          } catch (saveError) {
+            console.error('Error saving comment:', saveError);
+            setStatusMessage({
+              status: 'error',
+              message: `Error saving comment: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`
+            });
+          }
+        });
+        
+        return updatedComments;
+      });
+    } catch (error) {
+      // Handle errors during the comment creation process
+      console.error('Error creating comment:', error);
+      setStatusMessage({
+        status: 'error',
+        message: `Error creating comment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
   };
 
   const handleMarkAsTask = (elementType: 'table' | 'field', elementId: string, elementName: string, priority: 'low' | 'medium' | 'high') => {
@@ -138,7 +279,10 @@ const ProjectEditor = () => {
     setCommentDrawerOpen(true);
     // Also save the project with the new task
     handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
-    toast.success(`Marked ${elementName} as ${priority} priority task`);
+    setStatusMessage({
+      status: 'success',
+      message: `Marked ${elementName} as ${priority} priority task`
+    });
   };
   
   // Mark comment as read handler
@@ -148,7 +292,10 @@ const ProjectEditor = () => {
     );
     setComments(updatedComments);
     handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
-    toast.success("Comment marked as read");
+    setStatusMessage({
+      status: 'success',
+      message: "Comment marked as read"
+    });
   };
   
   // Mark task as complete handler
@@ -158,7 +305,114 @@ const ProjectEditor = () => {
     );
     setTasks(updatedTasks);
     handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
-    toast.success("Task marked as complete");
+    setStatusMessage({
+      status: 'success',
+      message: "Task marked as complete"
+    });
+  };
+  
+  /**
+   * Validation refresh handler
+   * Performs schema validation on the current tables and fields
+   * Checks for common issues like missing primary keys, empty tables,
+   * fields without types, and naming convention violations
+   * Updates the validationErrors state and displays toast notifications
+   */
+  const handleRefreshValidation = () => {
+    setValidationLoading(true);
+    
+    // Simulate validation process
+    setTimeout(() => {
+      // Perform schema validation
+      const errors: ValidationError[] = [];
+      
+      // Check for tables without primary keys
+      tables.forEach(table => {
+        const hasPrimaryKey = table.fields.some(field => field.primaryKey);
+        if (!hasPrimaryKey) {
+          errors.push({
+            id: `err-${table.id}-no-pk`,
+            type: 'error',
+            message: `Table ${table.name} doesn't have a primary key defined.`,
+            suggestion: 'Add a primary key field to ensure proper record identification.',
+            affectedElement: {
+              type: 'table',
+              id: table.id,
+              name: table.name
+            }
+          });
+        }
+        
+        // Check for empty tables (no fields)
+        if (table.fields.length === 0) {
+          errors.push({
+            id: `err-${table.id}-empty`,
+            type: 'warning',
+            message: `Table ${table.name} has no fields defined.`,
+            suggestion: 'Add fields to define your table structure.',
+            affectedElement: {
+              type: 'table',
+              id: table.id,
+              name: table.name
+            }
+          });
+        }
+        
+        // Check fields for issues
+        table.fields.forEach(field => {
+          // Check for fields without types
+          if (!field.type || field.type.trim() === '') {
+            errors.push({
+              id: `err-${field.id}-no-type`,
+              type: 'error',
+              message: `Field ${field.name} in table ${table.name} has no data type defined.`,
+              suggestion: 'Specify a data type for this field.',
+              affectedElement: {
+                type: 'field',
+                id: field.id,
+                name: field.name
+              }
+            });
+          }
+          
+          // Check for naming conventions
+          if (field.name.includes(' ') || /[^a-zA-Z0-9_]/.test(field.name)) {
+            errors.push({
+              id: `err-${field.id}-naming`,
+              type: 'warning',
+              message: `Field ${field.name} in table ${table.name} has spaces or special characters.`,
+              suggestion: 'Use snake_case for field names (letters, numbers, and underscores only).',
+              affectedElement: {
+                type: 'field',
+                id: field.id,
+                name: field.name
+              }
+            });
+          }
+        });
+      });
+      
+      setValidationErrors(errors);
+      setValidationLoading(false);
+      
+      // Save the validation results to the project
+      handleSaveProject(tables, triggers, functions, comments, tasks, true);
+      
+      if (errors.length === 0) {
+        setStatusMessage({
+          status: 'success',
+          message: 'Schema validation passed!'
+        });
+      } else {
+        const errorCount = errors.filter(e => e.type === 'error').length;
+        const warningCount = errors.filter(e => e.type === 'warning').length;
+        
+        setStatusMessage({
+          status: errorCount > 0 ? 'error' : 'warning',
+          message: `Found ${errors.length} validation issues (${errorCount} errors, ${warningCount} warnings)`
+        });
+      }
+    }, 800); // Simulate processing time
   };
   
   // Navigate to element handler
@@ -171,7 +425,10 @@ const ProjectEditor = () => {
       const table = tables.find(t => t.id === elementId);
       if (table) {
         setSelectedTable(table);
-        toast.info(`Navigated to table ${table.name}`);
+        setStatusMessage({
+          status: 'info',
+          message: `Navigated to table ${table.name}`
+        });
       }
     } else if (elementType === 'field') {
       // Find which table contains this field
@@ -179,7 +436,10 @@ const ProjectEditor = () => {
         const field = table.fields.find(f => f.id === elementId);
         if (field) {
           setSelectedTable(table);
-          toast.info(`Navigated to field ${field.name} in table ${table.name}`);
+          setStatusMessage({
+            status: 'info',
+            message: `Navigated to field ${field.name} in table ${table.name}`
+          });
           break;
         }
       }
@@ -219,6 +479,21 @@ const ProjectEditor = () => {
       setSelectedTable(null);
     }
     // Don't auto-save, let the auto-save handle it
+  };
+  
+  /**
+   * Handle reordering of tables via drag and drop
+   * Updates the tables state with the new order and marks project as unsaved
+   */
+  const handleReorderTables = (reorderedTables: DatabaseTable[]) => {
+    setTables(reorderedTables);
+    setHasUnsavedChanges(true);
+    
+    // Update status message to indicate the change
+    setStatusMessage({
+      status: 'info',
+      message: 'Table order updated'
+    });
   };
   
   // Edit an existing table's data
@@ -291,50 +566,78 @@ const ProjectEditor = () => {
     handleSaveProject(updatedTables, triggers, functions, comments, tasks, false);
   };
 
-  // Save project to Supabase. Accepts optional explicit data to avoid
-  // stale closures when state updates are asynchronous.
-  const handleSaveProject = async (
-    tablesData: DatabaseTable[] = tables,
-    triggersData: DatabaseTrigger[] = triggers,
-    functionsData: DatabaseFunction[] = functions,
-    commentsData: SchemaComment[] = comments,
-    tasksData: SchemaTask[] = tasks,
-    silent: boolean = false
+  /**
+   * Save project to Supabase. Accepts optional explicit data to avoid
+   * stale closures when state updates are asynchronous.
+   * @param updatedTables - Tables data to save
+   * @param updatedTriggers - Triggers data to save
+   * @param updatedFunctions - Functions data to save
+   * @param updatedComments - Comments data to save
+   * @param updatedTasks - Tasks data to save
+   * @param silent - Whether to show status updates
+   * @param customProjectName - Optional custom project name to use
+   */
+  const [statusMessage, setStatusMessage] = useState<{ status?: StatusType; message?: string }>({});
+
+  const handleSaveProject = (
+    updatedTables: DatabaseTable[] = tables,
+    updatedTriggers: DatabaseTrigger[] = triggers,
+    updatedFunctions: DatabaseFunction[] = functions,
+    updatedComments: SchemaComment[] = comments,
+    updatedTasks: SchemaTask[] = tasks,
+    silent: boolean = false,
+    customProjectName?: string
   ) => {
-    if (!currentProject) return;
-
-    setIsSaving(true);
+    if (!id) return;
     
-    const projectData = {
-      tables: tablesData,
-      triggers: triggersData,
-      functions: functionsData,
-      comments: commentsData,
-      tasks: tasksData,
-    };
-
-    try {
-      await updateProject(currentProject.id, {
-        name: projectName,
-        project_data: projectData,
-      });
-      
-      if (!silent) {
-        setLastSavedTime(new Date());
-        setHasUnsavedChanges(false);
-      }
-    } catch (error) {
-      console.error('Error saving project:', error);
-    } finally {
-      setIsSaving(false);
+    setIsSaving(true);
+    if (!silent) {
+      setStatusMessage({ status: 'loading', message: 'Saving project...' });
     }
+    
+    // Update local state
+    setTables(updatedTables);
+    setTriggers(updatedTriggers);
+    setFunctions(updatedFunctions);
+    setComments(updatedComments);
+    setTasks(updatedTasks);
+    
+    // Prepare project data for saving
+    const projectData = {
+      tables: updatedTables,
+      triggers: updatedTriggers,
+      functions: updatedFunctions,
+      comments: updatedComments,
+      tasks: updatedTasks,
+      validationErrors: validationErrors // Save validation errors with project
+    };
+    
+    // Call API to update project
+    updateProject(id, { 
+      name: customProjectName !== undefined ? customProjectName : projectName, 
+      project_data: projectData 
+    })
+      .then(() => {
+        setIsSaving(false);
+        setHasUnsavedChanges(false);
+        setLastSavedTime(new Date());
+        if (!silent) {
+          setStatusMessage({ status: 'success', message: 'Project saved successfully' });
+        }
+      })
+      .catch(error => {
+        setIsSaving(false);
+        console.error('Failed to save project:', error);
+        setStatusMessage({ status: 'error', message: 'Failed to update project' });
+      });
   };
 
   // Save immediately when project name changes
   const handleProjectNameChange = (name: string) => {
     setProjectName(name);
     // Save project name change immediately without debouncing
-    handleSaveProject(tables, triggers, functions, comments, tasks, false);
+    // Pass the new name directly to avoid stale closure issues
+    handleSaveProject(tables, triggers, functions, comments, tasks, false, name);
   };
 
   if (!currentProject) {
@@ -370,6 +673,8 @@ const ProjectEditor = () => {
             
             <div className="flex items-center gap-2">
               <SaveStatus 
+                status={statusMessage.status as StatusType}
+                message={statusMessage.message}
                 isSaving={isSaving} 
                 isSaved={!hasUnsavedChanges} 
                 className="hidden sm:flex"
@@ -464,6 +769,7 @@ const ProjectEditor = () => {
               onSaveProject={handleSaveProject}
               projectName={projectName}
               onProjectNameChange={handleProjectNameChange}
+              onReorderTables={handleReorderTables}
             />
           </div>
 
@@ -540,6 +846,7 @@ const ProjectEditor = () => {
                 onSaveProject={handleSaveProject}
                 projectName={projectName}
                 onProjectNameChange={handleProjectNameChange}
+                onReorderTables={handleReorderTables}
               />
             </div>
           </Panel>
@@ -638,6 +945,10 @@ const ProjectEditor = () => {
                   <Palette className="h-4 w-4 mr-2" />
                   Properties
                 </TabsTrigger>
+                <TabsTrigger value="validation" className="flex-1">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Validation
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -663,6 +974,23 @@ const ProjectEditor = () => {
                     <p className="text-sm">Select a table to edit properties</p>
                   </div>
                 )}
+              </div>
+            </TabsContent>
+            
+            {/* 
+              ValidationPanel Tab - Shows schema validation issues
+              Displays errors and warnings for the current project schema
+              Allows users to refresh validation and navigate to problematic elements
+              Provides suggestions for fixing issues
+            */}
+            <TabsContent value="validation" className="flex-1 p-4 pt-2 overflow-auto">
+              <div className="h-full">
+                <ValidationPanel
+                  errors={validationErrors}
+                  onRefreshValidation={handleRefreshValidation}
+                  onNavigateToElement={handleNavigateToElement}
+                  loading={validationLoading}
+                />
               </div>
             </TabsContent>
               </Tabs>

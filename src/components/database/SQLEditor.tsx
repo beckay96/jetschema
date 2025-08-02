@@ -133,18 +133,11 @@ CREATE TABLE order_items (
     setSqlCode(exampleSQL);
     toast.success('Example schema loaded');
   };
-  return <Card className="h-full flex flex-col">
+  return <Card className="h-screen flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex flex-col items-center justify-between">
           <CardTitle className="text-lg">SQL Editor</CardTitle>
           <div className="flex md:flex-row  sm:flex-col gap-1">
-            <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(sqlCode)} className="h-8">
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLoadExample} className="h-8">
-              <Upload className="h-3 w-3 mr-1" />
-              Example
-            </Button>
             <Button size="sm" onClick={handleParseSql} className="h-8">
               <Play className="h-3 w-3 mr-1" />
               Parse SQL

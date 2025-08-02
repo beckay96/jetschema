@@ -115,13 +115,13 @@ export function CommentModal({
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-            <Hash className="h-4 w-4 text-gray-500" />
+          <div className="flex items-center gap-2 p-3 bg-secondary/50 rounded-lg">
+            <Hash className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">{tableName}</span>
             {fieldName && (
               <>
-                <span className="text-gray-400">.</span>
-                <span className="text-sm font-medium text-blue-600">{fieldName}</span>
+                <span className="text-muted-foreground">.</span>
+                <span className="text-sm font-medium text-primary">{fieldName}</span>
               </>
             )}
             <Badge variant="outline" className="ml-auto text-xs">
@@ -201,7 +201,7 @@ export function CommentModal({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
             <input
               type="checkbox"
               id="tagInChat"
@@ -209,9 +209,9 @@ export function CommentModal({
               onChange={(e) => setTagInChat(e.target.checked)}
               className="rounded"
             />
-            <label htmlFor="tagInChat" className="text-sm text-blue-700 flex-1">
+            <label htmlFor="tagInChat" className="text-sm text-primary flex-1">
               <span className="font-medium">Tag this field in team chat</span>
-              <div className="text-xs text-blue-600 mt-1">
+              <div className="text-xs text-primary/80 mt-1">
                 This will create a chat message with this field tagged so your team can discuss it
               </div>
             </label>

@@ -4,3 +4,5 @@
 project_id: 48edd3f8-b03e-4e50-8272-ffa005b1e624
 # The framework of the web application (examples: nextjs, react, vue, etc.)
 framework: vite
+
+jetschema.com is setup on netlify

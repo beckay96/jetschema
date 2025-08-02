@@ -2,8 +2,36 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://siuezalzkwouthlsadvr.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpdWV6YWx6a3dvdXRobHNhZHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MTIxNTAsImV4cCI6MjA2OTI4ODE1MH0.zNf-azHb0ZmrYL9d-ZTwQpq-SXyaREaWlAWRm9owwP8";
+// Get the URL and key from the appropriate environment variables
+const getSupabaseConfig = () => {
+  // Determine which environment variables are available
+  const url = import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_APP_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_APP_SUPABASE_KEY;
+  
+  // Debug output (to be removed in production)
+  console.log('Supabase environment variables check:', { 
+    hasUrl: !!url, 
+    hasKey: !!key
+  });
+  
+  return { url, key };
+};
+
+// Get config values
+const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
+
+// Validate environment variables
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error('Missing Supabase environment variables. Please check your .env file.');
+  
+  // In development, provide a clearer message about what's missing
+  if (import.meta.env.DEV) {
+    console.warn('Make sure the following variables are in your .env file:', {
+      VITE_SUPABASE_URL: 'Your Supabase URL',
+      VITE_SUPABASE_ANON_KEY: 'Your Supabase anonymous key'
+    });
+  }
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

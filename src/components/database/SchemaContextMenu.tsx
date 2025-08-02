@@ -9,7 +9,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { MessageCircle, CheckCircle, PencilLine, ExternalLink, AlertCircle, Copy } from 'lucide-react';
+import { MessageCircle, CheckCircle, PencilLine, ExternalLink, AlertCircle, Copy, MoveHorizontal, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SchemaElementType = 'table' | 'field';
@@ -24,6 +24,8 @@ interface SchemaContextMenuProps {
   onCopyName?: (elementName: string) => void;
   onJumpToElement?: (elementType: SchemaElementType, elementId: string) => void;
   onValidate?: (elementType: SchemaElementType, elementId: string) => void;
+  onSetSize?: (size: 'small' | 'medium' | 'large' | 'xlarge' | 'huge') => void;
+  currentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'huge';
   className?: string;
 }
 
@@ -37,6 +39,8 @@ export function SchemaContextMenu({
   onCopyName,
   onJumpToElement,
   onValidate,
+  onSetSize,
+  currentSize = 'medium',
   className
 }: SchemaContextMenuProps) {
   const handleCopyName = () => {
@@ -57,7 +61,13 @@ export function SchemaContextMenu({
         <ContextMenuSeparator />
         
         {onAddComment && (
-          <ContextMenuItem onClick={() => onAddComment(elementType, elementId, elementName)}>
+          <ContextMenuItem onClick={() => {
+            try {
+              onAddComment(elementType, elementId, elementName);
+            } catch (error) {
+              console.error('Error adding comment:', error);
+            }
+          }}>
             <MessageCircle className="mr-2 h-4 w-4" />
             <span>Add comment</span>
           </ContextMenuItem>
@@ -87,6 +97,38 @@ export function SchemaContextMenu({
         )}
         
         <ContextMenuSeparator />
+        
+        {/* Size options for tables only */}
+        {elementType === 'table' && onSetSize && (
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <ArrowsOut className="mr-2 h-4 w-4" />
+              <span>Set table size</span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-48">
+              <ContextMenuItem onClick={() => onSetSize('small')} className={currentSize === 'small' ? 'bg-accent text-accent-foreground' : undefined}>
+                <Maximize2 className="mr-2 h-3 w-3" />
+                <span>Small</span>
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => onSetSize('medium')} className={currentSize === 'medium' ? 'bg-accent text-accent-foreground' : undefined}>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                <span>Medium</span>
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => onSetSize('large')} className={currentSize === 'large' ? 'bg-accent text-accent-foreground' : undefined}>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                <span>Large</span>
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => onSetSize('xlarge')} className={currentSize === 'xlarge' ? 'bg-accent text-accent-foreground' : undefined}>
+                <Maximize2 className="mr-2 h-5 w-5" />
+                <span>Extra Large</span>
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => onSetSize('huge')} className={currentSize === 'huge' ? 'bg-accent text-accent-foreground' : undefined}>
+                <Maximize2 className="mr-2 h-6 w-6" />
+                <span>Huge</span>
+              </ContextMenuItem>
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        )}
         
         {onCopyName && (
           <ContextMenuItem onClick={handleCopyName}>

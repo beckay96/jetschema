@@ -9,6 +9,7 @@ import { DataTypePill } from './DataTypePill';
 import { FieldCommentButton } from './FieldCommentButton';
 import { Plus, Edit, Settings, Trash2 } from 'lucide-react';
 import { TableEditModal } from './TableEditModal';
+import { FieldEditModal } from './FieldEditModal';
 
 interface TableViewProps {
   tables: DatabaseTable[];
@@ -34,6 +35,7 @@ export function TableView({
   selectedTable 
 }: TableViewProps) {
   const [editingTable, setEditingTable] = useState<DatabaseTable | null>(null);
+  const [editingField, setEditingField] = useState<{tableId: string, field: DatabaseFieldType} | null>(null);
   
   const handleEditTable = (table: DatabaseTable) => {
     setEditingTable({...table});
@@ -90,7 +92,11 @@ export function TableView({
     }
   };
   
-  const handleEditField = (tableId: string, updatedField: DatabaseFieldType) => {
+  const handleEditField = (tableId: string, field: DatabaseFieldType) => {
+    setEditingField({ tableId, field });
+  };
+  
+  const handleSaveField = (tableId: string, updatedField: DatabaseFieldType) => {
     if (onTableUpdate) {
       const updatedTables = tables.map(t => {
         if (t.id === tableId) {
@@ -103,6 +109,7 @@ export function TableView({
       });
       onTableUpdate(updatedTables);
     }
+    setEditingField(null);
   };
   return (
     <div className="h-full flex flex-col p-4 overflow-hidden">
@@ -251,6 +258,20 @@ export function TableView({
           onOpenChange={(open) => {
             if (!open) setEditingTable(null);
           }}
+        />
+      )}
+
+      {/* Field Edit Modal */}
+      {editingField && (
+        <FieldEditModal
+          field={editingField.field}
+          tableId={editingField.tableId}
+          allTables={tables}
+          open={!!editingField}
+          onOpenChange={(open) => {
+            if (!open) setEditingField(null);
+          }}
+          onFieldUpdate={handleSaveField}
         />
       )}
     </div>

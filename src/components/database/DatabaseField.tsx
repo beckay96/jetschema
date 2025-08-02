@@ -24,22 +24,21 @@ export function DatabaseField({ field, tableName, onEdit, onDelete, onAddComment
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="flex items-center gap-1">
            {field.primaryKey && (
-             <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
+             <Key className="h-3 w-3 text-[hsl(var(--status-primary-key))]" />
            )}
            {field.foreignKey && (
-             <Link className="h-3 w-3" style={{ color: 'hsl(var(--status-foreign-key))' }} />
+             <Link className="h-3 w-3 text-[hsl(var(--status-foreign-key))]" />
            )}
           {field.unique && !field.primaryKey && (
-            <Star className="h-3 w-3" style={{ color: 'hsl(var(--status-unique))' }} />
+            <Star className="h-3 w-3 text-[hsl(var(--status-unique))]" />
           )}
         </div>
         
         <span className={cn(
           "font-medium truncate",
           compact ? "text-sm" : "text-base",
-          field.primaryKey && "font-semibold"
-        )}
-        style={field.primaryKey ? { color: 'hsl(var(--status-primary-key))' } : {}}>
+          field.primaryKey && "font-semibold text-[hsl(var(--status-primary-key))]"
+        )}>
           {field.name}
         </span>
         

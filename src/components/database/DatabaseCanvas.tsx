@@ -106,6 +106,11 @@ export function DatabaseCanvas({
     id: table.id,
     type: 'databaseTable',
     position: table.position,
+    // Apply saved width and height if available
+    style: {
+      width: table.width,
+      height: table.height
+    },
     data: {
       table,
       allTables: tables,
@@ -181,13 +186,14 @@ export function DatabaseCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const lastPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
   
-  // Handle node position changes to update table positions
+  // Handle node position and size changes to update table positions and dimensions
   const handleNodesChange = useCallback((changes: any[]) => {
     onNodesChange(changes);
     
-    // Check for drag start and end
+    // Check for position, drag start/end, and dimension changes
     const dragStartChanges = changes.filter(change => change.type === 'position' && change.dragging === true);
     const dragEndChanges = changes.filter(change => change.type === 'position' && change.dragging === false);
+    const dimensionChanges = changes.filter(change => change.type === 'dimensions');
     
     // Track drag start
     if (dragStartChanges.length > 0) {
@@ -197,6 +203,40 @@ export function DatabaseCanvas({
       tables.forEach(table => {
         lastPositionsRef.current[table.id] = { ...table.position };
       });
+    }
+    
+    // Handle dimension changes (resizing nodes)
+    if (dimensionChanges.length > 0 && setTables) {
+      console.log('Node resize detected:', dimensionChanges);
+      let hasRealChanges = false;
+      
+      const updatedTables = tables.map(table => {
+        const sizeChange = dimensionChanges.find(change => change.id === table.id);
+        if (sizeChange && sizeChange.dimensions) {
+          // Only update if dimensions actually changed
+          const currentWidth = table.width || 0;
+          const currentHeight = table.height || 0;
+          const newWidth = sizeChange.dimensions.width;
+          const newHeight = sizeChange.dimensions.height;
+          
+          if (Math.abs(currentWidth - newWidth) > 1 || Math.abs(currentHeight - newHeight) > 1) {
+            hasRealChanges = true;
+            return {
+              ...table,
+              width: newWidth,
+              height: newHeight
+            };
+          }
+        }
+        return table;
+      });
+      
+      // Only update and save if real changes were detected
+      if (hasRealChanges) {
+        setTables(updatedTables);
+        // Auto-save size changes
+        onSave?.(updatedTables);
+      }
     }
     
     // Process drag end and update tables only when the drag is finished
@@ -268,12 +308,18 @@ export function DatabaseCanvas({
         nodeTypes={nodeTypes}
         fitView
         connectionMode={ConnectionMode.Loose}
-        selectNodesOnDrag={false}
+        selectNodesOnDrag={true}
         elevateEdgesOnSelect={true}
         onNodeClick={(e, node) => onNodeClick(e, node)}
         style={{ background: 'transparent' }}
         noDragClassName="nodrag"
         nodesDraggable={true}
+        // Enable drag handle functionality for better control
+        draggable={true}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          animated: true
+        }}
         // The dragHandle functionality will be handled by the data-draghandle attribute
         // in each node component instead of here
       >
@@ -283,8 +329,8 @@ export function DatabaseCanvas({
           size={1}
         />
         <Controls 
-          className="bg-card/80 dark:bg-black/80 text-black dark:text-white border border-border/50 rounded-lg shadow-lg backdrop-blur-sm hover:border-blue-500/50 active:border-blue-500/80"
-          showInteractive={true}
+          className="bg-card/80 text-black border border-border/50 rounded-lg shadow-lg backdrop-blur-sm hover:border-blue-500/50 active:border-blue-500/80"
+          showInteractive={false}
         />
       </ReactFlow>
     </div>

@@ -1,0 +1,9 @@
+{
+  "name": "jetschema-netlify-functions",
+  "version": "1.0.0",
+  "description": "Serverless functions for JetSchema",
+  "main": "index.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.5"
+  }
+}

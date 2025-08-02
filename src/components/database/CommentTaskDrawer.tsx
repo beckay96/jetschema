@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,47 @@ interface CommentTaskDrawerProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+// Error Boundary component to catch render errors
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Log error to console
+    console.error('CommentTaskDrawer error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Fallback UI
+      return <div className="p-4 text-sm text-red-500">
+        Something went wrong loading comments and tasks.
+        <button 
+          className="block mt-2 px-2 py-1 bg-muted rounded-md hover:bg-muted/80"
+          onClick={() => this.setState({ hasError: false })}
+        >
+          Try again
+        </button>
+      </div>;
+    }
+
+    return this.props.children;
+  }
+}
+
 export function CommentTaskDrawer({
-  comments,
-  tasks,
+  comments = [], // Add default empty arrays to prevent null/undefined errors
+  tasks = [],
   onMarkCommentRead,
   onMarkTaskComplete,
   onNavigateToElement,
@@ -57,22 +95,34 @@ export function CommentTaskDrawer({
   const [commentFilter, setCommentFilter] = useState<'all' | 'unread'>('all');
   const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed'>('active');
 
+  // Safely process comments and tasks with error checking
   useEffect(() => {
-    // Apply filters to comments
-    setFilteredComments(
-      commentFilter === 'unread' 
-        ? comments.filter(c => !c.read)
-        : comments
-    );
+    try {
+      // Ensure comments is an array before filtering
+      const safeComments = Array.isArray(comments) ? comments : [];
+      // Apply filters to comments
+      setFilteredComments(
+        commentFilter === 'unread' 
+          ? safeComments.filter(c => !c.read)
+          : safeComments
+      );
 
-    // Apply filters to tasks
-    setFilteredTasks(
-      taskFilter === 'active' 
-        ? tasks.filter(t => !t.completed)
-        : taskFilter === 'completed'
-          ? tasks.filter(t => t.completed)
-          : tasks
-    );
+      // Ensure tasks is an array before filtering
+      const safeTasks = Array.isArray(tasks) ? tasks : [];
+      // Apply filters to tasks
+      setFilteredTasks(
+        taskFilter === 'active' 
+          ? safeTasks.filter(t => !t.completed)
+          : taskFilter === 'completed'
+            ? safeTasks.filter(t => t.completed)
+            : safeTasks
+      );
+    } catch (error) {
+      console.error('Error filtering comments/tasks:', error);
+      // Reset to safe defaults on error
+      setFilteredComments([]);
+      setFilteredTasks([]);
+    }
   }, [comments, tasks, commentFilter, taskFilter]);
 
   const unreadCommentCount = comments.filter(c => !c.read).length;

@@ -14,3 +14,16 @@
 .light .react-flow__handle {
   --node-handle-color: #000000 !important;
 }
+
+/* Table drag handle styles */
+.table-drag-handle {
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+/* Ensure draggable elements have proper cursor */
+[data-draghandle="true"] {
+  cursor: move;
+  touch-action: none;
+}

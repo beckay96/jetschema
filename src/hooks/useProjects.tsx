@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { DatabaseProject } from '@/types/database';
 import { toast } from 'sonner';
 
 export function useProjects() {
@@ -36,26 +35,38 @@ export function useProjects() {
       return null;
     }
 
+    // Ensure name is properly structured and not empty
+    const projectName = name ? name.trim() : 'New Project';
+    console.log('Creating project with name:', projectName);
+
     try {
+      // Create explicit payload to ensure all fields are set correctly
+      const projectPayload = {
+        user_id: user.id,
+        name: projectName, // Explicitly set the name
+        description: description || '',
+        project_data: projectData || {}
+      };
+      
+      console.log('Saving project with payload:', projectPayload);
+      
       const { data, error } = await supabase
         .from('database_projects')
-        .insert({
-          user_id: user.id,
-          name,
-          description,
-          project_data: projectData
-        })
+        .insert(projectPayload)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error details:', error);
+        throw error;
+      }
       
-
+      console.log('Project saved successfully:', data);
       await fetchProjects(); // Refresh the list
       return data;
     } catch (error: any) {
       console.error('Error saving project:', error);
-      toast.error('Failed to save project');
+      toast.error(`Failed to save project: ${error.message || 'Unknown error'}`);
       return null;
     }
   };

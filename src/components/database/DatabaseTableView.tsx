@@ -242,7 +242,7 @@ export function DatabaseTableView({
                         key={field.id}
                         className={cn(
                           "group hover:bg-muted/50 transition-colors",
-                          field.primaryKey && "bg-gradient-to-r from-yellow-50 to-transparent"
+                          field.primaryKey && "bg-gradient-to-r from-[hsl(var(--status-primary-key)/0.15)] to-transparent dark:from-[hsl(var(--status-primary-key)/0.2)] dark:to-transparent"
                         )}
                       >
                          <TableCell className="p-2">

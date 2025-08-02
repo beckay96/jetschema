@@ -23,13 +23,52 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2 } from 'lucide-react';
-import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, ChevronDown, RocketIcon } from 'lucide-react';
+// Import database types
+import { DatabaseTable } from '@/types/database';
+// Use the hook's interface definitions for database functions and triggers
+import { useTriggersFunctions } from '@/hooks/useTriggersFunctions';
+
+// Define interfaces matching the Supabase database schema
+interface DatabaseTrigger {
+  id?: string;
+  project_id: string;
+  name: string;
+  table_name: string;
+  trigger_event: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
+  trigger_timing: 'BEFORE' | 'AFTER' | 'INSTEAD OF';
+  function_id?: string;
+  is_active: boolean;
+  conditions?: string;
+  author_id?: string;
+}
+
+interface DatabaseFunction {
+  id?: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  function_type: 'plpgsql' | 'edge' | 'cron';
+  parameters: Array<{ name: string; type: string; default?: string }>;
+  return_type?: string;
+  function_body: string;
+  is_edge_function: boolean;
+  edge_function_name?: string;
+  cron_schedule?: string;
+  is_cron_enabled: boolean;
+  author_id?: string;
+}
 import { ExportModal } from './ExportModal';
 import { TriggerFunctionModal } from './TriggerFunctionModal';
 import { DataTypePill } from './DataTypePill';
 import { ProjectTitleIcons } from './MicrointeractionIcons';
+import { TabsDropdown } from './TabsDropdown';
 
 interface DatabaseSidebarProps {
   tables: DatabaseTable[];
@@ -186,6 +225,7 @@ export function DatabaseSidebar({
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('tables');
   
   // Update local state when external project name changes
   useEffect(() => {
@@ -221,11 +261,11 @@ export function DatabaseSidebar({
   );
   
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-screen flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">DataBlaze</CardTitle>
+          <RocketIcon className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">Your JetSchema</CardTitle>
           <ProjectTitleIcons onOpenSettings={() => {/* TODO: Project settings */}} />
         </div>
         
@@ -274,31 +314,6 @@ export function DatabaseSidebar({
                   variant="ghost" 
                   size="sm" 
                   className="h-7 w-7 p-0" 
-                  onClick={() => {
-                    setEditedProjectName(projectName);
-                    setIsEditingName(false);
-                  }}
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="14" 
-                    height="14" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-red-500"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0" 
                   onClick={cancelNameEdit}
                   title="Cancel"
                 >
@@ -335,36 +350,22 @@ export function DatabaseSidebar({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 pt-6 pb-12 px-6 overflow-hidden">
-        <Tabs defaultValue="tables" className="h-full flex flex-col overflow-hidden">
-          <TabsList className="w-full mx-0 flex flex-wrap shrink-0">
-            <TabsTrigger value="tables" className="flex-1">
-              <Table className="h-3 w-3 mr-1" />
-              Tables
-            </TabsTrigger>
-            <TabsTrigger value="triggers" className="flex-1">
-              <Zap className="h-3 w-3 mr-1" />
-              Triggers
-            </TabsTrigger>
-            <TabsTrigger value="functions" className="flex-1">
-              <Code className="h-3 w-3 mr-1" />
-              Functions
-            </TabsTrigger>
-            <TabsTrigger value="rls" className="flex-1">
-              <Settings className="h-3 w-3 mr-1" />
-              RLS
-            </TabsTrigger>
-            <TabsTrigger value="indexes" className="flex-1">
-              <Database className="h-3 w-3 mr-1" />
-              Indexes
-            </TabsTrigger>
-          </TabsList>
+      <CardContent className="flex-1 pt-2 pb-2 px-6 overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden">
+          {/* Dropdown menu for tab selection - fixed position */}
+          <div className="flex items-center justify-center mb-4 flex-shrink-0">
+            <div className="flex-1">
+              <TabsDropdown activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+          </div>
 
-          <TabsContent value="tables" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
-            <div className="space-y-2">
+
+          {activeTab === "tables" && (
+            <div className="flex-1 overflow-hidden flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2 mb-4 pt-2 pl-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                  <Search className="p-2 h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                   <Input 
                     placeholder="Search tables..." 
                     value={searchTerm} 
@@ -387,7 +388,7 @@ export function DatabaseSidebar({
               </div>
             </div>
 
-            <ScrollArea className="h-full overflow-y-auto overflow-x-hidden" type="always">
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full!" type="always">
               <div className="space-y-2">
                 {filteredTables.length > 0 ? (
                   <DndContext 
@@ -399,7 +400,7 @@ export function DatabaseSidebar({
                       items={filteredTables.map(table => table.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-2 pt-1 w-full">
                         {filteredTables.map(table => {
                           const hasWarnings = table.fields.length < 2 || !table.fields.some(f => f.primaryKey);
                           const isValidated = table.fields.length >= 2 && 
@@ -433,124 +434,133 @@ export function DatabaseSidebar({
                 )}
               </div>
             </ScrollArea>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="triggers" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
-            <div className="space-y-4">
+          {activeTab === "triggers" && (
+            <div className="flex-1 overflow-hidden flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Triggers</Label>
                 <Button size="sm" onClick={() => setShowTriggerModal(true)} className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
+            </div>
 
-              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto overflow-x-hidden" type="always">
-                <div className="space-y-2">
-                  {triggers.map(trigger => (
-                    <Card key={trigger.id} className="cursor-pointer hover:bg-muted/50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{trigger.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {trigger.timing}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {trigger.event} on {trigger.table}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full" type="always">
+              <div className="space-y-2">
+                {triggers.map(trigger => (
+                  <Card key={trigger.id} className="cursor-pointer hover:bg-muted/50">
+                    <CardContent className="p-3">
+                      <div className="text-xs flex items-center justify-between">
+                <div>{trigger.table_name}</div>
+                <div className="flex items-center text-slate-500">
+                  <Badge variant="outline" className="text-[10px] h-5">{trigger.trigger_timing} {trigger.trigger_event}</Badge>
+                </div>
+              </div>        
+                      <p className="text-xs text-muted-foreground">
+                        {trigger.trigger_event} on {trigger.table_name}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
 
-                  {triggers.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No triggers defined</p>
-                    </div>
-                  )}
+                {triggers.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No triggers defined</p>
+                  </div>
+                )}
                 </div>
               </ScrollArea>
-            </div>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="functions" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
-            <div className="space-y-4">
+          {activeTab === "functions" && (
+            <div className="flex-1 overflow-hidden flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Functions</Label>
                 <Button size="sm" onClick={() => setShowFunctionModal(true)} className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
+            </div>
 
-              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto overflow-x-hidden" type="always">
-                <div className="space-y-2">
-                  {functions.map(func => (
-                    <Card key={func.id} className="cursor-pointer hover:bg-muted/50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm">{func.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {func.returnType}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {func.parameters.length} parameters
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full" type="always">
+              <div className="space-y-2">
+                {functions.map(func => (
+                  <Card key={func.id} className="cursor-pointer hover:bg-muted/50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm">{func.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {func.returnType}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {func.parameters.length} parameters
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
 
-                  {functions.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No functions defined</p>
-                    </div>
-                  )}
+                {functions.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No functions defined</p>
+                  </div>
+                )}
                 </div>
               </ScrollArea>
-            </div>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="rls" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
-            <div className="space-y-4">
+          {activeTab === "rls" && (
+            <div className="flex-1 overflow-hidden flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">RLS Policies</Label>
                 <Button size="sm" className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto overflow-x-hidden" type="always">
-                <div className="space-y-2">
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No RLS policies defined</p>
-                  </div>
-                </div>
-              </ScrollArea>
             </div>
-          </TabsContent>
 
-          <TabsContent value="indexes" className="flex-1 space-y-4 mt-4 overflow-hidden flex flex-col">
-            <div className="space-y-4">
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full" type="always">
+              <div className="space-y-2">
+                <div className="text-center py-8 text-muted-foreground">
+                  <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No RLS policies defined</p>
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+          )}
+
+          {activeTab === "indexes" && (
+            <div className="flex-1 overflow-hidden flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Database Indexes</Label>
                 <Button size="sm" className="h-8">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1 h-[calc(100%-50px)] overflow-y-auto overflow-x-hidden" type="always">
-                <div className="space-y-2">
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No indexes defined</p>
-                  </div>
-                </div>
-              </ScrollArea>
             </div>
-          </TabsContent>
-        </Tabs>
+
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full" type="always">
+              <div className="space-y-2">
+                <div className="text-center py-8 text-muted-foreground">
+                  <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No indexes defined</p>
+                </div>
+              </div>
+            </ScrollArea>
+            </div>
+          )}
+        </div>
       </CardContent>
 
       <ExportModal 
@@ -565,16 +575,18 @@ export function DatabaseSidebar({
         open={showTriggerModal} 
         onOpenChange={setShowTriggerModal} 
         tables={tables} 
-        functions={[]} 
+        functions={functions} 
         onSave={trigger => {
           const modalTrigger = trigger as any;
           const dbTrigger: Omit<DatabaseTrigger, 'id'> = {
             name: modalTrigger.name,
-            table: modalTrigger.table_name,
-            event: modalTrigger.trigger_event,
-            timing: modalTrigger.trigger_timing,
-            code: modalTrigger.function_body || '',
-            description: modalTrigger.description
+            table_name: modalTrigger.table_name,
+            trigger_event: modalTrigger.trigger_event,
+            trigger_timing: modalTrigger.trigger_timing,
+            function_id: modalTrigger.function_id,
+            is_active: modalTrigger.is_active,
+            conditions: modalTrigger.conditions,
+            project_id: selectedTable?.project_id || ''
           };
           onAddTrigger?.(dbTrigger);
           setShowTriggerModal(false);
@@ -586,15 +598,22 @@ export function DatabaseSidebar({
         open={showFunctionModal} 
         onOpenChange={setShowFunctionModal} 
         tables={tables} 
-        functions={[]} 
+        functions={functions} 
         onSave={func => {
           const modalFunc = func as any;
           const dbFunc: Omit<DatabaseFunction, 'id'> = {
             name: modalFunc.name,
-            returnType: modalFunc.return_type || 'TRIGGER',
+            project_id: selectedTable?.project_id || '',
+            function_type: modalFunc.function_type,
             parameters: modalFunc.parameters || [],
-            code: modalFunc.function_body || '',
-            description: modalFunc.description
+            return_type: modalFunc.return_type || 'TRIGGER',
+            function_body: modalFunc.function_body || '',
+            is_edge_function: modalFunc.is_edge_function || false,
+            edge_function_name: modalFunc.edge_function_name,
+            cron_schedule: modalFunc.cron_schedule,
+            is_cron_enabled: modalFunc.is_cron_enabled || false,
+            description: modalFunc.description,
+            author_id: '' // Will be filled by useTriggersFunctions hook
           };
           onAddFunction?.(dbFunc);
           setShowFunctionModal(false);

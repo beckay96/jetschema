@@ -10,7 +10,13 @@ import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
 import { HeaderMenu } from "./components/HeaderMenu";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { StripeProvider } from "./contexts/StripeContext";
+import { SettingsPage } from "./pages/SettingsPage";
+import { MainNavigation } from "./components/layout/MainNavigation";
+import { AIFeatures } from "./components/subscription/AIFeatures";
+import { Toaster } from "sonner";
 import { Layout } from "./components/Layout";
+import ErrorBoundary from "./components/ErrorBoundary";
 function AuthenticatedApp() {
   const {
     user,
@@ -34,7 +40,10 @@ function AuthenticatedApp() {
   }
   return (
     <ThemeProvider>
-      <Routes>
+      <StripeProvider>
+        <MainNavigation />
+        <Toaster position="top-right" />
+        <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route path="/team" element={<Team />} />
         <Route path="/account" element={<Account />} />
@@ -45,7 +54,37 @@ function AuthenticatedApp() {
         } />
         <Route path="/project/:id" element={
           <Layout>
-            <ProjectEditor />
+            <ErrorBoundary
+              onError={(error) => {
+                console.error("Project editor error:", error);
+              }}
+              fallback={
+                <div className="min-h-screen flex items-center justify-center p-6">
+                  <div className="w-full max-w-md p-6 bg-card rounded-lg shadow-lg border text-center">
+                    <h2 className="text-xl font-semibold mb-4">Project Loading Error</h2>
+                    <p className="mb-6 text-muted-foreground">
+                      There was an error loading the project. This could be due to corrupt project data or a temporary issue.
+                    </p>
+                    <div className="flex gap-4 justify-center">
+                      <button 
+                        onClick={() => window.location.reload()} 
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                      >
+                        Try Again
+                      </button>
+                      <a 
+                        href="/projects" 
+                        className="px-4 py-2 bg-muted text-muted-foreground rounded hover:bg-muted/90"
+                      >
+                        Back to Projects
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <ProjectEditor />
+            </ErrorBoundary>
           </Layout>
         } />
         <Route path="/" element={
@@ -55,14 +94,32 @@ function AuthenticatedApp() {
             </Layout>
           ) : null
         } />
+        <Route path="/settings" element={
+          <Layout>
+            <SettingsPage />
+          </Layout>
+        } />
+        <Route path="/ai-features" element={
+          <Layout>
+            <div className="container py-10">
+              <h1 className="text-3xl font-bold mb-6">AI-Powered Features</h1>
+              <AIFeatures />
+            </div>
+          </Layout>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </StripeProvider>
     </ThemeProvider>
   );
 }
 const App = () => {
-  return <BrowserRouter>
-      <AuthenticatedApp />
-    </BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <StripeProvider>
+        <AuthenticatedApp />
+      </StripeProvider>
+    </BrowserRouter>
+  );
 };
 export default App;

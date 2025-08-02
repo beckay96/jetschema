@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DatabaseTable, DatabaseField, DataType } from '@/types/database';
 import { DataTypePill } from './DataTypePill';
 import { ForeignKeySelector } from './ForeignKeySelector';
 import { FieldCommentButton } from './FieldCommentButton';
 import { CommentModal } from './CommentModal';
+import { ValidationFeedback, InlineValidationIndicator } from './ValidationFeedback';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Trash2, Key, Link, Star, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Key, Link, Star, MessageCircle, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { validateTable, validateTableName, validateColumnName, ValidationMessage } from '@/utils/databaseValidation';
 
 interface TableEditModalProps {
   table: DatabaseTable;
@@ -42,11 +44,46 @@ export function TableEditModal({
   const [editingTableName, setEditingTableName] = useState(false);
   const [foreignKeySelector, setForeignKeySelector] = useState<string | null>(null);
   const [currentTable, setCurrentTable] = useState(table);
+  const [validationResults, setValidationResults] = useState<ValidationMessage[]>([]);
+  const [fieldValidation, setFieldValidation] = useState<Record<string, ValidationMessage[]>>({});
+  const [tableNameValidation, setTableNameValidation] = useState<ValidationMessage[]>([]);
+  // RLS toggle state
+  const [hasRlsEnabled, setHasRlsEnabled] = useState((table as any).hasRlsEnabled || false);
   const [commentModal, setCommentModal] = useState<{ open: boolean; tableName: string; fieldName: string }>({
     open: false,
     tableName: '',
     fieldName: ''
   });
+
+  useEffect(() => {
+    setCurrentTable(table);
+    setEditingField(null);
+    setEditingTableName(false);
+    setForeignKeySelector(null);
+    setHasRlsEnabled((table as any).hasRlsEnabled || false);
+  }, [table]);
+
+  useEffect(() => {
+    // Validate table name
+    const tableNameResults = validateTableName(currentTable.name);
+    setTableNameValidation(tableNameResults);
+    
+    // Validate each field
+    const fieldValidationResults: Record<string, ValidationMessage[]> = {};
+    currentTable.fields.forEach(field => {
+      const columnMessages = validateColumnName(field.name);
+      fieldValidationResults[field.id] = columnMessages;
+    });
+    setFieldValidation(fieldValidationResults);
+    
+    // Validate entire table
+    const tableWithRls = {
+      ...currentTable,
+      hasRlsEnabled
+    };
+    const { messages } = validateTable(tableWithRls as any);
+    setValidationResults(messages);
+  }, [currentTable, hasRlsEnabled]);
 
   const updateField = (fieldId: string, updates: Partial<DatabaseField>) => {
     const updatedTable = {
@@ -116,52 +153,80 @@ export function TableEditModal({
     setCommentModal({ open: true, tableName: currentTable.name, fieldName: '' });
   };
 
+  const handleSave = () => {
+    // Include RLS state in the saved table
+    const tableWithRls = {
+      ...currentTable,
+      hasRlsEnabled
+    };
+    onTableUpdate(tableWithRls as any);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {editingTableName ? (
+          <DialogTitle className="flex items-center gap-2">
+            {editingTableName ? (
+              <div className="flex-1">
                 <Input
                   value={currentTable.name}
-                  onChange={(e) => updateTableName(e.target.value)}
+                  onChange={(e) => setCurrentTable({ ...currentTable, name: e.target.value })}
                   onBlur={() => setEditingTableName(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingTableName(false)}
-                  className="text-lg font-semibold"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setEditingTableName(false);
+                    }
+                  }}
                   autoFocus
+                  className="h-6 text-lg font-semibold"
                 />
-              ) : (
-                <span 
-                  className="cursor-pointer hover:bg-muted rounded px-2 py-1"
-                  onClick={() => setEditingTableName(true)}
-                >
-                  Edit Table: {currentTable.name}
-                </span>
-              )}
-              <Badge variant="secondary">
-                {currentTable.fields.length} fields
-              </Badge>
-            </div>
-            
-            {/* Table Comment Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleTableComment}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Comment on Table
-            </Button>
+              </div>
+            ) : (
+              <div onClick={() => setEditingTableName(true)} className="cursor-pointer flex items-center gap-2">
+                {currentTable.name}
+                {tableNameValidation.length > 0 && (
+                  <InlineValidationIndicator messages={tableNameValidation} />
+                )}
+              </div>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Table Fields</h3>
-            <Button onClick={addField} className="bg-gradient-to-r from-primary to-primary/80">
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="space-y-4 mb-4">
+            {/* Validation summary */}
+            {validationResults.length > 0 && (
+              <div className="bg-muted/50 p-3 rounded-md">
+                <h4 className="text-sm font-medium mb-2">Schema Validation</h4>
+                <ValidationFeedback messages={validationResults} showDetails={true} />
+              </div>
+            )}
+            
+            {/* RLS toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Row-Level Security (RLS)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="rls-toggle" 
+                  checked={hasRlsEnabled}
+                  onCheckedChange={(checked) => setHasRlsEnabled(!!checked)}
+                />
+                <label htmlFor="rls-toggle" className="text-sm cursor-pointer">
+                  {hasRlsEnabled ? 'Enabled' : 'Disabled'}
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium">Fields</h3>
+            <Button size="sm" variant="outline" onClick={addField}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
               Add Field
             </Button>
           </div>
@@ -184,12 +249,12 @@ export function TableEditModal({
                     key={field.id}
                     className={cn(
                       "group hover:bg-muted/50 transition-colors",
-                      field.primaryKey && "bg-gradient-to-r from-yellow-50 to-transparent"
+                      field.primaryKey && "bg-gradient-to-r from-[hsl(var(--status-primary-key)/0.15)] to-transparent dark:from-[hsl(var(--status-primary-key)/0.2)] dark:to-transparent"
                     )}
                   >
                     <TableCell className="p-2">
                       <div className="flex items-center gap-1 flex-col">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           {field.primaryKey && (
                             <Key className="h-3 w-3" style={{ color: 'hsl(var(--status-primary-key))' }} />
                           )}
@@ -205,67 +270,6 @@ export function TableEditModal({
                             → {field.foreignKey.table}.{field.foreignKey.field}
                           </Badge>
                         )}
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell className="p-2">
-                      {editingField === field.id ? (
-                        <Input
-                          value={field.name}
-                          onChange={(e) => updateField(field.id, { name: e.target.value })}
-                          onBlur={() => setEditingField(null)}
-                          onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                          className="h-8 text-sm"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors"
-                          onClick={() => setEditingField(field.id)}
-                        >
-                          {field.name}
-                        </div>
-                      )}
-                    </TableCell>
-                    
-                    <TableCell className="p-2">
-                      <Select
-                        value={field.type}
-                        onValueChange={(value) => updateField(field.id, { type: value as DataType })}
-                      >
-                        <SelectTrigger className="h-8 w-32">
-                          <SelectValue>
-                            <DataTypePill type={field.type} size="sm" />
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DATA_TYPES.map(type => (
-                            <SelectItem key={type} value={type}>
-                              <DataTypePill type={type} size="sm" />
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    
-                    <TableCell className="p-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`pk-${field.id}`}
-                            checked={field.primaryKey}
-                            onCheckedChange={(checked) => 
-                              updateField(field.id, { 
-                                primaryKey: !!checked,
-                                nullable: checked ? false : field.nullable 
-                              })
-                            }
-                          />
-                          <label htmlFor={`pk-${field.id}`} className="text-xs font-medium">
-                            PK
-                          </label>
-                        </div>
-                        
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`unique-${field.id}`}

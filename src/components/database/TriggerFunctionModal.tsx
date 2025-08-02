@@ -33,6 +33,7 @@ import {
 
 interface DatabaseFunction {
   id?: string;
+  project_id: string;
   name: string;
   description?: string;
   function_type: 'plpgsql' | 'edge' | 'cron';
@@ -43,10 +44,12 @@ interface DatabaseFunction {
   edge_function_name?: string;
   cron_schedule?: string;
   is_cron_enabled: boolean;
+  author_id?: string;
 }
 
 interface DatabaseTrigger {
   id?: string;
+  project_id: string;
   name: string;
   table_name: string;
   trigger_event: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
@@ -54,6 +57,8 @@ interface DatabaseTrigger {
   function_id?: string;
   is_active: boolean;
   conditions?: string;
+  author_id?: string;
+  description?: string;
 }
 
 interface TriggerFunctionModalProps {
@@ -82,7 +87,8 @@ export function TriggerFunctionModal({
     table_name: '',
     trigger_event: 'INSERT',
     trigger_timing: 'BEFORE',
-    is_active: true
+    is_active: true,
+    project_id: '' // Will be set when saving
   });
 
   const [functionData, setFunctionData] = useState<DatabaseFunction>({
@@ -93,47 +99,65 @@ export function TriggerFunctionModal({
     return_type: 'TRIGGER',
     function_body: '',
     is_edge_function: false,
-    is_cron_enabled: false
+    is_cron_enabled: false,
+    project_id: '' // Will be set when saving
   });
 
   const [newParameter, setNewParameter] = useState({ name: '', type: '', default: '' });
 
   useEffect(() => {
-    if (existingTrigger) {
-      setTriggerData(existingTrigger);
-    } else {
-      setTriggerData({
-        name: '',
-        table_name: '',
-        trigger_event: 'INSERT',
-        trigger_timing: 'BEFORE',
-        is_active: true
-      });
+    if (open) {
+      if (mode === 'trigger' && existingTrigger) {
+        setTriggerData(existingTrigger);
+      } else if (mode === 'function' && existingFunction) {
+        setFunctionData(existingFunction);
+      } else {
+        // Reset to default values
+        if (mode === 'trigger') {
+          setTriggerData({
+            name: '',
+            table_name: '',
+            trigger_event: 'INSERT',
+            trigger_timing: 'BEFORE',
+            is_active: true,
+            project_id: '' // Will be set when saving
+          });
+        } else {
+          setFunctionData({
+            name: '',
+            description: '',
+            function_type: 'plpgsql',
+            parameters: [],
+            return_type: 'TRIGGER',
+            function_body: '',
+            is_edge_function: false,
+            is_cron_enabled: false,
+            project_id: '' // Will be set when saving
+          });
+        }
+      }
     }
-  }, [existingTrigger, open]);
-
-  useEffect(() => {
-    if (existingFunction) {
-      setFunctionData(existingFunction);
-    } else {
-      setFunctionData({
-        name: '',
-        description: '',
-        function_type: 'plpgsql',
-        parameters: [],
-        return_type: 'TRIGGER',
-        function_body: '',
-        is_edge_function: false,
-        is_cron_enabled: false
-      });
-    }
-  }, [existingFunction, open]);
+  }, [open, mode, existingTrigger, existingFunction]);
 
   const handleSave = () => {
+    // Get project_id from URL or props if possible
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('projectId') || '';
+    
     if (mode === 'trigger') {
-      onSave(triggerData);
+      // Make sure project_id is set before saving
+      const finalTriggerData = {
+        ...triggerData,
+        project_id: triggerData.project_id || projectId
+      };
+      onSave(finalTriggerData);
     } else {
-      onSave(functionData);
+      // Make sure project_id is set before saving
+      const finalFunctionData = {
+        ...functionData,
+        project_id: functionData.project_id || projectId
+      };
+      onSave(finalFunctionData);
     }
     onOpenChange(false);
   };

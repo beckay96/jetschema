@@ -20,31 +20,46 @@ export interface DatabaseTable {
   name: string;
   fields: DatabaseField[];
   position: { x: number; y: number };
+  width?: number;    // For storing node width after resizing
+  height?: number;   // For storing node height after resizing
   color?: string;
   comment?: string;
+  project_id?: string; // Reference to the project this table belongs to
+  sizePreference?: 'small' | 'medium' | 'large' | 'xlarge' | 'huge'; // For size toggle preference
 }
 
 export interface DatabaseTrigger {
-  id: string;
+  id?: string;
+  project_id: string;
   name: string;
-  table: string;
-  event: 'INSERT' | 'UPDATE' | 'DELETE';
-  timing: 'BEFORE' | 'AFTER' | 'INSTEAD OF';
-  code: string;
+  table_name: string;
+  trigger_event: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
+  trigger_timing: 'BEFORE' | 'AFTER' | 'INSTEAD OF';
+  function_id?: string;
+  is_active: boolean;
+  conditions?: string;
+  author_id?: string;
   description?: string;
 }
 
 export interface DatabaseFunction {
-  id: string;
+  id?: string;
+  project_id: string;
   name: string;
-  returnType: string;
+  description?: string;
+  function_type: 'plpgsql' | 'edge' | 'cron';
   parameters: Array<{
     name: string;
     type: string;
-    defaultValue?: string;
+    default?: string;
   }>;
-  code: string;
-  description?: string;
+  return_type?: string;
+  function_body: string;
+  is_edge_function: boolean;
+  edge_function_name?: string;
+  cron_schedule?: string;
+  is_cron_enabled: boolean;
+  author_id?: string;
 }
 
 export interface DatabaseProject {
