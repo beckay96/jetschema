@@ -181,6 +181,12 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             console.error('Clipboard API error:', error);
           }
         }}
+        // Add size toggle to context menu
+        onSetSize={(size) => {
+          setSizeOption(size);
+          onEditTable?.({ ...table, sizePreference: size });
+        }}
+        currentSize={sizeOption}
         className="w-full">
         <Card 
           className={cn(
@@ -305,8 +311,8 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                   title={`Size: ${sizeOption} (click to toggle)`}
                   onClick={handleSizeToggle}
                 >
-                  {(sizeOption === 'small' || sizeOption === 'medium') && <ArrowsOut className="w-3 h-3" />}
-                  {(sizeOption === 'large' || sizeOption === 'xlarge' || sizeOption === 'huge') && <ArrowsIn className="w-3 h-3" />}
+                  {(sizeOption === 'small' || sizeOption === 'medium') && <MoveHorizontal className="w-3 h-3" />}
+                  {(sizeOption === 'large' || sizeOption === 'xlarge' || sizeOption === 'huge') && <MoveVertical className="w-3 h-3" />}
                 </Button>
                 <Button
                   variant="ghost"

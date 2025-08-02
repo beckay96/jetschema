@@ -102,7 +102,7 @@ export function SchemaContextMenu({
         {elementType === 'table' && onSetSize && (
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <ArrowsOut className="mr-2 h-4 w-4" />
+              <MoveHorizontal className="mr-2 h-4 w-4" />
               <span>Set table size</span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="w-48">
