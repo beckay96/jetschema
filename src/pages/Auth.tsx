@@ -20,7 +20,7 @@ export function Auth() {
 
   // Redirect if already authenticated
   if (user) {
-    navigate('/');
+    navigate('/projects');
     return null;
   }
 
@@ -61,7 +61,7 @@ export function Auth() {
     if (error) {
       toast.error(error.message || 'Failed to sign in');
     } else {
-      navigate('/');
+      navigate('/projects');
     }
     setLoading(false);
   };
