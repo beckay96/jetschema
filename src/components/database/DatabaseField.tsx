@@ -11,7 +11,7 @@ interface DatabaseFieldProps {
   tableName?: string;
   onEdit?: (field: DatabaseFieldType) => void;
   onDelete?: (fieldId: string) => void;
-  onAddComment?: (tableName: string, fieldName: string) => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
   compact?: boolean;
 }
 
@@ -67,14 +67,13 @@ export function DatabaseField({ field, tableName, onEdit, onDelete, onAddComment
       </div>
       
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {tableName && (
-          <FieldCommentButton
-            tableName={tableName}
-            fieldName={field.name}
-            onAddComment={onAddComment}
-            compact={compact}
-          />
-        )}
+        <FieldCommentButton
+          fieldId={field.id}
+          fieldName={field.name}
+          tableName={tableName}
+          onAddComment={onAddComment}
+          compact={compact}
+        />
         <Button
           variant="ghost"
           size="sm"

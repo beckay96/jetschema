@@ -7,6 +7,7 @@ import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { MultiDatabaseManager } from '@/components/subscription/MultiDatabaseManager';
 import { AIFeatures } from '@/components/subscription/AIFeatures';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
+import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
@@ -17,7 +18,8 @@ import {
   Shield, 
   Sparkles,
   Zap,
-  Users
+  Users,
+  Palette
 } from 'lucide-react';
 
 // Import subscription-related API functions
@@ -41,7 +43,7 @@ export function SettingsPage() {
       </div>
 
       <Tabs defaultValue="subscription" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="subscription" className="flex items-center gap-1.5">
             <CreditCard className="h-4 w-4" />
             <span>Subscription</span>
@@ -57,6 +59,10 @@ export function SettingsPage() {
           <TabsTrigger value="teams" className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             <span>Team Access</span>
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-1.5">
+            <Palette className="h-4 w-4" />
+            <span>Appearance</span>
           </TabsTrigger>
           <TabsTrigger value="account" className="flex items-center gap-1.5">
             <User className="h-4 w-4" />
@@ -157,6 +163,10 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance" className="space-y-6">
+          <AppearanceSettings />
         </TabsContent>
 
         <TabsContent value="account" className="space-y-6">

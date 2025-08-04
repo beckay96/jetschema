@@ -9,9 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, FolderOpen, Users, User, LogOut } from 'lucide-react';
+import { Menu, FolderOpen, Users, User, LogOut, Home, Settings, Sparkles } from 'lucide-react';
 
-export function HeaderMenu() {
+interface HeaderMenuProps {
+  isSubscribed?: boolean;
+}
+
+export function HeaderMenu({ isSubscribed = false }: HeaderMenuProps) {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
@@ -30,6 +34,11 @@ export function HeaderMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
+        <DropdownMenuItem onClick={() => navigate('/')}>
+          <Home className="h-4 w-4 mr-2" />
+          Home
+        </DropdownMenuItem>
+
         <DropdownMenuItem onClick={() => navigate('/projects')}>
           <FolderOpen className="h-4 w-4 mr-2" />
           Projects
@@ -39,11 +48,23 @@ export function HeaderMenu() {
           <Users className="h-4 w-4 mr-2" />
           Team
         </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => navigate('/account')}>
-          <User className="h-4 w-4 mr-2" />
-          Account
+
+        <DropdownMenuItem onClick={() => navigate('/settings')}>
+          <Settings className="h-4 w-4 mr-2" />
+          Settings
         </DropdownMenuItem>
+        
+        {isSubscribed ? (
+          <DropdownMenuItem onClick={() => navigate('/account')}>
+            <User className="h-4 w-4 mr-2" />
+            Account
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => navigate('/upgrade')} className="text-primary font-medium">
+            <Sparkles className="h-4 w-4 mr-2 text-primary" />
+            Upgrade
+          </DropdownMenuItem>
+        )}
         
         <DropdownMenuSeparator />
         

@@ -25,17 +25,19 @@ interface FieldComment {
 }
 
 interface FieldCommentButtonProps {
-  tableName: string;
+  fieldId: string;
   fieldName: string;
+  tableName?: string;
   comments?: FieldComment[];
-  onAddComment?: (tableName: string, fieldName: string) => void;
-  onViewComments?: (tableName: string, fieldName: string) => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
+  onViewComments?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
   compact?: boolean;
 }
 
 export function FieldCommentButton({ 
-  tableName, 
+  fieldId,
   fieldName, 
+  tableName,
   comments = [], 
   onAddComment,
   onViewComments,
@@ -45,11 +47,11 @@ export function FieldCommentButton({
   const hasComments = comments.length > 0;
 
   const handleAddComment = () => {
-    onAddComment?.(tableName, fieldName);
+    onAddComment?.('field', fieldId, fieldName);
   };
 
   const handleViewComments = () => {
-    onViewComments?.(tableName, fieldName);
+    onViewComments?.('field', fieldId, fieldName);
     setShowComments(true);
   };
 
@@ -81,7 +83,7 @@ export function FieldCommentButton({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
-              Comments for {tableName}.{fieldName}
+              Comments for {tableName ? `${tableName}.${fieldName}` : fieldName}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 max-h-60 overflow-y-auto">

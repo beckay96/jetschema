@@ -211,6 +211,22 @@ const ProjectEditor = () => {
         message: `Adding comment for ${elementName}...`
       });
       
+      // Create context information for better reference
+      let context: SchemaComment['context'] = {};
+      
+      // If this is a field, find its parent table
+      if (elementType === 'field') {
+        const parentTableName = findParentTableForField(elementId);
+        if (parentTableName) {
+          context.parentTable = parentTableName;
+        }
+      }
+      
+      // Add current project info if available
+      if (currentProject) {
+        context.database = currentProject.name;
+      }
+      
       // Create the new comment with a more reliable ID
       const commentId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       const newComment: SchemaComment = {
@@ -221,6 +237,7 @@ const ProjectEditor = () => {
         content: `Add your comment about ${elementName} here...`,
         createdAt: new Date(),
         read: false,
+        context,
       };
       
       // Update local state with functional update to avoid closure issues
@@ -283,6 +300,93 @@ const ProjectEditor = () => {
       status: 'success',
       message: `Marked ${elementName} as ${priority} priority task`
     });
+  };
+  
+  // Convert comment to task handler
+  const handleConvertCommentToTask = (commentId: string) => {
+    try {
+      // Find the comment to convert
+      const commentToConvert = comments.find(comment => comment.id === commentId);
+      if (!commentToConvert) {
+        console.error(`Comment with ID ${commentId} not found`);
+        return;
+      }
+
+      setStatusMessage({
+        status: 'loading',
+        message: `Converting comment to task...`
+      });
+
+      // Extract details from the comment
+      const { elementType, elementId, elementName, content, context } = commentToConvert;
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Create a new task based on the comment
+      const newTask: SchemaTask = {
+        id: taskId,
+        elementType,
+        elementId,
+        elementName,
+        description: content, // Use the comment content as the task description
+        priority: 'medium', // Default priority
+        createdAt: new Date(),
+        completed: false,
+        // If the comment has an author, preserve it for the task
+        ...(commentToConvert.author && { author: commentToConvert.author }),
+        // Preserve context and add the commentId reference
+        context: {
+          ...(context || {}),
+          commentId: commentId,
+          
+          // If this is a field, try to infer the parent table if not already set
+          ...(!context?.parentTable && elementType === 'field' && {
+            parentTable: findParentTableForField(elementId)
+          })
+        }
+      };
+      
+      // Mark the comment as converted and store the task ID
+      const updatedComments = comments.map(comment => 
+        comment.id === commentId ? { 
+          ...comment, 
+          read: true, // Also mark as read when converting
+          convertedToTaskId: taskId
+        } : comment
+      );
+      
+      // Add the new task to the tasks list
+      const updatedTasks = [...tasks, newTask];
+      
+      // Update state
+      setComments(updatedComments);
+      setTasks(updatedTasks);
+      
+      // Save the project with both updates
+      handleSaveProject(tables, triggers, functions, updatedComments, updatedTasks, true);
+      
+      setStatusMessage({
+        status: 'success',
+        message: `Comment converted to task`
+      });
+    } catch (error) {
+      console.error('Error converting comment to task:', error);
+      setStatusMessage({
+        status: 'error',
+        message: `Error converting comment to task: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  };
+  
+  // Helper function to find the parent table for a field
+  const findParentTableForField = (fieldId: string): string | undefined => {
+    // Look through all tables to find the one containing this field
+    for (const table of tables) {
+      const field = table.fields.find(f => f.id === fieldId);
+      if (field) {
+        return table.name;
+      }
+    }
+    return undefined;
   };
   
   // Mark comment as read handler
@@ -640,6 +744,65 @@ const ProjectEditor = () => {
     handleSaveProject(tables, triggers, functions, comments, tasks, false, name);
   };
 
+  // Reply to comment handler
+  const handleReplyToComment = (parentId: string) => {
+    try {
+      const parentComment = comments.find(c => c.id === parentId);
+      if (!parentComment) {
+        console.error(`Parent comment with ID ${parentId} not found`);
+        return;
+      }
+
+      setStatusMessage({
+        status: 'loading',
+        message: `Creating reply...`
+      });
+      
+      // Create a new reply comment, inheriting context from parent
+      const commentId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const newComment: SchemaComment = {
+        id: commentId,
+        elementType: parentComment.elementType,
+        elementId: parentComment.elementId,
+        elementName: parentComment.elementName,
+        content: `Reply to comment about ${parentComment.elementName}...`,
+        createdAt: new Date(),
+        read: false,
+        parentId: parentId,
+        isReply: true,
+        // Inherit context from parent comment
+        context: parentComment.context ? { ...parentComment.context } : undefined,
+      };
+      
+      // Add the reply to comments
+      const updatedComments = [...comments, newComment];
+      setComments(updatedComments);
+      
+      // Open the drawer and save
+      setCommentDrawerOpen(true);
+      handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+      
+      setStatusMessage({
+        status: 'success',
+        message: `Reply created`
+      });
+    } catch (error) {
+      console.error('Error creating reply:', error);
+      setStatusMessage({
+        status: 'error',
+        message: `Error creating reply: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  };
+  
+  // Comment thread functionality - open comment drawer
+  const handleOpenCommentDrawer = () => {
+    if (!leftPanelOpen && rightPanelOpen) {
+      setRightPanelOpen(false);
+    }
+    setLeftPanelOpen(!leftPanelOpen);
+  };
+
   if (!currentProject) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
@@ -698,6 +861,8 @@ const ProjectEditor = () => {
                 onMarkCommentRead={handleMarkCommentRead}
                 onMarkTaskComplete={handleMarkTaskComplete}
                 onNavigateToElement={handleNavigateToElement}
+                onConvertCommentToTask={handleConvertCommentToTask}
+                onReplyToComment={handleReplyToComment}
                 open={commentDrawerOpen}
                 onOpenChange={setCommentDrawerOpen}
               />

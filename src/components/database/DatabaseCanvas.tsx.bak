@@ -26,9 +26,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
+// Implement emoji utilities directly to avoid import issues
 /**
- * Get an emoji for a keyword
+ * Get an emoji for a given keyword
  * @param keyword - The keyword to find an emoji for
  * @returns The corresponding emoji or empty string if not found
  */
@@ -128,55 +128,25 @@ interface StickerNodeData extends StickerData {
 const StickerNodeWrapper = (props: NodeProps) => {
   // Extract the node data and provide the required props to DiagramSticker
   const { id, data } = props;
-  
-  // Safely handle the data with type checking
-  const isValidStickerData = data && 
-    typeof data === 'object' &&
-    'text' in data &&
-    'position' in data &&
-    'type' in data;
-  
-  // Fall back to empty data if invalid to prevent crashes
-  const stickerData = isValidStickerData ? data : {
-    id: id || 'fallback-id',
-    text: 'Error',
-    position: { x: 0, y: 0 },
-    type: 'sticker' as const
-  };
+  // Safely cast the data to our expected structure
+const stickerData = data as unknown as StickerNodeData;
   
   // Create handler functions that access the handlers stored in the node data
   const handleDelete = useCallback((id: string) => {
-    if (data && typeof data === 'object' && 'onDelete' in data && typeof data.onDelete === 'function') {
-      data.onDelete(id);
+    if (stickerData.onDelete) {
+      stickerData.onDelete(id);
     }
-  }, [data]);
+  }, [stickerData]);
   
   const handleUpdate = useCallback((id: string, newData: Partial<StickerData>) => {
-    if (data && typeof data === 'object' && 'onUpdate' in data && typeof data.onUpdate === 'function') {
-      data.onUpdate(id, newData);
+    if (stickerData.onUpdate) {
+      stickerData.onUpdate(id, newData);
     }
-  }, [data]);
-  
-  // Convert to StickerNodeData with proper typing
-  const typedData: StickerData = {
-    id: typeof stickerData.id === 'string' ? stickerData.id : id || 'fallback-id',
-    text: typeof stickerData.text === 'string' ? stickerData.text : 'Error',
-    position: stickerData.position && 
-              typeof stickerData.position === 'object' && 
-              'x' in stickerData.position && 
-              'y' in stickerData.position ? 
-              { x: Number(stickerData.position.x) || 0, y: Number(stickerData.position.y) || 0 } : 
-              { x: 0, y: 0 },
-    type: stickerData.type === 'tag' ? 'tag' : 'sticker',
-    color: typeof stickerData.color === 'string' ? stickerData.color : undefined,
-    rotation: typeof stickerData.rotation === 'number' ? stickerData.rotation : 0,
-    size: ['small', 'medium', 'large'].includes(stickerData.size as string) ? 
-      stickerData.size as 'small' | 'medium' | 'large' : undefined
-  };
+  }, [stickerData]);
   
   return (
     <DiagramSticker 
-      data={typedData} 
+      data={stickerData} 
       onDelete={handleDelete} 
       onUpdate={handleUpdate} 
     />
@@ -364,7 +334,18 @@ export function DatabaseCanvas({
     dragHandle: '.table-drag-handle'
   }));
 
-  // Note: useEffect moved after handler functions are declared
+  // Update nodes when tables change or theme changes
+  React.useEffect(() => {
+    const updatedNodes = tableNodes.map(node => ({
+      ...node,
+      style: {
+        ...node.style,
+        '--node-handle-color': theme === 'dark' ? '#ffffff' : '#000000',
+      },
+    }));
+    setNodes(updatedNodes);
+    setEdges(generateForeignKeyEdges(tables));
+  }, [tables, selectedTable, setNodes, setEdges, theme]);
 
   // Track if a node is being dragged
   const [isDragging, setIsDragging] = useState(false);
@@ -533,35 +514,6 @@ export function DatabaseCanvas({
     toast.success('Sticker removed');
   }, [stickers, onSaveStickers]);
 
-  // Update nodes when tables change or theme changes
-  React.useEffect(() => {
-    const updatedTableNodes = tableNodes.map(node => ({
-      ...node,
-      style: {
-        ...node.style,
-        '--node-handle-color': theme === 'dark' ? '#ffffff' : '#000000',
-      },
-    }));
-    
-    // Convert stickers to ReactFlow nodes
-    const stickerNodes = stickers.map(sticker => ({
-      id: sticker.id,
-      type: 'sticker',
-      position: sticker.position,
-      data: {
-        ...sticker,
-        onDelete: handleDeleteSticker,
-        onUpdate: handleUpdateSticker
-      },
-      draggable: true,
-      selectable: true
-    }));
-    
-    // Combine table nodes and sticker nodes
-    setNodes([...updatedTableNodes, ...stickerNodes]);
-    setEdges(generateForeignKeyEdges(tables));
-  }, [tables, selectedTable, stickers, setNodes, setEdges, theme, handleDeleteSticker, handleUpdateSticker, tableNodes]);
-
   // Handle bulk import of stickers from JSON
   const handleImportStickers = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -630,7 +582,15 @@ export function DatabaseCanvas({
         // The dragHandle functionality will be handled by the data-draghandle attribute
         // in each node component instead of here
       >
-        {/* Stickers are now handled through the nodeTypes system */}
+        {/* Render stickers */}
+        {stickers.map(sticker => (
+          <DiagramSticker
+            key={sticker.id}
+            data={sticker}
+            onDelete={handleDeleteSticker}
+            onUpdate={handleUpdateSticker}
+          />
+        ))}
         
         <Background 
           color="hsl(var(--border))" 
@@ -714,16 +674,17 @@ export function DatabaseCanvas({
                               "p-2 rounded-md text-center max-w-[200px] transition-all",
                               newStickerType === 'tag' ? 
                                 'bg-primary/20 border border-primary/30 text-primary-foreground' :
-                                ''
+                                `bg-${previewColor}/20 border border-${previewColor}/30`
                             )}
                             style={{ 
-                              backgroundColor: newStickerType === 'sticker' ? `${previewColor.substring(0, 7)}20` : '',
-                              borderColor: newStickerType === 'sticker' ? `${previewColor.substring(0, 7)}50` : '' 
+                              backgroundColor: newStickerType === 'sticker' ? `${previewColor}20` : '',
+                              borderColor: newStickerType === 'sticker' ? `${previewColor}50` : '' 
                             }}
                           >
-                            {newStickerType === 'sticker' && newStickerText && (
+                            {newStickerType === 'sticker' && 
+                              getEmojiForKeyword(newStickerText.split(' ')[0]) && (
                                 <span className="text-lg mr-1">
-                                  {getEmojiForKeyword(newStickerText.split(' ')[0] || '')}
+                                  {getEmojiForKeyword(newStickerText.split(' ')[0])}
                                 </span>
                             )}
                             <span>{newStickerType === 'tag' ? '#' + newStickerText : newStickerText}</span>
@@ -834,8 +795,112 @@ export function DatabaseCanvas({
             </PopoverContent>
           </Popover>
         </Panel>
+            {/* Duplicate content removed */}
+            
+            {/* Preview section */}
+            {newStickerText && (
+              <div className="mt-3">
+                <Label>Preview</Label>
+                <div className="mt-1 border rounded-md p-3 flex items-center justify-center">
+                  <div 
+                    className={cn(
+                      "p-2 rounded-md text-center max-w-[200px] transition-all",
+                      newStickerType === 'tag' ? 
+                        'bg-primary/20 border border-primary/30 text-primary-foreground' :
+                        `bg-${previewColor}/20 border border-${previewColor}/30`
+                    )}
+                    style={{ 
+                      backgroundColor: newStickerType === 'sticker' ? `${previewColor}20` : '',
+                      borderColor: newStickerType === 'sticker' ? `${previewColor}50` : '' 
+                    }}
+                  >
+                    {newStickerType === 'sticker' && 
+                      getEmojiForKeyword(newStickerText.split(' ')[0]) && (
+                        <span className="text-lg mr-1">
+                          {getEmojiForKeyword(newStickerText.split(' ')[0])}
+                        </span>
+                    )}
+                    <span>{newStickerType === 'tag' ? '#' + newStickerText : newStickerText}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center mt-4">
+              <div className="flex gap-2 items-center">
+                <Label className="text-xs">Color:</Label>
+                <input 
+                  type="color" 
+                  value={previewColor}
+                  onChange={(e) => setPreviewColor(e.target.value)}
+                  className="w-8 h-8 rounded-md cursor-pointer"
+                />
+              </div>
+              {newStickerType === 'sticker' ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsAddingStickerMode(true)}
+                  disabled={isAddingStickerMode || !newStickerText.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Place Sticker
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    // For tags, create directly at a default position without requiring placement
+                    if (!newStickerText.trim()) return;
+                    
+                    const defaultPosition = {
+                      x: 100, // Default X position
+                      y: 100  // Default Y position
+                    };
+                    
+                    // Find an open spot to avoid stacking tags
+                    const usedPositions = stickers
+                      .filter(s => s.type === 'tag')
+                      .map(s => s.position);
+                      
+                    // Offset position if there are existing tags
+                    if (usedPositions.length > 0) {
+                      defaultPosition.y += (usedPositions.length * 40);
+                    }
+                    
+                    // Create new tag directly
+                    const newTag: StickerData = {
+                      id: `tag-${Date.now()}`,
+                      text: newStickerText,
+                      position: defaultPosition,
+                      type: 'tag',
+                      rotation: 0, // No rotation for tags
+                    };
+                    
+                    // Add to stickers
+                    const updatedStickers = [...stickers, newTag];
+                    setStickers(updatedStickers);
+                    
+                    // Save stickers if callback provided
+                    onSaveStickers?.(updatedStickers);
+                    
+                    // Reset sticker text
+                    setNewStickerText('');
+                    
+                    toast.success('Tag added!');
+                  }}
+                  disabled={!newStickerText.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Tag
+                </Button>
+              )}
+            </div>
+          </div>
+        </Panel>
       </ReactFlow>
-    </div>
+      </div>
     );
 }
 

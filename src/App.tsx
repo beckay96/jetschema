@@ -8,11 +8,12 @@ import Account from "./pages/Account";
 import { Auth } from "./pages/Auth";
 import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
 import { HeaderMenu } from "./components/HeaderMenu";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { StripeProvider } from "./contexts/StripeContext";
 import { SettingsPage } from "./pages/SettingsPage";
-import { MainNavigation } from "./components/layout/MainNavigation";
+// MainNavigation removed - consolidated with HeaderMenu
 import { AIFeatures } from "./components/subscription/AIFeatures";
 import { Toaster } from "sonner";
 import { Layout } from "./components/Layout";
@@ -26,8 +27,9 @@ function AuthenticatedApp() {
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
-    if (!loading && !user && location.pathname !== '/auth') {
-      navigate('/auth');
+    const publicRoutes = ['/auth', '/']; // Routes accessible without authentication
+    if (!loading && !user && !publicRoutes.includes(location.pathname)) {
+      navigate('/');
     }
   }, [user, loading, navigate, location.pathname]);
   if (loading) {
@@ -41,12 +43,12 @@ function AuthenticatedApp() {
   return (
     <ThemeProvider>
       <StripeProvider>
-        <MainNavigation />
         <Toaster position="top-right" />
         <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route path="/team" element={<Team />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={
           <Layout>
             <Projects />

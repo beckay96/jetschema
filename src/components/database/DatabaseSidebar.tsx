@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -18,9 +18,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -29,7 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, ChevronDown, RocketIcon } from 'lucide-react';
+import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, ChevronDown, RocketIcon, MessageCircle } from 'lucide-react';
 // Import database types
 import { DatabaseTable } from '@/types/database';
 // Use the hook's interface definitions for database functions and triggers
@@ -85,16 +85,18 @@ interface DatabaseSidebarProps {
   projectName?: string;
   onProjectNameChange?: (name: string) => void;
   onReorderTables?: (reorderedTables: DatabaseTable[]) => void; // New prop for table reordering
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
 }
 
 // Sortable Table Card Component
 interface SortableTableCardProps {
   table: DatabaseTable;
   isSelected: boolean;
-  isValidated: boolean;
-  hasWarnings: boolean;
+  isValidated?: boolean;
+  hasWarnings?: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
 }
 
 function SortableTableCard({
@@ -103,7 +105,8 @@ function SortableTableCard({
   isValidated,
   hasWarnings,
   onSelect,
-  onDelete
+  onDelete,
+  onAddComment
 }: SortableTableCardProps) {
   const {
     attributes,
@@ -128,7 +131,7 @@ function SortableTableCard({
           isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
         } ${isValidated ? 'card-validated' : hasWarnings ? 'card-warning' : ''}`}
       >
-        <CardContent className="p-3">
+        <CardContent className="p-2">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-sm truncate">
               <div className="flex items-center gap-1" {...listeners}>
@@ -146,6 +149,14 @@ function SortableTableCard({
               </div>
             </h4>
             <div className="flex gap-1">
+              {onAddComment && (
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon" onClick={e => {
+                  e.stopPropagation();
+                  onAddComment('table', table.id, table.name);
+                }}>
+                  <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon" onClick={e => {
                 e.stopPropagation();
                 onDelete();
@@ -171,6 +182,8 @@ function SortableTableCard({
   );
 }
 
+const MIN_WIDTH = 300; // Minimum width in pixels before auto-closing
+
 export function DatabaseSidebar({
   tables,
   triggers,
@@ -185,7 +198,8 @@ export function DatabaseSidebar({
   onShare,
   projectName: externalProjectName,
   onProjectNameChange,
-  onReorderTables
+  onReorderTables,
+  onAddComment
 }: DatabaseSidebarProps) {
   // Function to handle table reordering
   const handleTableReorder = (event: DragEndEvent) => {
@@ -226,6 +240,54 @@ export function DatabaseSidebar({
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
   const [activeTab, setActiveTab] = useState('tables');
+  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
+  const [isResizing, setIsResizing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const resizeRef = useRef(null);
+  const sidebarRef = useRef(null);
+  
+  // Resize handler setup
+  const startResizing = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+  
+  const stopResizing = () => {
+    setIsResizing(false);
+    // Auto collapse if width is less than MIN_WIDTH
+    if (sidebarWidth <= MIN_WIDTH) {
+      setIsCollapsed(true);
+    }
+  };
+  
+  const resize = (e) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      // Limit minimum width
+      if (newWidth >= 180) { // Absolute minimum for visibility
+        setSidebarWidth(newWidth);
+      }
+    }
+  };
+  
+  // Add event listeners for resize
+  useEffect(() => {
+    window.addEventListener('mousemove', resize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
+  
+  // Function to toggle sidebar collapse state
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+    if (isCollapsed) {
+      // When expanding, reset to last known width or default
+      setSidebarWidth(sidebarWidth < 180 ? 320 : sidebarWidth);
+    }
+  };
   
   // Update local state when external project name changes
   useEffect(() => {
@@ -261,7 +323,28 @@ export function DatabaseSidebar({
   );
   
   return (
-    <Card className="h-screen flex flex-col">
+    <>
+      {/* Collapsed state toggle button */}
+      {isCollapsed && (
+        <button 
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-primary text-white p-2 rounded-r-md shadow-md z-10"
+          onClick={toggleSidebar}
+          aria-label="Expand sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      )}
+      
+      <Card 
+        ref={sidebarRef} 
+        className={cn(
+          "h-screen flex flex-col transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-0 opacity-0 overflow-hidden" : "opacity-100"
+        )}
+        style={{ width: isCollapsed ? 0 : sidebarWidth }}
+      >
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <RocketIcon className="h-5 w-5 text-primary" />
@@ -350,7 +433,7 @@ export function DatabaseSidebar({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 pt-2 pb-2 px-6 overflow-hidden">
+      <CardContent className="flex-1 pt-2 pb-2 px-2 overflow-hidden">
         <div className="h-full flex flex-col overflow-hidden">
           {/* Dropdown menu for tab selection - fixed position */}
           <div className="flex items-center justify-center mb-4 flex-shrink-0">
@@ -400,7 +483,7 @@ export function DatabaseSidebar({
                       items={filteredTables.map(table => table.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2 pt-1 w-full">
+                      <div className="space-y-2 pt-1 px-2 w-full">
                         {filteredTables.map(table => {
                           const hasWarnings = table.fields.length < 2 || !table.fields.some(f => f.primaryKey);
                           const isValidated = table.fields.length >= 2 && 
@@ -416,6 +499,7 @@ export function DatabaseSidebar({
                               hasWarnings={hasWarnings}
                               onSelect={() => onSelectTable?.(table)}
                               onDelete={() => onDeleteTable?.(table.id)}
+                              onAddComment={onAddComment}
                             />
                           );
                         })}
@@ -496,7 +580,7 @@ export function DatabaseSidebar({
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-sm">{func.name}</h4>
                         <Badge variant="outline" className="text-xs">
-                          {func.returnType}
+                          {func.return_type}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -563,6 +647,13 @@ export function DatabaseSidebar({
         </div>
       </CardContent>
 
+      <div
+        ref={resizeRef}
+        className="absolute top-0 right-0 w-1 h-full bg-border cursor-col-resize hover:bg-primary active:bg-primary transition-colors"
+        onMouseDown={startResizing}
+        title="Drag to resize (auto-collapses below 300px)"
+      />
+
       <ExportModal 
         tables={tables} 
         open={showExportModal} 
@@ -620,5 +711,6 @@ export function DatabaseSidebar({
         }} 
       />
     </Card>
+    </>
   );
 }

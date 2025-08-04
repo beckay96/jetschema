@@ -323,6 +323,17 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                 >
                   <Copy className="w-3 h-3" />
                 </Button>
+                {onAddComment && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-6 h-6 p-0 text-white hover:bg-white/20"
+                    onClick={() => onAddComment('table', table.id, table.name)}
+                    title="Add Comment"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -346,10 +357,18 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
           </CardHeader>
       
       <CardContent className={cn(
-        "p-0 flex-1 min-h-0 overflow-y-auto",
-        (isCompact || isMobile) && "max-h-48"
+        "p-0 flex-1 min-h-0",
+        // Remove max-h-48 to allow dynamic height based on content
+        "overflow-hidden" // Changed from overflow-y-auto to use the inner scroll container
       )}>
-        <div className={cn("space-y-1", isMobile ? "p-2" : "p-3")}>
+        <div className={cn(
+          "space-y-1", 
+          isMobile ? "p-2" : "p-3",
+          // Add a scrollable container with custom styling
+          "max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-track-transparent",
+          // Add smooth scrolling
+          "scroll-smooth"
+        )}>
           {/* Primary Key Fields */}
           {primaryKeyFields.map(field => (
             <DatabaseFieldWithContext

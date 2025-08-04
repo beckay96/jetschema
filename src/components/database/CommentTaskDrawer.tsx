@@ -7,6 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, CheckCircle, Clock, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from '@/lib/utils';
 
+// Import comment parser
+import { parseComment, extractMentions, extractHashtags } from '@/lib/commentParser';
+
 // Define types for comments and tasks
 export interface SchemaComment {
   id: string;
@@ -15,8 +18,18 @@ export interface SchemaComment {
   elementName: string;
   content: string;
   author?: string;
-  createdAt: Date;
+  createdAt: Date | string; // Allow both Date objects and ISO strings
   read?: boolean;
+  mentions?: string[]; // Users mentioned in the comment with @
+  hashtags?: string[]; // Topics tagged in the comment with #
+  parentId?: string; // For threaded comments/replies
+  isReply?: boolean;
+  convertedToTaskId?: string; // If this comment was converted to a task
+  context?: { // Additional context about the element
+    parentTable?: string; // If this is a field, store its parent table name
+    schema?: string; // The schema this element belongs to
+    database?: string; // The database this element belongs to
+  };
 }
 
 export interface SchemaTask {
@@ -30,6 +43,12 @@ export interface SchemaTask {
   createdAt: Date;
   completed?: boolean;
   completedAt?: Date;
+  context?: { // Additional context about the element
+    parentTable?: string; // If this is a field, store its parent table name
+    schema?: string; // The schema this element belongs to
+    database?: string; // The database this element belongs to
+    commentId?: string; // Original comment ID if converted from a comment
+  };
 }
 
 interface CommentTaskDrawerProps {
@@ -38,6 +57,8 @@ interface CommentTaskDrawerProps {
   onMarkCommentRead: (id: string) => void;
   onMarkTaskComplete: (id: string) => void;
   onNavigateToElement: (elementType: string, elementId: string) => void;
+  onConvertCommentToTask?: (commentId: string) => void;
+  onReplyToComment?: (parentId: string) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -86,6 +107,8 @@ export function CommentTaskDrawer({
   onMarkCommentRead,
   onMarkTaskComplete,
   onNavigateToElement,
+  onConvertCommentToTask,
+  onReplyToComment,
   open,
   onOpenChange
 }: CommentTaskDrawerProps) {
@@ -100,22 +123,38 @@ export function CommentTaskDrawer({
     try {
       // Ensure comments is an array before filtering
       const safeComments = Array.isArray(comments) ? comments : [];
+      
+      // Validate each comment object before filtering
+      const validatedComments = safeComments.filter(comment => {
+        if (!comment || typeof comment !== 'object') return false;
+        if (!comment.id || !comment.elementId || !comment.elementType) return false;
+        return true;
+      });
+      
       // Apply filters to comments
       setFilteredComments(
         commentFilter === 'unread' 
-          ? safeComments.filter(c => !c.read)
-          : safeComments
+          ? validatedComments.filter(c => !c.read)
+          : validatedComments
       );
 
       // Ensure tasks is an array before filtering
       const safeTasks = Array.isArray(tasks) ? tasks : [];
+      
+      // Validate each task object before filtering
+      const validatedTasks = safeTasks.filter(task => {
+        if (!task || typeof task !== 'object') return false;
+        if (!task.id || !task.elementId || !task.elementType) return false;
+        return true;
+      });
+      
       // Apply filters to tasks
       setFilteredTasks(
         taskFilter === 'active' 
-          ? safeTasks.filter(t => !t.completed)
+          ? validatedTasks.filter(t => !t.completed)
           : taskFilter === 'completed'
-            ? safeTasks.filter(t => t.completed)
-            : safeTasks
+            ? validatedTasks.filter(t => t.completed)
+            : validatedTasks
       );
     } catch (error) {
       console.error('Error filtering comments/tasks:', error);
@@ -125,8 +164,8 @@ export function CommentTaskDrawer({
     }
   }, [comments, tasks, commentFilter, taskFilter]);
 
-  const unreadCommentCount = comments.filter(c => !c.read).length;
-  const activeTaskCount = tasks.filter(t => !t.completed).length;
+  const unreadCommentCount = Array.isArray(comments) ? comments.filter(c => c && !c.read).length : 0;
+  const activeTaskCount = Array.isArray(tasks) ? tasks.filter(t => t && !t.completed).length : 0;
   
   function getPriorityColor(priority: 'low' | 'medium' | 'high') {
     switch (priority) {
@@ -136,18 +175,33 @@ export function CommentTaskDrawer({
     }
   }
 
-  function formatDate(date: Date) {
-    // If today, just show time
-    const today = new Date();
-    if (date.toDateString() === today.toDateString()) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function formatDate(dateInput: Date | string | undefined) {
+    if (!dateInput) return 'Unknown date';
+    
+    try {
+      // Convert string to date if needed
+      const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      // If today, just show time
+      const today = new Date();
+      if (date.toDateString() === today.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      // If this year, show month and day
+      if (date.getFullYear() === today.getFullYear()) {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+      // Otherwise show full date
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date error';
     }
-    // If this year, show month and day
-    if (date.getFullYear() === today.getFullYear()) {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
-    // Otherwise show full date
-    return date.toLocaleDateString();
   }
 
   return (
@@ -251,36 +305,139 @@ export function CommentTaskDrawer({
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div 
-                          className="cursor-pointer text-sm font-medium hover:underline"
+                          className="cursor-pointer text-sm font-medium hover:underline flex items-center"
                           onClick={() => onNavigateToElement(comment.elementType, comment.elementId)}
                         >
-                          {comment.elementName} 
-                          <span className="text-xs text-muted-foreground ml-1">({comment.elementType})</span>
+                          <Badge 
+                            variant="secondary"
+                            className={cn(
+                              "mr-2 py-0 h-5",
+                              comment.elementType === 'table' ? "bg-blue-500/10 text-blue-500" : "bg-amber-500/10 text-amber-500"
+                            )}
+                          >
+                            {comment.elementType === 'table' ? 'Table' : 'Field'}
+                          </Badge>
+                          {comment.elementName}
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatDate(comment.createdAt)}
                         </div>
                       </div>
-                      <p className="text-sm mb-3">{comment.content}</p>
-                      <div className="flex justify-between items-center">
-                        {comment.author && (
-                          <div className="text-xs text-muted-foreground">
-                            by {comment.author}
-                          </div>
-                        )}
-                        {!comment.read && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => onMarkCommentRead(comment.id)}
-                            className="h-7 text-xs"
-                          >
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Mark as Read
-                          </Button>
-                        )}
+                      {/* Comment content with parsed @mentions and #hashtags */}
+                      <div className="text-sm mb-3">
+                        {parseComment(comment.content).map((part, index) => {
+                          switch(part.type) {
+                            case 'mention':
+                              return (
+                                <span key={index} className="text-primary font-medium">@{part.content}</span>
+                              );
+                            case 'hashtag':
+                              return (
+                                <span key={index} className="text-blue-500 font-medium">#{part.content}</span>
+                              );
+                            default:
+                              return <span key={index}>{part.content}</span>;
+                          }
+                        })}
                       </div>
+                      
+                      {/* Additional context display if available */}
+                      {comment.context && (
+                        <div className="text-xs text-muted-foreground mb-3">
+                          {comment.context.parentTable && (
+                            <div className="inline-flex items-center">
+                              <span className="mr-1">Parent table:</span>
+                              <Badge variant="outline" className="py-0 h-5">
+                                {comment.context.parentTable}
+                              </Badge>
+                            </div>
+                          )}
+                          {(comment.context.schema || comment.context.database) && (
+                            <div className="inline-flex items-center ml-2">
+                              <span className="mr-1">In:</span>
+                              {comment.context.database && (
+                                <span className="mr-1">{comment.context.database}</span>
+                              )}
+                              {comment.context.schema && (
+                                <Badge variant="outline" className="py-0 h-5">
+                                  {comment.context.schema}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <div className="flex space-x-2">
+                          {comment.author && (
+                            <div className="text-xs text-muted-foreground">
+                              by {comment.author}
+                            </div>
+                          )}
+                          
+                          {comment.hashtags && comment.hashtags.length > 0 && (
+                            <div className="flex gap-1">
+                              {comment.hashtags.map(tag => (
+                                <Badge key={tag} variant="outline" className="text-xs py-0 h-5">
+                                  #{tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-1">
+                          {onReplyToComment && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onReplyToComment(comment.id)}
+                              className="h-7 text-xs"
+                            >
+                              <MessageSquare className="h-3 w-3 mr-1" />
+                              Reply
+                            </Button>
+                          )}
+                          
+                          {onConvertCommentToTask && !comment.convertedToTaskId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onConvertCommentToTask(comment.id)}
+                              className="h-7 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Convert to Task
+                            </Button>
+                          )}
+                          
+                          {!comment.read && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => onMarkCommentRead(comment.id)}
+                              className="h-7 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Mark as Read
+                            </Button>
+                          )}
+                          
+                          {comment.convertedToTaskId && (
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/30">
+                              Converted to Task
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Show reply indication if this is a reply */}
+                      {comment.isReply && comment.parentId && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Reply to another comment
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -338,11 +495,19 @@ export function CommentTaskDrawer({
                             {task.priority}
                           </Badge>
                           <div 
-                            className="cursor-pointer text-sm font-medium hover:underline"
+                            className="cursor-pointer text-sm font-medium hover:underline flex items-center"
                             onClick={() => onNavigateToElement(task.elementType, task.elementId)}
                           >
+                            <Badge 
+                              variant="secondary"
+                              className={cn(
+                                "mr-2 py-0 h-5",
+                                task.elementType === 'table' ? "bg-blue-500/10 text-blue-500" : "bg-amber-500/10 text-amber-500"
+                              )}
+                            >
+                              {task.elementType === 'table' ? 'Table' : 'Field'}
+                            </Badge>
                             {task.elementName}
-                            <span className="text-xs text-muted-foreground ml-1">({task.elementType})</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -350,12 +515,43 @@ export function CommentTaskDrawer({
                           {formatDate(task.createdAt)}
                         </div>
                       </div>
-                      <p className={cn(
-                        "text-sm mb-3",
-                        task.completed && "line-through text-muted-foreground"
-                      )}>
+                      <div className="text-sm mb-3 whitespace-pre-line">
                         {task.description}
-                      </p>
+                      </div>
+                      
+                      {/* Additional context display if available */}
+                      {task.context && (
+                        <div className="text-xs text-muted-foreground mb-3">
+                          {task.context.parentTable && (
+                            <div className="inline-flex items-center">
+                              <span className="mr-1">Parent table:</span>
+                              <Badge variant="outline" className="py-0 h-5">
+                                {task.context.parentTable}
+                              </Badge>
+                            </div>
+                          )}
+                          {(task.context.schema || task.context.database) && (
+                            <div className="inline-flex items-center ml-2">
+                              <span className="mr-1">In:</span>
+                              {task.context.database && (
+                                <span className="mr-1">{task.context.database}</span>
+                              )}
+                              {task.context.schema && (
+                                <Badge variant="outline" className="py-0 h-5">
+                                  {task.context.schema}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          {task.context.commentId && (
+                            <div className="inline-flex items-center ml-2">
+                              <Badge variant="outline" className="py-0 h-5 bg-green-500/10 text-green-500 border-green-500/30">
+                                From Comment
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         {task.author && (
                           <div className="text-xs text-muted-foreground">
