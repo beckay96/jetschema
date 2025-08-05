@@ -186,7 +186,21 @@ export function TableView({
                                 <Badge variant="secondary" className="text-xs">Not Null</Badge>
                               )}
                               {field.foreignKey && (
-                                <Badge variant="outline" className="text-xs">FK</Badge>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                                  title={`References ${field.foreignKey.table}.${field.foreignKey.field}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Find the referenced table and select it
+                                    const referencedTable = tables.find(t => t.name === field.foreignKey?.table);
+                                    if (referencedTable && onTableSelect) {
+                                      onTableSelect(referencedTable);
+                                    }
+                                  }}
+                                >
+                                  FK: {field.foreignKey.table}.{field.foreignKey.field}
+                                </Badge>
                               )}
                             </div>
                           </TableCell>
@@ -196,6 +210,7 @@ export function TableView({
                           <TableCell className="opacity-0 group-hover:opacity-100 transition-opacity w-36 text-right">
                             <div className="flex items-center justify-end gap-1">
                               <FieldCommentButton
+                                fieldId={field.id}
                                 tableName={table.name}
                                 fieldName={field.name}
                                 onAddComment={onAddComment}

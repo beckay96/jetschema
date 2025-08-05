@@ -535,12 +535,81 @@ export function DatabaseCanvas({
 
   // Update nodes when tables change or theme changes
   React.useEffect(() => {
-    const updatedTableNodes = tableNodes.map(node => ({
-      ...node,
+    console.log('Tables changed, updating nodes:', tables.length);
+    
+    // Generate table nodes directly from tables instead of using tableNodes variable
+    const updatedTableNodes = tables.map(table => ({
+      id: table.id,
+      type: 'databaseTable',
+      position: table.position,
+      // Apply saved width and height if available
       style: {
-        ...node.style,
+        width: table.width,
+        height: table.height,
         '--node-handle-color': theme === 'dark' ? '#ffffff' : '#000000',
       },
+      data: {
+        table,
+        allTables: tables,
+        selected: selectedTable?.id === table.id,
+        onEditTable: (updatedTable: DatabaseTable) => {
+          console.log('🔄 Updating table:', updatedTable.name);
+          // Handle table editing
+          const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
+          setTables?.(updatedTables);
+        },
+        onEditField: (field: any) => {
+          // Handle field editing - find the table and open edit modal
+          console.log('Edit field:', field);
+          const fieldTable = tables.find(t => t.fields.some(f => f.id === field.id));
+          if (fieldTable) {
+            setSelectedTable?.(fieldTable);
+            // Call the parent onEditField callback if provided
+            onEditField?.(fieldTable.id, field.id, field);
+          }
+        },
+        onDeleteField: (tableId: string, fieldId: string) => {
+          // Handle field deletion
+          const updatedTables = tables.map(t => {
+            if (t.id === tableId) {
+              return {
+                ...t,
+                fields: t.fields.filter(f => f.id !== fieldId)
+              };
+            }
+            return t;
+          });
+          setTables?.(updatedTables);
+        },
+        onAddField: (tableId: string) => {
+          console.log('➕ Adding field to table:', tableId);
+          // Handle adding new field
+          const updatedTables = tables.map(t => {
+            if (t.id === tableId) {
+              const newField = {
+                id: `field-${Date.now()}`,
+                name: `new_field_${t.fields.length + 1}`,
+                type: 'VARCHAR' as DataType,
+                nullable: true,
+                primaryKey: false,
+                unique: false,
+                foreignKey: null,
+                defaultValue: null,
+                comment: null
+              };
+              console.log('📝 New field created:', newField.name, 'for table:', t.name);
+              return {
+                ...t,
+                fields: [...t.fields, newField]
+              };
+            }
+            return t;
+          });
+          setTables?.(updatedTables);
+        },
+        onAddComment: onAddComment
+      },
+      dragHandle: '.table-drag-handle'
     }));
     
     // Convert stickers to ReactFlow nodes
@@ -560,7 +629,7 @@ export function DatabaseCanvas({
     // Combine table nodes and sticker nodes
     setNodes([...updatedTableNodes, ...stickerNodes]);
     setEdges(generateForeignKeyEdges(tables));
-  }, [tables, selectedTable, stickers, setNodes, setEdges, theme, handleDeleteSticker, handleUpdateSticker, tableNodes]);
+  }, [tables, selectedTable, stickers, setNodes, setEdges, theme, handleDeleteSticker, handleUpdateSticker]);
 
   // Handle bulk import of stickers from JSON
   const handleImportStickers = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

@@ -13,6 +13,8 @@ import { HeaderMenu } from "./components/HeaderMenu";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { StripeProvider } from "./contexts/StripeContext";
 import { SettingsPage } from "./pages/SettingsPage";
+import ProjectDashboard from './pages/ProjectDashboard';
+import ProjectMerge from './pages/ProjectMerge';
 // MainNavigation removed - consolidated with HeaderMenu
 import { AIFeatures } from "./components/subscription/AIFeatures";
 import { Toaster } from "sonner";
@@ -95,6 +97,16 @@ function AuthenticatedApp() {
               <Projects />
             </Layout>
           ) : null
+        } />
+        <Route path="/dashboard" element={
+          <Layout>
+            <ProjectDashboard />
+          </Layout>
+        } />
+        <Route path="/merge" element={
+          <Layout>
+            <ProjectMerge />
+          </Layout>
         } />
         <Route path="/settings" element={
           <Layout>

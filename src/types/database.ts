@@ -73,6 +73,96 @@ export interface DatabaseProject {
   updatedAt: Date;
 }
 
+export interface SchemaComment {
+  id: string;
+  content: string;
+  author?: string;
+  createdAt: string;
+  read: boolean;
+  context?: {
+    parentTable?: string;
+    parentField?: string;
+    parentTrigger?: string;
+    parentFunction?: string;
+    commentId?: string;
+  };
+  convertedToTaskId?: string;
+}
+
+export interface SchemaTask {
+  id: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string;
+  author?: string;
+  context?: {
+    parentTable?: string;
+    parentField?: string;
+    parentTrigger?: string;
+    parentFunction?: string;
+    commentId?: string;
+  };
+}
+
+export interface DatabaseFieldMockup {
+  id: string;
+  name: string;
+  type: string;
+  primaryKey: boolean;
+  required: boolean;
+  unique: boolean;
+  defaultValue?: string;
+  description?: string;
+  foreignKey?: {
+    table: string;
+    field: string;
+    onDelete: string;
+    onUpdate: string;
+  };
+}
+
+export interface DatabaseTableMockup {
+  id: string;
+  name: string;
+  fields: DatabaseFieldMockup[];
+  position: { x: number; y: number };
+}
+
+export interface DatabaseTriggerMockup {
+  id: string;
+  name: string;
+  table: string;
+  event: string;
+  timing: string;
+  code: string;
+}
+
+export interface DatabaseFunctionMockup {
+  id: string;
+  name: string;
+  returnType: string;
+  code: string;
+  language: string;
+}
+
+export interface ProjectMockup {
+  id: string;
+  name: string;
+  url: string;
+  page: string;
+  createdAt: string;
+  description?: string;
+  type: 'image' | 'webview';
+}
+
+export interface ProjectMockupCategory {
+  id: string;
+  name: string;
+  mockups: ProjectMockup[];
+}
+
 export type DataType = 
   | 'UUID'
   | 'SERIAL'
@@ -133,13 +223,13 @@ export function getDataTypeColor(type: DataType): string {
     TEXT: 'color-text',
     VARCHAR: 'color-varchar',
     STRING: 'color-string',
-    CHAR: 'color-string',
+    CHAR: 'color-char', // Give CHAR its own color variable
     INT: 'color-int',
     INTEGER: 'color-integer',
     INT4: 'color-int4',
     INT8: 'color-int8',
     BIGINT: 'color-bigint',
-    SMALLINT: 'color-int',
+    SMALLINT: 'color-smallint', // Give SMALLINT its own color variable
     SERIAL: 'color-serial',
     BOOLEAN: 'color-boolean',
     BOOL: 'color-bool',
@@ -153,7 +243,7 @@ export function getDataTypeColor(type: DataType): string {
     NUMERIC: 'color-numeric',
     FLOAT: 'color-float',
     REAL: 'color-real',
-    'DOUBLE PRECISION': 'color-real',
+    'DOUBLE PRECISION': 'color-double-precision', // Give DOUBLE PRECISION its own color variable
     EMAIL: 'color-email',
     ENUM: 'color-enum',
     ARRAY: 'color-array',

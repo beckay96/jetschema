@@ -10,9 +10,9 @@ import { DataType } from '@/types/database';
 import { DataTypePill } from '@/components/database/DataTypePill';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { RefreshCcw, Save, Plus, Star, Trash, Check, ChevronDown, Bookmark } from 'lucide-react';
+import { RefreshCcw, Save, Plus, Star, Trash, Check, ChevronDown, Bookmark, Grid, Table } from 'lucide-react';
 import { toast } from 'sonner';
-import { ColorTheme, getUserColorThemes, saveColorTheme, deleteColorTheme, setDefaultColorTheme, getActiveColorTheme } from '@/api/userSettings';
+import { ColorTheme, getUserColorThemes, saveColorTheme, deleteColorTheme, setDefaultColorTheme, getActiveColorTheme, getUserDefaultView, setUserDefaultView, DefaultView } from '@/api/userSettings';
 
 type ColorCategory = 'string' | 'number' | 'boolean' | 'date' | 'uuid' | 'json' | 'binary' | 'network' | 'other';
 
@@ -22,30 +22,55 @@ interface TypeColorGroup {
   types: DataType[];
 }
 
-// This function takes a CSS HSL variable string like "340 100% 65%" and converts to hex
+/**
+ * Converts an HSL color string to hexadecimal format
+ * 
+ * Takes a CSS HSL value string like "340 100% 65%" and converts it to hexadecimal color format (#RRGGBB)
+ * Handles edge cases and invalid input by providing default values and error handling
+ *
+ * @param hslStr - The HSL string in format "H S% L%" (e.g., "210 50% 40%")
+ * @returns Hexadecimal color string (e.g., "#3366cc")
+ */
 const hslToHex = (hslStr: string): string => {
-  const [h, s, l] = hslStr.split(' ').map(val => parseFloat(val));
-  const sDecimal = s / 100;
-  const lDecimal = l / 100;
+  // Default values for r, g, b, and m to fix linting errors
+  let r = 0, g = 0, b = 0, m = 0;
   
-  const c = (1 - Math.abs(2 * lDecimal - 1)) * sDecimal;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = lDecimal - c / 2;
-  
-  let r, g, b;
-  
-  if (0 <= h && h < 60) {
-    [r, g, b] = [c, x, 0];
-  } else if (60 <= h && h < 120) {
-    [r, g, b] = [x, c, 0];
-  } else if (120 <= h && h < 180) {
-    [r, g, b] = [0, c, x];
-  } else if (180 <= h && h < 240) {
-    [r, g, b] = [0, x, c];
-  } else if (240 <= h && h < 300) {
-    [r, g, b] = [x, 0, c];
-  } else {
-    [r, g, b] = [c, 0, x];
+  try {
+    // Clean the string and handle edge cases
+    const cleanStr = hslStr.trim();
+    if (!cleanStr) return '#000000';
+    
+    // Parse the HSL values
+    const [h, s, l] = cleanStr.split(' ').map(val => {
+      const parsed = parseFloat(val.replace('%', ''));
+      return isNaN(parsed) ? 0 : parsed;
+    });
+    
+    const sDecimal = Math.min(Math.max(s / 100, 0), 1); // Clamp between 0-1
+    const lDecimal = Math.min(Math.max(l / 100, 0), 1); // Clamp between 0-1
+    
+    const c = (1 - Math.abs(2 * lDecimal - 1)) * sDecimal;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    m = lDecimal - c / 2;
+    
+    const hue = ((h % 360) + 360) % 360; // Normalize hue to 0-359
+    
+    if (0 <= hue && hue < 60) {
+      r = c; g = x; b = 0;
+    } else if (60 <= hue && hue < 120) {
+      r = x; g = c; b = 0;
+    } else if (120 <= hue && hue < 180) {
+      r = 0; g = c; b = x;
+    } else if (180 <= hue && hue < 240) {
+      r = 0; g = x; b = c;
+    } else if (240 <= hue && hue < 300) {
+      r = x; g = 0; b = c;
+    } else {
+      r = c; g = 0; b = x;
+    }
+  } catch (error) {
+    console.error('Error converting HSL to Hex:', error, hslStr);
+    return '#000000';
   }
   
   const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
@@ -55,47 +80,77 @@ const hslToHex = (hslStr: string): string => {
   return `#${rHex}${gHex}${bHex}`;
 };
 
-// This function converts a hex color to HSL format for CSS variables
+/**
+ * Converts a hexadecimal color string to HSL format for CSS variables
+ * 
+ * Takes a hex color code (#RRGGBB or #RGB) and converts it to HSL format used by CSS variables.
+ * Includes validation, error handling, and support for both 6-digit and 3-digit hex formats.
+ *
+ * @param hex - The hexadecimal color string (e.g., "#3366cc" or "#36c")
+ * @returns HSL string in the format "H S% L%" (e.g., "210 50% 40%")
+ */
 const hexToHsl = (hex: string): string => {
-  // Remove the # if it exists
-  hex = hex.replace('#', '');
-  
-  // Convert hex to RGB
-  const r = parseInt(hex.substring(0, 2), 16) / 255;
-  const g = parseInt(hex.substring(2, 4), 16) / 255;
-  const b = parseInt(hex.substring(4, 6), 16) / 255;
-  
-  // Find the min and max values of RGB
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  
-  // Calculate the lightness
-  let l = (max + min) / 2;
-  
-  // If max and min are the same, it's a shade of grey
-  if (max === min) {
-    return `0 0% ${Math.round(l * 100)}%`;
+  try {
+    // Validate and normalize the hex color
+    if (!hex || typeof hex !== 'string') {
+      console.warn('Invalid hex color:', hex);
+      return '0 0% 0%';
+    }
+    
+    // Remove the # if it exists
+    hex = hex.replace('#', '').trim();
+    
+    // Handle shorthand hex (e.g., #F00 -> #FF0000)
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    
+    // Validate hex format
+    if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+      console.warn('Invalid hex format:', hex);
+      return '0 0% 0%';
+    }
+    
+    // Convert hex to RGB
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    
+    // Find the min and max values of RGB
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    
+    // Calculate the lightness
+    let l = (max + min) / 2;
+    
+    // If max and min are the same, it's a shade of grey
+    if (max === min) {
+      return `0 0% ${Math.round(l * 100)}%`;
+    }
+    
+    // Calculate the saturation
+    const s = l > 0.5 
+      ? (max - min) / (2 - max - min) 
+      : (max - min) / (max + min);
+    
+    // Calculate the hue
+    let h;
+    if (max === r) {
+      h = ((g - b) / (max - min)) % 6;
+    } else if (max === g) {
+      h = (b - r) / (max - min) + 2;
+    } else {
+      h = (r - g) / (max - min) + 4;
+    }
+    
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+    
+    return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+  } catch (error) {
+    console.error('Error converting hex to HSL:', error, hex);
+    return '0 0% 0%'; // Default to black
   }
-  
-  // Calculate the saturation
-  const s = l > 0.5 
-    ? (max - min) / (2 - max - min) 
-    : (max - min) / (max + min);
-  
-  // Calculate the hue
-  let h;
-  if (max === r) {
-    h = ((g - b) / (max - min)) % 6;
-  } else if (max === g) {
-    h = (b - r) / (max - min) + 2;
-  } else {
-    h = (r - g) / (max - min) + 4;
-  }
-  
-  h = Math.round(h * 60);
-  if (h < 0) h += 360;
-  
-  return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 };
 
 // Group data types by category
@@ -148,11 +203,36 @@ export function AppearanceSettings() {
   const [hasChanges, setHasChanges] = useState(false);
   const [savedThemes, setSavedThemes] = useState<ColorTheme[]>([]);
   const [activeTheme, setActiveTheme] = useState<ColorTheme | null>(null);
+  const [defaultView, setDefaultView] = useState<DefaultView>('diagram');
   
   // New theme dialog state
   const [isThemeDialogOpen, setIsThemeDialogOpen] = useState(false);
   const [newThemeName, setNewThemeName] = useState('');
   const [newThemeDescription, setNewThemeDescription] = useState('');
+  
+  // Load user's default view preference
+  const loadDefaultView = useCallback(async () => {
+    try {
+      const view = await getUserDefaultView();
+      setDefaultView(view);
+    } catch (error) {
+      console.error('Failed to load default view preference:', error);
+    }
+  }, []);
+  
+  // Save user's default view preference
+  const saveDefaultView = async (view: DefaultView) => {
+    try {
+      console.log('Attempting to save default view:', view);
+      await setUserDefaultView(view);
+      setDefaultView(view);
+      console.log('Default view saved successfully, state updated to:', view);
+      toast.success(`Default view preference saved: ${view}`);
+    } catch (error) {
+      console.error('Failed to save default view preference:', error);
+      toast.error(`Failed to save default view preference: ${error.message}`);
+    }
+  };
   
   // Load saved themes and active theme from database
   const loadSavedThemes = useCallback(async () => {
@@ -181,15 +261,24 @@ export function AppearanceSettings() {
       allTypes.forEach(type => {
         const cssVarName = `--color-${type.toLowerCase()}`;
         const cssValue = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
-        colors[type] = hslToHex(cssValue);
+        
+        if (cssValue) {
+          // Convert HSL to hex for the color picker
+          colors[type] = hslToHex(cssValue);
+        } else {
+          // Default color if not set
+          colors[type] = '#000000';
+        }
       });
       
       setTypeColors(colors);
+      setHasChanges(false);
     };
     
     loadColorValues();
     loadSavedThemes();
-  }, [loadSavedThemes]);
+    loadDefaultView();
+  }, [loadSavedThemes, loadDefaultView]);
 
   // Load colors from local storage if available
   useEffect(() => {
@@ -204,18 +293,76 @@ export function AppearanceSettings() {
     }
   }, []);
 
-  // Apply color changes to CSS variables
+  /**
+   * Applies the selected color values to CSS custom properties (variables)
+   * 
+   * Takes a record of data types mapped to their hex color values and sets
+   * the corresponding CSS variables for use throughout the application.
+   * Includes validation and a forced repaint to ensure immediate visual updates.
+   * 
+   * @param colors - Record mapping data types to hex color strings
+   */
   const applyColorChanges = (colors: Record<DataType, string>) => {
+    // Create a style element to apply all color changes at once
+    const styleId = 'jetschema-dynamic-colors';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+    
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    
+    // Build CSS rules for all colors
+    let cssRules = '/* JetSchema dynamic color variables */\n:root {\n';
+    
     Object.entries(colors).forEach(([type, hexColor]) => {
-      const cssVarName = `--color-${type.toLowerCase()}`;
-      document.documentElement.style.setProperty(cssVarName, hexToHsl(hexColor));
+      // Ensure we have a valid hex color before conversion
+      if (hexColor && hexColor.startsWith('#')) {
+        try {
+          const hslValue = hexToHsl(hexColor);
+          const cssVarName = `--color-${type.toLowerCase().replace(/\s+/g, '-')}`;
+          
+          // Log for debugging
+          console.log(`Applying color: ${type}, HEX: ${hexColor}, HSL: ${hslValue}`);
+          
+          // Add to our CSS rules
+          cssRules += `  ${cssVarName}: ${hslValue};\n`;
+          
+          // Also apply directly to ensure immediate effect
+          document.documentElement.style.setProperty(cssVarName, hslValue);
+        } catch (error) {
+          console.error(`Error applying color for ${type}:`, error);
+        }
+      } else {
+        console.warn(`Invalid hex color for ${type}: ${hexColor}`);
+      }
     });
+    
+    cssRules += '}\n';
+    
+    // Apply all rules at once
+    styleEl.textContent = cssRules;
+    
+    // Force a repaint
+    const existingTransition = document.body.style.transition;
+    document.body.style.transition = 'none';
+    document.body.style.backgroundColor = document.body.style.backgroundColor || 'transparent';
+    document.body.offsetHeight; // Force reflow
+    setTimeout(() => {
+      document.body.style.transition = existingTransition;
+    }, 50);
   };
 
   // Handle color change for a specific type
   const handleColorChange = (type: DataType, newColor: string) => {
     setTypeColors(prev => {
       const updated = { ...prev, [type]: newColor };
+      
+      // Apply change immediately to see preview
+      const singleChange = { [type]: newColor } as Record<DataType, string>;
+      applyColorChanges(singleChange);
+      
       setHasChanges(true);
       return updated;
     });
@@ -263,12 +410,15 @@ export function AppearanceSettings() {
   
   // Save all color changes
   const saveColorChanges = async () => {
-    // Apply all color changes to CSS variables
-    applyColorChanges(typeColors);
-    
-    // If there's an active theme, update it
-    if (activeTheme) {
-      try {
+    try {
+      // Apply all color changes to CSS variables immediately
+      applyColorChanges(typeColors);
+      
+      // Always save to localStorage for immediate persistence
+      localStorage.setItem('jetschema-type-colors', JSON.stringify(typeColors));
+      
+      // If there's an active theme, update it in database/storage
+      if (activeTheme) {
         const updatedTheme: ColorTheme = {
           ...activeTheme,
           colors: { ...typeColors },
@@ -284,48 +434,88 @@ export function AppearanceSettings() {
         );
         
         toast.success(`Theme "${updatedTheme.name}" updated successfully`);
-      } catch (error) {
-        console.error('Failed to update theme:', error);
-        toast.error('Failed to update theme');
+        console.log('Theme updated with colors:', typeColors);
+      } else {
+        toast.success('Color settings saved');
+        console.log('Colors saved without theme:', typeColors);
       }
-    } else {
-      // If no active theme, just save to local storage for now
-      localStorage.setItem('jetschema-type-colors', JSON.stringify(typeColors));
-      toast.success('Color settings saved temporarily. Save as theme for permanence.');
+      
+      // Force reapplication of colors to ensure they take effect
+      setTimeout(() => {
+        applyColorChanges(typeColors);
+        document.body.style.transition = 'background-color 0.1s';
+        document.body.style.backgroundColor = document.body.style.backgroundColor || 'transparent';
+        setTimeout(() => {
+          document.body.style.transition = '';
+        }, 100);
+      }, 50);
+      
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Failed to save color changes:', error);
+      toast.error('Failed to save color changes. Please try again.');
     }
-    
-    setHasChanges(false);
   };
 
   // Reset colors to defaults
   const resetToDefaults = () => {
-    const styles = getComputedStyle(document.documentElement);
-    const resetColors: Record<DataType, string> = {} as Record<DataType, string>;
-    
-    // Remove custom colors from local storage
-    localStorage.removeItem('jetschema-type-colors');
-    
-    // Reset all CSS variables to their default values
-    document.documentElement.setAttribute('style', '');
-    
-    // Reset active theme (but don't delete saved themes)
-    setActiveTheme(null);
-    
-    // Reload the page to get fresh CSS variables
-    window.location.reload();
+    try {
+      // Remove custom colors from local storage
+      localStorage.removeItem('jetschema-type-colors');
+      
+      // Reset all CSS variables to their default values
+      document.documentElement.setAttribute('style', '');
+      
+      // Reset active theme (but don't delete saved themes)
+      setActiveTheme(null);
+      setHasChanges(false);
+      
+      // Reload the page to get fresh CSS variables
+      toast.success('Color settings reset to defaults');
+      console.log('Color settings reset to defaults');
+      
+      // Force reload after toast is shown
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to reset colors:', error);
+      toast.error('Failed to reset colors. Please try again.');
+    }
   };
   
   // Load a saved theme
   const loadTheme = (theme: ColorTheme) => {
-    // Apply the theme colors
-    setTypeColors(theme.colors);
-    applyColorChanges(theme.colors);
-    
-    // Update active theme
-    setActiveTheme(theme);
-    setHasChanges(false);
-    
-    toast.success(`Theme "${theme.name}" applied`);
+    try {
+      if (!theme || !theme.colors) {
+        toast.error('Invalid theme data');
+        return;
+      }
+
+      console.log('Loading theme:', theme.name, theme.colors);
+      
+      // Apply the theme colors
+      setTypeColors(theme.colors);
+      applyColorChanges(theme.colors);
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('jetschema-type-colors', JSON.stringify(theme.colors));
+      
+      // Update active theme
+      setActiveTheme(theme);
+      setHasChanges(false);
+      
+      // Force reapplication of colors after a small delay to ensure they take effect
+      setTimeout(() => {
+        applyColorChanges(theme.colors);
+        console.log('Theme colors reapplied');
+      }, 100);
+      
+      toast.success(`Theme "${theme.name}" applied`);
+    } catch (error) {
+      console.error('Failed to load theme:', error);
+      toast.error('Failed to load theme. Please try again.');
+    }
   };
   
   // Set a theme as default
@@ -631,6 +821,34 @@ export function AppearanceSettings() {
           </TabsContent>
         </Tabs>
       </CardContent>
+      <CardFooter className="border-t pt-6">
+        <div className="flex flex-col space-y-4 w-full">
+          <div>
+            <h3 className="text-lg font-medium">Default View Preference</h3>
+            <p className="text-sm text-muted-foreground">
+              Choose your preferred default view when opening projects
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              variant={defaultView === 'diagram' ? 'default' : 'outline'}
+              className="flex-1 justify-start gap-2"
+              onClick={() => saveDefaultView('diagram')}
+            >
+              <Grid className="h-4 w-4" />
+              Diagram View
+            </Button>
+            <Button
+              variant={defaultView === 'table' ? 'default' : 'outline'}
+              className="flex-1 justify-start gap-2"
+              onClick={() => saveDefaultView('table')}
+            >
+              <Table className="h-4 w-4" />
+              Table View
+            </Button>
+          </div>
+        </div>
+      </CardFooter>
     </Card>
   );
 }

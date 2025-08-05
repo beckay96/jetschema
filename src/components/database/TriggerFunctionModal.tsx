@@ -108,11 +108,13 @@ export function TriggerFunctionModal({
   useEffect(() => {
     if (open) {
       if (mode === 'trigger' && existingTrigger) {
+        // When editing an existing trigger, use its data
         setTriggerData(existingTrigger);
       } else if (mode === 'function' && existingFunction) {
+        // When editing an existing function, use its data
         setFunctionData(existingFunction);
       } else {
-        // Reset to default values
+        // Reset to default values for new items
         if (mode === 'trigger') {
           setTriggerData({
             name: '',
@@ -129,7 +131,7 @@ export function TriggerFunctionModal({
             function_type: 'plpgsql',
             parameters: [],
             return_type: 'TRIGGER',
-            function_body: '',
+            function_body: getFunctionTemplate('plpgsql'),
             is_edge_function: false,
             is_cron_enabled: false,
             project_id: '' // Will be set when saving
@@ -150,6 +152,12 @@ export function TriggerFunctionModal({
         ...triggerData,
         project_id: triggerData.project_id || projectId
       };
+      
+      // If we're editing an existing trigger, preserve its ID
+      if (existingTrigger?.id) {
+        finalTriggerData.id = existingTrigger.id;
+      }
+      
       onSave(finalTriggerData);
     } else {
       // Make sure project_id is set before saving
@@ -157,6 +165,12 @@ export function TriggerFunctionModal({
         ...functionData,
         project_id: functionData.project_id || projectId
       };
+      
+      // If we're editing an existing function, preserve its ID
+      if (existingFunction?.id) {
+        finalFunctionData.id = existingFunction.id;
+      }
+      
       onSave(finalFunctionData);
     }
     onOpenChange(false);
@@ -551,12 +565,12 @@ END;`;
             {mode === 'trigger' ? (
               <>
                 <Zap className="h-5 w-5" />
-                {existingTrigger ? 'Edit Trigger' : 'Create Trigger'}
+                {existingTrigger ? 'Edit' : 'Create'} Database Trigger
               </>
             ) : (
               <>
-                <Database className="h-5 w-5" />
-                {existingFunction ? 'Edit Function' : 'Create Function'}
+                <Code className="h-5 w-5" />
+                {existingFunction ? 'Edit' : 'Create'} Database Function
               </>
             )}
           </DialogTitle>

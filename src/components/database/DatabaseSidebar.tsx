@@ -23,17 +23,19 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, ChevronDown, RocketIcon, MessageCircle } from 'lucide-react';
+import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Trash2, ChevronDown, RocketIcon, MessageCircle, Pencil, Clock } from 'lucide-react';
 // Import database types
 import { DatabaseTable } from '@/types/database';
 // Use the hook's interface definitions for database functions and triggers
 import { useTriggersFunctions } from '@/hooks/useTriggersFunctions';
+import { useRLSPolicies } from '@/hooks/useRLSPolicies';
 
 // Define interfaces matching the Supabase database schema
 interface DatabaseTrigger {
@@ -66,6 +68,7 @@ interface DatabaseFunction {
 }
 import { ExportModal } from './ExportModal';
 import { TriggerFunctionModal } from './TriggerFunctionModal';
+import { RLSPolicyModal } from './RLSPolicyModal';
 import { DataTypePill } from './DataTypePill';
 import { ProjectTitleIcons } from './MicrointeractionIcons';
 import { TabsDropdown } from './TabsDropdown';
@@ -75,16 +78,21 @@ interface DatabaseSidebarProps {
   triggers: DatabaseTrigger[];
   functions: DatabaseFunction[];
   selectedTable?: DatabaseTable | null;
+  projectId?: string;
   onAddTable?: () => void;
   onAddTrigger?: (trigger: Omit<DatabaseTrigger, 'id'>) => void;
   onAddFunction?: (func: Omit<DatabaseFunction, 'id'>) => void;
   onSelectTable?: (table: DatabaseTable) => void;
   onDeleteTable?: (tableId: string) => void;
+  onDeleteTrigger?: (triggerId: string) => void;
+  onDeleteFunction?: (functionId: string) => void;
+  onUpdateTrigger?: (trigger: DatabaseTrigger) => void;
+  onUpdateFunction?: (func: DatabaseFunction) => void;
   onSaveProject?: () => void;
   onShare?: () => void;
   projectName?: string;
   onProjectNameChange?: (name: string) => void;
-  onReorderTables?: (reorderedTables: DatabaseTable[]) => void; // New prop for table reordering
+  onReorderTables?: (reorderedTables: DatabaseTable[]) => void;
   onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
 }
 
@@ -197,6 +205,7 @@ export function DatabaseSidebar({
   onSaveProject,
   onShare,
   projectName: externalProjectName,
+  projectId,
   onProjectNameChange,
   onReorderTables,
   onAddComment
@@ -239,12 +248,18 @@ export function DatabaseSidebar({
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showFunctionModal, setShowFunctionModal] = useState(false);
+  const [showRLSModal, setShowRLSModal] = useState(false);
+  const [editingTrigger, setEditingTrigger] = useState<DatabaseTrigger | null>(null);
+  const [editingFunction, setEditingFunction] = useState<DatabaseFunction | null>(null);
   const [activeTab, setActiveTab] = useState('tables');
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
   const [isResizing, setIsResizing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const resizeRef = useRef(null);
   const sidebarRef = useRef(null);
+  
+  // RLS policies
+  const { policies, loading: policiesLoading, savePolicy, updatePolicy, deletePolicy, refetch: refetchPolicies } = useRLSPolicies(projectId);
   
   // Resize handler setup
   const startResizing = (e) => {
@@ -538,14 +553,41 @@ export function DatabaseSidebar({
                   <Card key={trigger.id} className="cursor-pointer hover:bg-muted/50">
                     <CardContent className="p-3">
                       <div className="text-xs flex items-center justify-between">
-                <div>{trigger.table_name}</div>
-                <div className="flex items-center text-slate-500">
-                  <Badge variant="outline" className="text-[10px] h-5">{trigger.trigger_timing} {trigger.trigger_event}</Badge>
-                </div>
-              </div>        
-                      <p className="text-xs text-muted-foreground">
-                        {trigger.trigger_event} on {trigger.table_name}
-                      </p>
+                        <div>{trigger.name}</div>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTrigger(trigger);
+                              setShowTriggerModal(true);
+                            }}
+                            title="Edit trigger"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-destructive" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteTrigger?.(trigger.id!);
+                            }}
+                            title="Delete trigger"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <Badge variant="outline" className="text-[10px] h-5">{trigger.trigger_timing} {trigger.trigger_event}</Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {trigger.table_name}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -579,13 +621,42 @@ export function DatabaseSidebar({
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-sm">{func.name}</h4>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFunction(func);
+                              setShowFunctionModal(true);
+                            }}
+                            title="Edit function"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-destructive" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteFunction?.(func.id!);
+                            }}
+                            title="Delete function"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
                         <Badge variant="outline" className="text-xs">
                           {func.return_type}
                         </Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {func.parameters.length} parameters
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {func.parameters.length} parameters
-                      </p>
                     </CardContent>
                   </Card>
                 ))}
@@ -606,7 +677,7 @@ export function DatabaseSidebar({
               <div className="flex-shrink-0 space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">RLS Policies</Label>
-                <Button size="sm" className="h-8">
+                <Button size="sm" className="h-8" onClick={() => setShowRLSModal(true)}>
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
@@ -614,10 +685,43 @@ export function DatabaseSidebar({
 
             <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full" type="always">
               <div className="space-y-2">
-                <div className="text-center py-8 text-muted-foreground">
-                  <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No RLS policies defined</p>
-                </div>
+                {policiesLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="h-8 w-8 mx-auto mb-2 opacity-50 animate-spin">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    </div>
+                    <p className="text-sm">Loading policies...</p>
+                  </div>
+                ) : policies.length > 0 ? (
+                  policies.map(policy => (
+                    <Card key={policy.id} className="cursor-pointer hover:bg-muted/50">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium text-sm">{policy.name}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {policy.command}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Table: {policy.table_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Role: {policy.role || 'public'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No RLS policies defined</p>
+                    <Button variant="link" size="sm" className="mt-2" onClick={() => setShowRLSModal(true)}>
+                      Create your first policy
+                    </Button>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -709,6 +813,40 @@ export function DatabaseSidebar({
           onAddFunction?.(dbFunc);
           setShowFunctionModal(false);
         }} 
+      />
+      
+      <RLSPolicyModal
+        open={showRLSModal}
+        onOpenChange={setShowRLSModal}
+        tables={tables}
+        projectId={projectId || ''}
+        onSave={async (policy) => {
+          if (!projectId) {
+            console.error('Cannot save RLS policy: projectId is undefined');
+            return;
+          }
+          
+          console.log('Saving RLS policy:', { ...policy, project_id: projectId });
+          
+          try {
+            // Ensure we're passing all required fields and correct types
+            const result = await savePolicy({
+              ...policy,
+              project_id: projectId,
+              // is_permissive is required and must be a boolean
+              is_permissive: policy.is_permissive === undefined ? true : policy.is_permissive,
+              // author_id will be filled by useRLSPolicies hook
+              author_id: '',
+            });
+            
+            console.log('RLS policy saved successfully:', result);
+            setShowRLSModal(false);
+            refetchPolicies();
+          } catch (error) {
+            console.error('Error saving policy:', error);
+            // Keep the modal open so user can fix any issues
+          }
+        }}
       />
     </Card>
     </>

@@ -348,6 +348,70 @@ export type Database = {
         }
         Relationships: []
       }
+      mockup_comments: {
+        Row: {
+          id: string
+          mockup_id: string
+          user_id: string
+          project_id: string
+          content: string
+          annotations: Json | null
+          is_task: boolean
+          completed: boolean | null
+          assigned_to: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          mockup_id: string
+          user_id: string
+          project_id: string
+          content: string
+          annotations?: Json | null
+          is_task?: boolean
+          completed?: boolean | null
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          mockup_id?: string
+          user_id?: string
+          project_id?: string
+          content?: string
+          annotations?: Json | null
+          is_task?: boolean
+          completed?: boolean | null
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mockup_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mockup_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "database_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mockup_comments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       field_comments: {
         Row: {
           author_id: string
@@ -399,6 +463,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          default_view: string | null
           display_name: string | null
           email: string | null
           id: string
@@ -408,6 +473,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          default_view?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -417,6 +483,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          default_view?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -502,6 +569,73 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      unified_comments: {
+        Row: {
+          id: string
+          project_id: string
+          author_id: string
+          content: string
+          object_type: string
+          object_id: string
+          parent_object_id: string | null
+          is_task: boolean
+          completed: boolean
+          assigned_to: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          author_id: string
+          content: string
+          object_type: string
+          object_id: string
+          parent_object_id?: string | null
+          is_task?: boolean
+          completed?: boolean
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          author_id?: string
+          content?: string
+          object_type?: string
+          object_id?: string
+          parent_object_id?: string | null
+          is_task?: boolean
+          completed?: boolean
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "database_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_comments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
       teams: {

@@ -5,18 +5,21 @@ import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
 import { TableView } from '@/components/database/TableView';
 import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/SQLEditor';
-import { DatabaseTable, DatabaseTrigger, DatabaseFunction } from '@/types/database';
+import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
 import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/CommentTaskDrawer';
 import { ValidationPanel } from '@/components/database/ValidationPanel';
+import { MockupsPanel } from '@/components/database/MockupsPanel';
+import { UnifiedCommentsPanel } from '@/components/comments/UnifiedCommentsPanel';
 import { ValidationError } from '@/utils/validationUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle } from 'lucide-react';
+import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SaveStatus, StatusType } from '@/components/SaveStatus';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
 import { toast } from 'sonner';
+import { getUserDefaultView } from '@/api/userSettings';
 
 const ProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +36,9 @@ const ProjectEditor = () => {
   const [comments, setComments] = useState<SchemaComment[]>([]);
   const [tasks, setTasks] = useState<SchemaTask[]>([]);
   const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
+  
+  // Mockup state
+  const [mockups, setMockups] = useState<ProjectMockupCategory[]>([]);
   
   /**
    * Validation state for the project schema
@@ -54,6 +60,21 @@ const ProjectEditor = () => {
   
   // View mode state - 'diagram' (default) or 'table'
   const [viewMode, setViewMode] = useState<'diagram' | 'table'>('diagram');
+  
+  // Initialize view mode based on user preference
+  useEffect(() => {
+    const loadUserDefaultView = async () => {
+      try {
+        const defaultView = await getUserDefaultView();
+        setViewMode(defaultView);
+      } catch (error) {
+        console.error('Failed to load user default view preference:', error);
+        // Keep default 'diagram' view if there's an error
+      }
+    };
+    
+    loadUserDefaultView();
+  }, []);
 
   const currentProject = projects.find(p => p.id === id);
   
@@ -157,6 +178,10 @@ const ProjectEditor = () => {
         
         const safeTasks = Array.isArray(projectData.tasks) ? projectData.tasks : [];
         setTasks(safeTasks);
+        
+        // Safely load mockups if they exist
+        const safeMockups = Array.isArray(projectData.mockups) ? projectData.mockups : [];
+        setMockups(safeMockups);
         
         /**
          * Load validation errors if they exist in the project data
@@ -415,6 +440,117 @@ const ProjectEditor = () => {
     });
   };
   
+  // Edit comment handler
+  const handleEditComment = (commentId: string, newContent: string) => {
+    const updatedComments = comments.map(comment => 
+      comment.id === commentId ? { ...comment, content: newContent } : comment
+    );
+    setComments(updatedComments);
+    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    setStatusMessage({
+      status: 'success',
+      message: "Comment updated successfully"
+    });
+  };
+  
+  // Delete comment handler
+  const handleDeleteComment = (commentId: string) => {
+    const updatedComments = comments.filter(comment => comment.id !== commentId);
+    setComments(updatedComments);
+    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    setStatusMessage({
+      status: 'success',
+      message: "Comment deleted successfully"
+    });
+  };
+  
+  // Edit task handler
+  const handleEditTask = (taskId: string, newDescription: string, newPriority: 'low' | 'medium' | 'high') => {
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId ? { ...task, description: newDescription, priority: newPriority } : task
+    );
+    setTasks(updatedTasks);
+    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    setStatusMessage({
+      status: 'success',
+      message: "Task updated successfully"
+    });
+  };
+  
+  // Delete task handler
+  const handleDeleteTask = (taskId: string) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    setStatusMessage({
+      status: 'success',
+      message: "Task deleted successfully"
+    });
+  };
+  
+  // Reply to comment handler
+  const handleReplyToComment = (parentId: string) => {
+    try {
+      // Find the parent comment
+      const parentComment = comments.find(comment => comment.id === parentId);
+      if (!parentComment) {
+        console.error(`Parent comment with ID ${parentId} not found`);
+        return;
+      }
+
+      setStatusMessage({
+        status: 'loading',
+        message: `Adding reply to comment...`
+      });
+
+      // Create context information for the reply
+      let context: SchemaComment['context'] = {};
+      
+      // Inherit context from parent comment
+      if (parentComment.context) {
+        context = { ...parentComment.context };
+      }
+      
+      // Add current project info if available
+      if (currentProject) {
+        context.database = currentProject.name;
+      }
+      
+      // Create the new reply comment
+      const replyId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const newReply: SchemaComment = {
+        id: replyId,
+        elementType: parentComment.elementType,
+        elementId: parentComment.elementId,
+        elementName: parentComment.elementName,
+        content: `Add your reply here...`,
+        createdAt: new Date(),
+        read: false,
+        parentId: parentId,
+        isReply: true,
+        context,
+      };
+      
+      // Update local state
+      const updatedComments = [...comments, newReply];
+      setComments(updatedComments);
+      
+      // Save the project with the new reply
+      handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+      
+      setStatusMessage({
+        status: 'success',
+        message: `Reply added successfully`
+      });
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      setStatusMessage({
+        status: 'error',
+        message: `Error adding reply: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  };
+  
   /**
    * Validation refresh handler
    * Performs schema validation on the current tables and fields
@@ -584,7 +720,65 @@ const ProjectEditor = () => {
     }
     // Don't auto-save, let the auto-save handle it
   };
+
+  // CRITICAL FIX: Add proper function handler
+  const handleAddFunction = (func: any) => {
+    console.log('Add function', func);
+    const updatedFunctions = [...functions, func];
+    setFunctions(updatedFunctions);
+    // Auto-save will handle the database update
+  };
+
+  // CRITICAL FIX: Add proper trigger handler
+  const handleAddTrigger = (trigger: any) => {
+    const newTrigger = {
+      ...trigger,
+      id: `trigger-${Date.now()}`
+    };
+    setTriggers([...triggers, newTrigger]);
+    setHasUnsavedChanges(true);
+  };
   
+  // Handle updating a trigger
+  const handleUpdateTrigger = (updatedTrigger: DatabaseTrigger) => {
+    // Update the trigger in state
+    setTriggers(prev => prev.map(trigger => 
+      trigger.id === updatedTrigger.id ? updatedTrigger : trigger
+    ));
+    
+    // Mark as unsaved
+    setHasUnsavedChanges(true);
+  };
+  
+  // Handle deleting a trigger
+  const handleDeleteTrigger = (triggerId: string) => {
+    // Remove the trigger from state
+    setTriggers(prev => prev.filter(trigger => trigger.id !== triggerId));
+    
+    // Mark as unsaved
+    setHasUnsavedChanges(true);
+  };
+
+  // CRITICAL FIX: Add proper function handler
+  const handleUpdateFunction = (updatedFunction: DatabaseFunction) => {
+    // Update the function in state
+    setFunctions(prev => prev.map(func => 
+      func.id === updatedFunction.id ? updatedFunction : func
+    ));
+    
+    // Mark as unsaved
+    setHasUnsavedChanges(true);
+  };
+  
+  // Handle deleting a function
+  const handleDeleteFunction = (functionId: string) => {
+    // Remove the function from state
+    setFunctions(prev => prev.filter(func => func.id !== functionId));
+    
+    // Mark as unsaved
+    setHasUnsavedChanges(true);
+  };
+
   /**
    * Handle reordering of tables via drag and drop
    * Updates the tables state with the new order and marks project as unsaved
@@ -713,6 +907,7 @@ const ProjectEditor = () => {
       functions: updatedFunctions,
       comments: updatedComments,
       tasks: updatedTasks,
+      mockups: mockups, // Save mockups with project
       validationErrors: validationErrors // Save validation errors with project
     };
     
@@ -744,56 +939,7 @@ const ProjectEditor = () => {
     handleSaveProject(tables, triggers, functions, comments, tasks, false, name);
   };
 
-  // Reply to comment handler
-  const handleReplyToComment = (parentId: string) => {
-    try {
-      const parentComment = comments.find(c => c.id === parentId);
-      if (!parentComment) {
-        console.error(`Parent comment with ID ${parentId} not found`);
-        return;
-      }
 
-      setStatusMessage({
-        status: 'loading',
-        message: `Creating reply...`
-      });
-      
-      // Create a new reply comment, inheriting context from parent
-      const commentId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      const newComment: SchemaComment = {
-        id: commentId,
-        elementType: parentComment.elementType,
-        elementId: parentComment.elementId,
-        elementName: parentComment.elementName,
-        content: `Reply to comment about ${parentComment.elementName}...`,
-        createdAt: new Date(),
-        read: false,
-        parentId: parentId,
-        isReply: true,
-        // Inherit context from parent comment
-        context: parentComment.context ? { ...parentComment.context } : undefined,
-      };
-      
-      // Add the reply to comments
-      const updatedComments = [...comments, newComment];
-      setComments(updatedComments);
-      
-      // Open the drawer and save
-      setCommentDrawerOpen(true);
-      handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
-      
-      setStatusMessage({
-        status: 'success',
-        message: `Reply created`
-      });
-    } catch (error) {
-      console.error('Error creating reply:', error);
-      setStatusMessage({
-        status: 'error',
-        message: `Error creating reply: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-  };
   
   // Comment thread functionality - open comment drawer
   const handleOpenCommentDrawer = () => {
@@ -828,10 +974,6 @@ const ProjectEditor = () => {
                 <ArrowLeft className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Projects</span>
               </Button>
-              <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                <img src="/rocket-logo.svg" alt="JetSchema Logo" className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
-                <h1 className="text-sm sm:text-lg font-semibold truncate">{projectName}</h1>
-              </div>
             </div>
             
             <div className="flex items-center gap-2">
@@ -863,6 +1005,10 @@ const ProjectEditor = () => {
                 onNavigateToElement={handleNavigateToElement}
                 onConvertCommentToTask={handleConvertCommentToTask}
                 onReplyToComment={handleReplyToComment}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
                 open={commentDrawerOpen}
                 onOpenChange={setCommentDrawerOpen}
               />
@@ -926,9 +1072,10 @@ const ProjectEditor = () => {
               triggers={triggers}
               functions={functions}
               selectedTable={selectedTable}
+              projectId={id}
               onAddTable={handleAddTable}
-              onAddTrigger={(trigger) => console.log('Add trigger', trigger)}
-              onAddFunction={(func) => console.log('Add function', func)}
+              onAddTrigger={handleAddTrigger}
+              onAddFunction={handleAddFunction}
               onSelectTable={setSelectedTable}
               onDeleteTable={handleDeleteTable}
               onSaveProject={handleSaveProject}
@@ -1003,11 +1150,16 @@ const ProjectEditor = () => {
                 triggers={triggers}
                 functions={functions}
                 selectedTable={selectedTable}
+                projectId={id}
                 onAddTable={handleAddTable}
-                onAddTrigger={(trigger) => console.log('Add trigger', trigger)}
-                onAddFunction={(func) => console.log('Add function', func)}
+                onAddTrigger={handleAddTrigger}
+                onAddFunction={handleAddFunction}
                 onSelectTable={setSelectedTable}
                 onDeleteTable={handleDeleteTable}
+                onDeleteTrigger={handleDeleteTrigger}
+                onDeleteFunction={handleDeleteFunction}
+                onUpdateTrigger={handleUpdateTrigger}
+                onUpdateFunction={handleUpdateFunction}
                 onSaveProject={handleSaveProject}
                 projectName={projectName}
                 onProjectNameChange={handleProjectNameChange}
@@ -1114,6 +1266,14 @@ const ProjectEditor = () => {
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   Validation
                 </TabsTrigger>
+                <TabsTrigger value="mockups" className="flex-1">
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Mockups
+                </TabsTrigger>
+                <TabsTrigger value="comments" className="flex-1">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Comments
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -1158,23 +1318,92 @@ const ProjectEditor = () => {
                 />
               </div>
             </TabsContent>
-              </Tabs>
-            </div>
-          </Panel>
-        </PanelGroup>
-      )}
-      
-      {/* Mobile backdrop - Only shown on mobile */}
-      {isMobile && (leftPanelOpen || rightPanelOpen) && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40" 
-          onClick={() => {
-            setLeftPanelOpen(false);
-            setRightPanelOpen(false);
-          }} 
-        />
-      )}
-    </div>
+            
+            <TabsContent value="mockups" className="flex-1 p-4 pt-2 overflow-auto">
+              <MockupsPanel mockups={mockups} onMockupsChange={setMockups} projectId={id || ''} />
+            </TabsContent>
+            
+            <TabsContent value="comments" className="flex-1 p-4 pt-2 overflow-auto">
+              <UnifiedCommentsPanel 
+                projectId={id || ''}
+                onNavigateToObject={(objectType, objectId, parentObjectId) => {
+                  // Handle navigation to different object types
+                  if (objectType === 'table') {
+                    const table = tables.find(t => t.id === objectId || t.name === objectId);
+                    if (table) {
+                      setSelectedTable(table);
+                      setViewMode('diagram');
+                    }
+                  } else if (objectType === 'field') {
+                    // Find which table contains this field
+                    for (const table of tables) {
+                      const field = table.fields.find(f => f.id === objectId || f.name === objectId);
+                      if (field && (!parentObjectId || table.name === parentObjectId || table.id === parentObjectId)) {
+                        setSelectedTable(table);
+                        setViewMode('diagram');
+                        break;
+                      }
+                    }
+                  } else if (objectType === 'function') {
+                    // Navigate to function in sidebar
+                    // This would typically open the function modal or highlight it in the sidebar
+                    const func = functions.find(f => f.id === objectId || f.name === objectId);
+                    if (func) {
+                      // Implement function navigation (could open a modal)
+                      toast.info(`Navigated to function: ${func.name}`);
+                    }
+                  } else if (objectType === 'trigger') {
+                    // Navigate to trigger in sidebar
+                    const trigger = triggers.find(t => t.id === objectId || t.name === objectId);
+                    if (trigger) {
+                      // Implement trigger navigation (could open a modal)
+                      toast.info(`Navigated to trigger: ${trigger.name}`);
+                      // If trigger has a table, select that table
+                      const table = tables.find(t => t.name === trigger.table_name);
+                      if (table) {
+                        setSelectedTable(table);
+                      }
+                    }
+                  } else if (objectType === 'policy') {
+                    // Navigate to RLS policy
+                    // This would typically open the policy modal or highlight it in the sidebar
+                    toast.info(`Navigated to RLS policy: ${objectId}`);
+                    // If policy has a table, select that table
+                    if (parentObjectId) {
+                      const table = tables.find(t => t.name === parentObjectId || t.id === parentObjectId);
+                      if (table) {
+                        setSelectedTable(table);
+                      }
+                    }
+                  } else if (objectType === 'mockup') {
+                    // Navigate to mockup tab and potentially highlight the specific mockup
+                    const tabsList = document.querySelector('[role="tablist"]');
+                    const mockupsTab = tabsList?.querySelector('[value="mockups"]');
+                    if (mockupsTab instanceof HTMLElement) {
+                      mockupsTab.click();
+                      toast.info(`Navigated to mockup: ${objectId}`);
+                    }
+                  }
+                }}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </Panel>
+    </PanelGroup>
+  )}
+  
+  {/* Mobile backdrop - Only shown on mobile */}
+  {isMobile && (leftPanelOpen || rightPanelOpen) && (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+      onClick={() => {
+        setLeftPanelOpen(false);
+        setRightPanelOpen(false);
+      }} 
+    />
+  )}
+</div>
   );
 };
 

@@ -194,13 +194,13 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             "bg-gradient-to-br from-db-table to-db-table/95 text-black dark:text-white",
             "border-db-table-border shadow-table text-black dark:text-white",
             selected && "ring-2 ring-primary ring-offset-2 text-black dark:text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]",
-            "w-full min-w-[200px]",
-            // Size classes based on size preference
-            sizeOption === 'small' && "max-w-[250px] max-h-[150px]",
-            sizeOption === 'medium' && "max-w-[350px] max-h-[250px]",
-            sizeOption === 'large' && "max-w-[450px] max-h-[350px]",
-            sizeOption === 'xlarge' && "max-w-[550px] max-h-[450px]",
-            sizeOption === 'huge' && "max-w-[650px] max-h-[550px]",
+            "w-full min-w-[400px]",
+            // Size classes based on size preference (doubled width)
+            sizeOption === 'small' && "max-w-[500px] max-h-[150px]",
+            sizeOption === 'medium' && "max-w-[700px] max-h-[250px]",
+            sizeOption === 'large' && "max-w-[900px] max-h-[350px]",
+            sizeOption === 'xlarge' && "max-w-[1100px] max-h-[450px]",
+            sizeOption === 'huge' && "max-w-[1300px] max-h-[550px]",
             isCompact ? "" : "hover:translate-y-[-2px] hover:shadow-xl",
             "table-drag-handle"
           )}

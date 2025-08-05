@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Play, Download, Upload, Copy, Check } from 'lucide-react';
 import { parseCreateTableStatement, convertParsedTablesToDatabase } from '@/utils/sqlParser';
 import { generateAllTablesSQL } from '@/utils/sqlGenerator';
@@ -19,7 +27,43 @@ export function SQLEditor({
   onTablesImported,
   currentTables = []
 }: SQLEditorProps) {
-  const [sqlCode, setSqlCode] = useState(`-- Paste your SQL schema here
+  const [sqlCode, setSqlCode] = useState(
+    currentTables.length === 0 
+      ? `-- Paste your SQL schema here
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  content TEXT,
+  published BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);`
+      : ''
+  );
+  const [copied, setCopied] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [parsedTables, setParsedTables] = useState<DatabaseTable[]>([]);
+  const [parseAction, setParseAction] = useState<'add' | 'overwrite' | null>(null);
+
+  const { theme } = useTheme();
+
+  // Set template SQL only on initial load if there are no current tables
+  useEffect(() => {
+    if (currentTables.length === 0 && sqlCode === '') {
+      setSqlCode(`-- Paste your SQL schema here
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -41,9 +85,8 @@ CREATE TABLE posts (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );`);
-  const [copied, setCopied] = useState(false);
-
-  const { theme } = useTheme();
+    }
+  }, []);
 
   // Generate SQL from current tables
   const generatedSQL = useMemo(() => {
@@ -55,23 +98,55 @@ CREATE TABLE posts (
   const handleParseSql = () => {
     try {
       console.log('Starting SQL parse with content:', sqlCode);
-      const parsedTables = parseCreateTableStatement(sqlCode);
-      console.log('Parsed tables result:', parsedTables);
+      const parsedResult = parseCreateTableStatement(sqlCode);
+      console.log('Parsed tables result:', parsedResult);
       
-      if (parsedTables.length === 0) {
+      if (parsedResult.length === 0) {
         console.log('No tables found in SQL');
         toast.error('No CREATE TABLE statements found in the SQL');
         return;
       }
       
-      const dbTables = convertParsedTablesToDatabase(parsedTables);
+      const dbTables = convertParsedTablesToDatabase(parsedResult);
       console.log('Converted database tables:', dbTables);
       
-      onTablesImported?.(dbTables);
-      toast.success(`Successfully imported ${dbTables.length} tables`);
+      // Check for duplicate table names
+      const tableNames = dbTables.map(table => table.name);
+      const duplicateNames = tableNames.filter((name, index) => tableNames.indexOf(name) !== index);
+      
+      if (duplicateNames.length > 0) {
+        toast.error(`Duplicate table names found: ${[...new Set(duplicateNames)].join(', ')}`);
+        return;
+      }
+      
+      // If project is empty, directly import without confirmation
+      if (currentTables.length === 0) {
+        onTablesImported?.(dbTables);
+        toast.success(`Successfully imported ${dbTables.length} tables`);
+        return;
+      }
+      
+      // For non-empty projects, show confirmation dialog
+      setParsedTables(dbTables);
+      setIsDialogOpen(true);
     } catch (error) {
       console.error('Error parsing SQL:', error);
       toast.error('Error parsing SQL. Please check your syntax.');
+    }
+  };
+  
+  const handleParseAction = (action: 'add' | 'overwrite') => {
+    setParseAction(action);
+    setIsDialogOpen(false);
+    
+    if (action === 'overwrite') {
+      onTablesImported?.(parsedTables);
+      toast.success(`Successfully imported ${parsedTables.length} tables`);
+    } else if (action === 'add') {
+      // Merge existing tables with new tables
+      const mergedTables = [...currentTables, ...parsedTables];
+      onTablesImported?.(mergedTables);
+      toast.success(`Successfully added ${parsedTables.length} tables`);
     }
   };
   const handleCopyToClipboard = async (text: string) => {
@@ -208,5 +283,30 @@ CREATE TABLE order_items (
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      {/* Parse Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Parse SQL</DialogTitle>
+            <DialogDescription>
+              You have existing tables in your project. What would you like to do with the parsed tables?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              You're about to import {parsedTables.length} table(s).
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleParseAction('add')}>
+              Add to Existing
+            </Button>
+            <Button variant="destructive" onClick={() => handleParseAction('overwrite')}>
+              Overwrite All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>;
 }

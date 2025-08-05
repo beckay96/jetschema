@@ -18,6 +18,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto">
           <div className="flex items-center gap-3">
             <Database className="h-6 w-6 text-primary" />
+            <div className="border border-purple-500 rounded-full px-2 py-1 text-xs text-purple-300 animate-glow bg-black">Beta</div>
             <h1 className="text-xl font-bold text-foreground">JetSchema</h1>
           </div>
           

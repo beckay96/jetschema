@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, CheckCircle, Clock, AlertTriangle, AlertCircle } from "lucide-react";
+import { MessageSquare, CheckCircle, Clock, AlertTriangle, AlertCircle, Edit, Trash } from "lucide-react";
 import { cn } from '@/lib/utils';
 
 // Import comment parser
@@ -59,6 +59,10 @@ interface CommentTaskDrawerProps {
   onNavigateToElement: (elementType: string, elementId: string) => void;
   onConvertCommentToTask?: (commentId: string) => void;
   onReplyToComment?: (parentId: string) => void;
+  onEditComment?: (commentId: string, newContent: string) => void;
+  onDeleteComment?: (commentId: string) => void;
+  onEditTask?: (taskId: string, newDescription: string, newPriority: 'low' | 'medium' | 'high') => void;
+  onDeleteTask?: (taskId: string) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -109,9 +113,19 @@ export function CommentTaskDrawer({
   onNavigateToElement,
   onConvertCommentToTask,
   onReplyToComment,
+  onEditComment,
+  onDeleteComment,
+  onEditTask,
+  onDeleteTask,
   open,
   onOpenChange
 }: CommentTaskDrawerProps) {
+  // State for editing comments and tasks
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskDescription, setEditingTaskDescription] = useState('');
+  const [editingTaskPriority, setEditingTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [activeTab, setActiveTab] = useState('comments');
   const [filteredComments, setFilteredComments] = useState<SchemaComment[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<SchemaTask[]>([]);
@@ -325,23 +339,54 @@ export function CommentTaskDrawer({
                         </div>
                       </div>
                       {/* Comment content with parsed @mentions and #hashtags */}
-                      <div className="text-sm mb-3">
-                        {parseComment(comment.content).map((part, index) => {
-                          switch(part.type) {
-                            case 'mention':
-                              return (
-                                <span key={index} className="text-primary font-medium">@{part.content}</span>
-                              );
-                            case 'hashtag':
-                              return (
-                                <span key={index} className="text-blue-500 font-medium">#{part.content}</span>
-                              );
-                            default:
-                              return <span key={index}>{part.content}</span>;
-                          }
-                        })}
-                      </div>
-                      
+                      {editingCommentId === comment.id ? (
+                        <div className="mb-3">
+                          <textarea
+                            value={editingCommentContent}
+                            onChange={(e) => setEditingCommentContent(e.target.value)}
+                            className="w-full p-2 text-sm border rounded"
+                            rows={3}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (onEditComment) {
+                                  onEditComment(comment.id, editingCommentContent);
+                                }
+                                setEditingCommentId(null);
+                              }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingCommentId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm mb-3">
+                          {parseComment(comment.content).map((part, index) => {
+                            switch(part.type) {
+                              case 'mention':
+                                return (
+                                  <span key={index} className="text-primary font-medium">@{part.content}</span>
+                                );
+                              case 'hashtag':
+                                return (
+                                  <span key={index} className="text-blue-500 font-medium">#{part.content}</span>
+                                );
+                              default:
+                                return <span key={index}>{part.content}</span>;
+                            }
+                          })}
+                        </div>
+                      )}
+                       
                       {/* Additional context display if available */}
                       {comment.context && (
                         <div className="text-xs text-muted-foreground mb-3">
@@ -421,6 +466,33 @@ export function CommentTaskDrawer({
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Mark as Read
+                            </Button>
+                          )}
+                          
+                          {onEditComment && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditingCommentContent(comment.content);
+                              }}
+                              className="h-7 text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                          )}
+                          
+                          {onDeleteComment && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onDeleteComment(comment.id)}
+                              className="h-7 text-xs text-red-500 hover:text-red-700"
+                            >
+                              <Trash className="h-3 w-3 mr-1" />
+                              Delete
                             </Button>
                           )}
                           
@@ -515,10 +587,53 @@ export function CommentTaskDrawer({
                           {formatDate(task.createdAt)}
                         </div>
                       </div>
-                      <div className="text-sm mb-3 whitespace-pre-line">
-                        {task.description}
-                      </div>
-                      
+                      {editingTaskId === task.id ? (
+                        <div className="mb-3">
+                          <textarea
+                            value={editingTaskDescription}
+                            onChange={(e) => setEditingTaskDescription(e.target.value)}
+                            className="w-full p-2 text-sm border rounded"
+                            rows={3}
+                          />
+                          <div className="mt-2">
+                            <label className="text-xs text-muted-foreground mr-2">Priority:</label>
+                            <select
+                              value={editingTaskPriority}
+                              onChange={(e) => setEditingTaskPriority(e.target.value as 'low' | 'medium' | 'high')}
+                              className="text-sm border rounded p-1"
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                            </select>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (onEditTask) {
+                                  onEditTask(task.id, editingTaskDescription, editingTaskPriority);
+                                }
+                                setEditingTaskId(null);
+                              }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingTaskId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm mb-3 whitespace-pre-line">
+                          {task.description}
+                        </div>
+                      )}
+                       
                       {/* Additional context display if available */}
                       {task.context && (
                         <div className="text-xs text-muted-foreground mb-3">
@@ -558,17 +673,47 @@ export function CommentTaskDrawer({
                             by {task.author}
                           </div>
                         )}
-                        {!task.completed && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => onMarkTaskComplete(task.id)}
-                            className="h-7 text-xs"
-                          >
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Mark Complete
-                          </Button>
-                        )}
+                        <div className="flex gap-1">
+                          {!task.completed && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => onMarkTaskComplete(task.id)}
+                              className="h-7 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Mark Complete
+                            </Button>
+                          )}
+                          
+                          {onEditTask && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingTaskId(task.id);
+                                setEditingTaskDescription(task.description);
+                                setEditingTaskPriority(task.priority);
+                              }}
+                              className="h-7 text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                          )}
+                          
+                          {onDeleteTask && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onDeleteTask(task.id)}
+                              className="h-7 text-xs text-red-500 hover:text-red-700"
+                            >
+                              <Trash className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -34,7 +34,7 @@ export function HeaderMenu({ isSubscribed = false }: HeaderMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        <DropdownMenuItem onClick={() => navigate('/')}>
+        <DropdownMenuItem onClick={() => navigate('/dashboard')}>
           <Home className="h-4 w-4 mr-2" />
           Home
         </DropdownMenuItem>
