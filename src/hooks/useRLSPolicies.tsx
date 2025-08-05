@@ -55,7 +55,7 @@ export function useRLSPolicies(projectId?: string) {
     }
   };
 
-  const savePolicy = async (policy: Omit<RLSPolicy, 'id' | 'created_at' | 'updated_at'>) => {
+  const savePolicy = async (policy: Omit<RLSPolicy, 'id' | 'created_at' | 'updated_at' | 'author_id'> & { author_id?: string }) => {
     if (!user) {
       console.error('Cannot save policy: User not authenticated');
       toast.error('You must be logged in to create policies');

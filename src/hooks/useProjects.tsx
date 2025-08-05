@@ -9,21 +9,68 @@ export function useProjects() {
   const [loading, setLoading] = useState(false);
 
   const fetchProjects = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping project fetch');
+      return;
+    }
     
+    console.log('Fetching projects for user:', user.id);
     setLoading(true);
+    
     try {
+      // First check if user is authenticated
+      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error('Authentication failed');
+      }
+      
+      if (!currentUser) {
+        console.error('No authenticated user found');
+        throw new Error('User not authenticated');
+      }
+      
+      console.log('Authenticated user confirmed:', currentUser.id);
+      
+      // Try to fetch projects with detailed error logging
       const { data, error } = await supabase
         .from('database_projects')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database query error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+      
+      console.log('Projects fetched successfully:', data?.length || 0, 'projects');
       setProjects(data || []);
+      
     } catch (error: any) {
-      console.error('Error fetching projects:', error);
-      toast.error('Failed to load projects');
+      console.error('Error fetching projects:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        stack: error.stack
+      });
+      
+      // More specific error messages
+      if (error.code === '42501') {
+        toast.error('Permission denied. Please check your account access.');
+      } else if (error.code === 'PGRST116') {
+        toast.error('Database table not found. Please contact support.');
+      } else if (error.message?.includes('JWT')) {
+        toast.error('Session expired. Please sign in again.');
+      } else {
+        toast.error(`Failed to load projects: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { MultiDatabaseManager } from '@/components/subscription/MultiDatabaseMan
 import { AIFeatures } from '@/components/subscription/AIFeatures';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
+import { TeamAccessSettings } from '@/components/settings/TeamAccessSettings';
 import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
@@ -24,6 +25,7 @@ import {
 
 // Import subscription-related API functions
 import { checkSubscriptionStatus } from '@/api/stripe';
+import { supabase } from '@/integrations/supabase/client';
 
 export function SettingsPage() {
   const { 
@@ -32,6 +34,46 @@ export function SettingsPage() {
     canUseMultipleDBs, 
     canUseAIFeatures 
   } = useStripe();
+  
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      // Get current user
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Error getting user:', userError);
+        return;
+      }
+      
+      setUser(currentUser);
+      
+      if (currentUser) {
+        // Get user profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (profileError) {
+          console.log('No profile found, user may need to complete setup');
+        } else {
+          setProfile(profileData);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 
@@ -113,56 +155,11 @@ export function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="teams" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Access Management</CardTitle>
-              <CardDescription>
-                View and manage your team access permissions and settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Team Management</h3>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="gap-1.5"
-                    onClick={() => window.location.href = '/team'}
-                  >
-                    <Users className="h-4 w-4" />
-                    Manage Team
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Create or join teams to collaborate on projects with other users.
-                  Team owners can invite members and manage permissions.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Project Sharing</h3>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Share specific projects with team members and set granular permissions.
-                  Control who can view, edit, or administer each project.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Role Management</h3>
-                  <Badge variant="outline">Pro+ Feature</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Define custom roles and permission sets for team members.
-                  Upgrade to Pro plan to access advanced team features.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <TeamAccessSettings 
+            user={user} 
+            loading={loading} 
+            onNavigateToTeam={() => window.location.href = '/team'}
+          />
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-6">
@@ -180,16 +177,36 @@ export function SettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h3 className="font-medium">Profile Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Name</label>
-                    <p className="text-sm text-muted-foreground">Demo User</p>
+                {loading ? (
+                  <div className="text-sm text-muted-foreground">Loading...</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Name</label>
+                      <p className="text-sm text-muted-foreground">
+                        {profile?.full_name || user?.user_metadata?.full_name || 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Email</label>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.email || 'Not available'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">User ID</label>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {user?.id || 'Not available'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Member Since</label>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <p className="text-sm text-muted-foreground">user@example.com</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4">

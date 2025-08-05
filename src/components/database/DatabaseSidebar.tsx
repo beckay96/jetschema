@@ -835,8 +835,7 @@ export function DatabaseSidebar({
               project_id: projectId,
               // is_permissive is required and must be a boolean
               is_permissive: policy.is_permissive === undefined ? true : policy.is_permissive,
-              // author_id will be filled by useRLSPolicies hook
-              author_id: '',
+              // Don't override author_id - let useRLSPolicies hook set it to user.id
             });
             
             console.log('RLS policy saved successfully:', result);

@@ -24,6 +24,10 @@ interface TableEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTableUpdate: (updatedTable: DatabaseTable) => void;
+  /**
+   * If true, automatically add a new field when the modal opens
+   */
+  addFieldOnOpen?: boolean;
 }
 
 const DATA_TYPES: DataType[] = [
@@ -38,7 +42,8 @@ export function TableEditModal({
   allTables, 
   open, 
   onOpenChange, 
-  onTableUpdate 
+  onTableUpdate,
+  addFieldOnOpen = false
 }: TableEditModalProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingTableName, setEditingTableName] = useState(false);
@@ -61,7 +66,15 @@ export function TableEditModal({
     setEditingTableName(false);
     setForeignKeySelector(null);
     setHasRlsEnabled((table as any).hasRlsEnabled || false);
-  }, [table]);
+    
+    // If addFieldOnOpen is true, automatically add a new field
+    if (open && addFieldOnOpen) {
+      // Use setTimeout to ensure the modal is fully rendered before adding the field
+      setTimeout(() => {
+        addField();
+      }, 100);
+    }
+  }, [table, open, addFieldOnOpen]);
 
   useEffect(() => {
     // Validate table name
@@ -335,6 +348,7 @@ export function TableEditModal({
                     {/* Comments Cell */}
                     <TableCell className="p-2">
                       <FieldCommentButton
+                        fieldId={field.id}
                         tableName={currentTable.name}
                         fieldName={field.name}
                         onAddComment={handleAddComment}

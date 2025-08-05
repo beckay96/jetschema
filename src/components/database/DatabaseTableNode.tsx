@@ -53,6 +53,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(table.name);
   const [isHovering, setIsHovering] = useState(false);
+  const [addFieldOnOpen, setAddFieldOnOpen] = useState(false);
   
   // Size options: small, medium, large, xlarge, huge
   const [sizeOption, setSizeOption] = useState<'small' | 'medium' | 'large' | 'xlarge' | 'huge'>(table.sizePreference || 'medium');
@@ -147,6 +148,25 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
 
   return (
     <>
+      {/* Table Edit Modal */}
+      {showEditModal && (
+        <TableEditModal
+          table={table}
+          allTables={allTables || []}
+          open={showEditModal}
+          onOpenChange={(open) => {
+            setShowEditModal(open);
+            if (!open) {
+              setAddFieldOnOpen(false);
+            }
+          }}
+          onTableUpdate={(updatedTable) => {
+            onEditTable?.(updatedTable);
+          }}
+          addFieldOnOpen={addFieldOnOpen}
+        />
+      )}
+      
       <div
         ref={nodeRef}
         onMouseEnter={() => setIsHovering(true)}
@@ -338,7 +358,10 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                   variant="ghost"
                   size="sm"
                   className="w-6 h-6 p-0 text-white hover:bg-white/20"
-                  onClick={() => onEditTable?.(table)}
+                  onClick={() => {
+                    setShowEditModal(true);
+                    setAddFieldOnOpen(false);
+                  }}
                   title="Edit Table"
                 >
                   <Pencil className="w-3 h-3" />
@@ -347,7 +370,10 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                   variant="ghost"
                   size="sm"
                   className="w-6 h-6 p-0 text-white hover:bg-white/20"
-                  onClick={() => onAddField?.(table.id)}
+                  onClick={() => {
+                    setShowEditModal(true);
+                    setAddFieldOnOpen(true);
+                  }}
                   title="Add Field"
                 >
                   <Plus className="w-3 h-3" />

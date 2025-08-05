@@ -11,8 +11,13 @@ import { ValidationPanel } from '@/components/database/ValidationPanel';
 import { MockupsPanel } from '@/components/database/MockupsPanel';
 import { UnifiedCommentsPanel } from '@/components/comments/UnifiedCommentsPanel';
 import { ValidationError } from '@/utils/validationUtils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SaveStatus, StatusType } from '@/components/SaveStatus';
@@ -52,6 +57,7 @@ const ProjectEditor = () => {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeRightPanelTab, setActiveRightPanelTab] = useState<'sql' | 'properties' | 'validation' | 'mockups' | 'comments'>('sql');
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,17 +86,19 @@ const ProjectEditor = () => {
   
   // Track changes to mark as unsaved
   useEffect(() => {
-    if (currentProject) {
+    if (currentProject && !isSaving) {
       const initialData = currentProject.project_data || {};
       const currentData = { tables, triggers, functions };
       const hasChanges = 
         JSON.stringify(initialData.tables || []) !== JSON.stringify(tables) ||
         JSON.stringify(initialData.triggers || []) !== JSON.stringify(triggers) ||
-        JSON.stringify(initialData.functions || []) !== JSON.stringify(functions);
+        JSON.stringify(initialData.functions || []) !== JSON.stringify(functions) ||
+        JSON.stringify(initialData.comments || []) !== JSON.stringify(comments) ||
+        JSON.stringify(initialData.tasks || []) !== JSON.stringify(tasks);
       
       setHasUnsavedChanges(hasChanges);
     }
-  }, [tables, triggers, functions, currentProject]);
+  }, [tables, triggers, functions, comments, tasks, currentProject, isSaving, lastSavedTime]);
 
   // Check if mobile view
   useEffect(() => {
@@ -917,9 +925,16 @@ const ProjectEditor = () => {
       project_data: projectData 
     })
       .then(() => {
+        // Update the current project in memory to match what we just saved
+        // This ensures that our change detection works correctly
+        if (currentProject) {
+          currentProject.project_data = projectData;
+        }
+        
         setIsSaving(false);
         setHasUnsavedChanges(false);
         setLastSavedTime(new Date());
+        
         if (!silent) {
           setStatusMessage({ status: 'success', message: 'Project saved successfully' });
         }
@@ -1251,56 +1266,123 @@ const ProjectEditor = () => {
             className="border-l bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30 overflow-hidden"
           >
             <div ref={rightPanelRef} className="h-full">
-              <Tabs defaultValue="sql" className="h-full flex flex-col">
+              {/*
+  Right Panel Tabs (Dropdown-Only)
+  The right panel uses a dropdown menu for tab selection, ensuring compactness and better spacing.
+  The dropdown below is the sole way to switch between right panel tabs.
+*/}
+<div className="h-full flex flex-col">
+
             <div className="p-4 pb-0">
-              <TabsList className="w-full">
-                <TabsTrigger value="sql" className="flex-1">
-                  <Code className="h-4 w-4 mr-2" />
-                  SQL
-                </TabsTrigger>
-                <TabsTrigger value="properties" className="flex-1">
-                  <Palette className="h-4 w-4 mr-2" />
-                  Properties
-                </TabsTrigger>
-                <TabsTrigger value="validation" className="flex-1">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Validation
-                </TabsTrigger>
-                <TabsTrigger value="mockups" className="flex-1">
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Mockups
-                </TabsTrigger>
-                <TabsTrigger value="comments" className="flex-1">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Comments
-                </TabsTrigger>
-              </TabsList>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <div className="flex items-center">
+                      {(() => {
+                        switch (activeRightPanelTab) {
+                          case 'sql':
+                            return (
+                              <>
+                                <Code className="h-4 w-4 mr-2" />
+                                SQL
+                              </>
+                            );
+                          case 'properties':
+                            return (
+                              <>
+                                <Palette className="h-4 w-4 mr-2" />
+                                Properties
+                              </>
+                            );
+                          case 'validation':
+                            return (
+                              <>
+                                <AlertTriangle className="h-4 w-4 mr-2" />
+                                Validation
+                              </>
+                            );
+                          case 'mockups':
+                            return (
+                              <>
+                                <ImageIcon className="h-4 w-4 mr-2" />
+                                Mockups
+                              </>
+                            );
+                          case 'comments':
+                            return (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Comments
+                              </>
+                            );
+                          default:
+                            return (
+                              <>
+                                <Code className="h-4 w-4 mr-2" />
+                                SQL
+                              </>
+                            );
+                        }
+                      })()} 
+                    </div>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('sql')}>
+                    <Code className="h-4 w-4 mr-2" />
+                    SQL
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('properties')}>
+                    <Palette className="h-4 w-4 mr-2" />
+                    Properties
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('validation')}>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Validation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('mockups')}>
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Mockups
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('comments')}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Comments
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            <TabsContent value="sql" className="flex-1 p-4 pt-2">
-              <SQLEditor onTablesImported={handleTablesImported} currentTables={tables} />
-            </TabsContent>
+            {/* SQL Tab Content */}
+{activeRightPanelTab === 'sql' && (
+  <div className="flex-1 p-4 pt-2">
+    <SQLEditor onTablesImported={handleTablesImported} currentTables={tables} />
+  </div>
+)}
 
-            <TabsContent value="properties" className="flex-1 p-4 pt-2">
-              <div className="h-full">
-                {selectedTable ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">Table Properties</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Configure {selectedTable.name} table settings
-                      </p>
-                    </div>
-                    {/* Table properties form would go here */}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Select a table to edit properties</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
+            {/* Properties Tab Content */}
+{activeRightPanelTab === 'properties' && (
+  <div className="flex-1 p-4 pt-2">
+    <div className="h-full">
+      {selectedTable ? (
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2">Table Properties</h3>
+            <p className="text-sm text-muted-foreground">
+              Configure {selectedTable.name} table settings
+            </p>
+          </div>
+          {/* Table properties form would go here */}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Select a table to edit properties</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
             
             {/* 
               ValidationPanel Tab - Shows schema validation issues
@@ -1308,102 +1390,112 @@ const ProjectEditor = () => {
               Allows users to refresh validation and navigate to problematic elements
               Provides suggestions for fixing issues
             */}
-            <TabsContent value="validation" className="flex-1 p-4 pt-2 overflow-auto">
-              <div className="h-full">
-                <ValidationPanel
-                  errors={validationErrors}
-                  onRefreshValidation={handleRefreshValidation}
-                  onNavigateToElement={handleNavigateToElement}
-                  loading={validationLoading}
-                />
-              </div>
-            </TabsContent>
+            {/* Validation Tab Content */}
+{activeRightPanelTab === 'validation' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <div className="h-full">
+      <ValidationPanel
+        errors={validationErrors}
+        onRefreshValidation={handleRefreshValidation}
+        onNavigateToElement={handleNavigateToElement}
+        loading={validationLoading}
+      />
+    </div>
+  </div>
+)}
             
-            <TabsContent value="mockups" className="flex-1 p-4 pt-2 overflow-auto">
-              <MockupsPanel mockups={mockups} onMockupsChange={setMockups} projectId={id || ''} />
-            </TabsContent>
+            {/* Mockups Tab Content */}
+{activeRightPanelTab === 'mockups' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <MockupsPanel mockups={mockups} onMockupsChange={setMockups} projectId={id || ''} />
+  </div>
+)}
             
-            <TabsContent value="comments" className="flex-1 p-4 pt-2 overflow-auto">
-              <UnifiedCommentsPanel 
-                projectId={id || ''}
-                onNavigateToObject={(objectType, objectId, parentObjectId) => {
-                  // Handle navigation to different object types
-                  if (objectType === 'table') {
-                    const table = tables.find(t => t.id === objectId || t.name === objectId);
-                    if (table) {
-                      setSelectedTable(table);
-                      setViewMode('diagram');
-                    }
-                  } else if (objectType === 'field') {
-                    // Find which table contains this field
-                    for (const table of tables) {
-                      const field = table.fields.find(f => f.id === objectId || f.name === objectId);
-                      if (field && (!parentObjectId || table.name === parentObjectId || table.id === parentObjectId)) {
-                        setSelectedTable(table);
-                        setViewMode('diagram');
-                        break;
-                      }
-                    }
-                  } else if (objectType === 'function') {
-                    // Navigate to function in sidebar
-                    // This would typically open the function modal or highlight it in the sidebar
-                    const func = functions.find(f => f.id === objectId || f.name === objectId);
-                    if (func) {
-                      // Implement function navigation (could open a modal)
-                      toast.info(`Navigated to function: ${func.name}`);
-                    }
-                  } else if (objectType === 'trigger') {
-                    // Navigate to trigger in sidebar
-                    const trigger = triggers.find(t => t.id === objectId || t.name === objectId);
-                    if (trigger) {
-                      // Implement trigger navigation (could open a modal)
-                      toast.info(`Navigated to trigger: ${trigger.name}`);
-                      // If trigger has a table, select that table
-                      const table = tables.find(t => t.name === trigger.table_name);
-                      if (table) {
-                        setSelectedTable(table);
-                      }
-                    }
-                  } else if (objectType === 'policy') {
-                    // Navigate to RLS policy
-                    // This would typically open the policy modal or highlight it in the sidebar
-                    toast.info(`Navigated to RLS policy: ${objectId}`);
-                    // If policy has a table, select that table
-                    if (parentObjectId) {
-                      const table = tables.find(t => t.name === parentObjectId || t.id === parentObjectId);
-                      if (table) {
-                        setSelectedTable(table);
-                      }
-                    }
-                  } else if (objectType === 'mockup') {
-                    // Navigate to mockup tab and potentially highlight the specific mockup
-                    const tabsList = document.querySelector('[role="tablist"]');
-                    const mockupsTab = tabsList?.querySelector('[value="mockups"]');
-                    if (mockupsTab instanceof HTMLElement) {
-                      mockupsTab.click();
-                      toast.info(`Navigated to mockup: ${objectId}`);
-                    }
-                  }
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </Panel>
-    </PanelGroup>
-  )}
-  
-  {/* Mobile backdrop - Only shown on mobile */}
-  {isMobile && (leftPanelOpen || rightPanelOpen) && (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-40" 
-      onClick={() => {
-        setLeftPanelOpen(false);
-        setRightPanelOpen(false);
-      }} 
-    />
-  )}
-</div>
+            {/* Comments Tab Content */}
+{activeRightPanelTab === 'comments' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <UnifiedCommentsPanel 
+      projectId={id || ''}
+      onNavigateToObject={(objectType, objectId, parentObjectId) => {
+        // Handle navigation to different object types
+        if (objectType === 'table') {
+          const table = tables.find(t => t.id === objectId || t.name === objectId);
+          if (table) {
+            setSelectedTable(table);
+            setViewMode('diagram');
+          }
+        } else if (objectType === 'field') {
+          // Find which table contains this field
+          for (const table of tables) {
+            const field = table.fields.find(f => f.id === objectId || f.name === objectId);
+            if (field && (!parentObjectId || table.name === parentObjectId || table.id === parentObjectId)) {
+              setSelectedTable(table);
+              setViewMode('diagram');
+              break;
+            }
+          }
+        } else if (objectType === 'function') {
+          // Navigate to function in sidebar
+          // This would typically open the function modal or highlight it in the sidebar
+          const func = functions.find(f => f.id === objectId || f.name === objectId);
+          if (func) {
+            // Implement function navigation (could open a modal)
+            toast.info(`Navigated to function: ${func.name}`);
+          }
+        } else if (objectType === 'trigger') {
+          // Navigate to trigger in sidebar
+          const trigger = triggers.find(t => t.id === objectId || t.name === objectId);
+          if (trigger) {
+            // Implement trigger navigation (could open a modal)
+            toast.info(`Navigated to trigger: ${trigger.name}`);
+            // If trigger has a table, select that table
+            const table = tables.find(t => t.name === trigger.table_name);
+            if (table) {
+              setSelectedTable(table);
+            }
+          }
+        } else if (objectType === 'policy') {
+          // Navigate to RLS policy
+          // This would typically open the policy modal or highlight it in the sidebar
+          toast.info(`Navigated to RLS policy: ${objectId}`);
+          // If policy has a table, select that table
+          if (parentObjectId) {
+            const table = tables.find(t => t.name === parentObjectId || t.id === parentObjectId);
+            if (table) {
+              setSelectedTable(table);
+            }
+          }
+        } else if (objectType === 'mockup') {
+          // Navigate to mockup tab and potentially highlight the specific mockup
+          const tabsList = document.querySelector('[role="tablist"]');
+          const mockupsTab = tabsList?.querySelector('[value="mockups"]');
+          if (mockupsTab instanceof HTMLElement) {
+            mockupsTab.click();
+            toast.info(`Navigated to mockup: ${objectId}`);
+          }
+        }
+      }}
+    />  
+  </div>
+)}
+
+            </div>
+          </div>
+        </Panel>
+      </PanelGroup>
+      )}
+
+    {/* Mobile backdrop - Only shown on mobile */}
+    {isMobile && (leftPanelOpen || rightPanelOpen) && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+        onClick={() => {
+          setLeftPanelOpen(false);
+          setRightPanelOpen(false);
+        }} 
+      />
+    )}
+    </div>
   );
 };
 

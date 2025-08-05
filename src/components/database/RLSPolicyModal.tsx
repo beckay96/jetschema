@@ -15,7 +15,7 @@ import { RLSPolicy } from '@/hooks/useRLSPolicies';
 interface RLSPolicyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (policy: Omit<RLSPolicy, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSave: (policy: Omit<RLSPolicy, 'id' | 'created_at' | 'updated_at' | 'author_id'> & { author_id?: string }) => Promise<void>;
   tables: DatabaseTable[];
   projectId: string;
   editingPolicy?: RLSPolicy | null;
@@ -102,7 +102,7 @@ export function RLSPolicyModal({ open, onOpenChange, onSave, tables, projectId, 
       is_permissive: isPermissive,
       description: description || undefined,
       project_id: projectId,
-      author_id: '' // Will be set by the hook
+      // Don't set author_id - let useRLSPolicies hook set it to user.id
     });
 
     onOpenChange(false);
