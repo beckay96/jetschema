@@ -18,9 +18,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { SaveStatus, StatusType } from '@/components/SaveStatus';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { DatabaseSchema } from "@/hooks/useAutoSave";
+import { useTheme } from "@/components/theme-provider";
+import { SaveStatus, StatusType } from '@/components/ui/SaveStatus';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
 import { toast } from 'sonner';
@@ -30,6 +33,47 @@ const ProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { projects, updateProject } = useProjects();
+  
+  // Track unsaved changes state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Initialize auto-save with proper typing
+  const { 
+    updateData: updateAutoSave,
+    clearAutoSave 
+  } = useAutoSave<DatabaseSchema>({
+    tables: [],
+    triggers: [],
+    functions: [],
+    comments: [],
+    tasks: [],
+    mockups: [],
+    validationErrors: []
+  }, {
+    projectId: id || 'new-project',
+    debounceMs: 2000,
+    onSave: async (savedSchema) => {
+      // Auto-save to localStorage
+      console.log('Auto-saved schema:', savedSchema);
+    },
+    onRecover: (recoveredSchema) => {
+      // Handle recovered data
+      setTables(recoveredSchema.tables || []);
+      setTriggers(recoveredSchema.triggers || []);
+      setFunctions(recoveredSchema.functions || []);
+      setComments(recoveredSchema.comments || []);
+      setTasks(recoveredSchema.tasks || []);
+      setMockups(recoveredSchema.mockups || []);
+      setValidationErrors(recoveredSchema.validationErrors || []);
+      
+      toast({
+        title: 'Recovered unsaved changes',
+        description: 'Your unsaved changes have been recovered.',
+      });
+    },
+  });
   
   const [tables, setTables] = useState<DatabaseTable[]>([]);
   const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);
@@ -60,9 +104,6 @@ const ProjectEditor = () => {
   const [activeRightPanelTab, setActiveRightPanelTab] = useState<'sql' | 'properties' | 'validation' | 'mockups' | 'comments'>('sql');
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   
   // View mode state - 'diagram' (default) or 'table'
   const [viewMode, setViewMode] = useState<'diagram' | 'table'>('diagram');
@@ -86,20 +127,101 @@ const ProjectEditor = () => {
   
   // Track changes to mark as unsaved
   useEffect(() => {
-    if (currentProject && !isSaving) {
-      const initialData = currentProject.project_data || {};
-      const currentData = { tables, triggers, functions };
+    if (currentProject) {
+      const initialData = currentProject.project_data || {
+        tables: [],
+        triggers: [],
+        functions: [],
+        comments: [],
+        tasks: [],
+        mockups: [],
+        validationErrors: []
+      };
+      
       const hasChanges = 
-        JSON.stringify(initialData.tables || []) !== JSON.stringify(tables) ||
-        JSON.stringify(initialData.triggers || []) !== JSON.stringify(triggers) ||
-        JSON.stringify(initialData.functions || []) !== JSON.stringify(functions) ||
+        JSON.stringify(initialData.tables) !== JSON.stringify(tables) ||
+        JSON.stringify(initialData.triggers) !== JSON.stringify(triggers) ||
+        JSON.stringify(initialData.functions) !== JSON.stringify(functions) ||
         JSON.stringify(initialData.comments || []) !== JSON.stringify(comments) ||
-        JSON.stringify(initialData.tasks || []) !== JSON.stringify(tasks);
+        JSON.stringify(initialData.tasks || []) !== JSON.stringify(tasks) ||
+        JSON.stringify(initialData.mockups || []) !== JSON.stringify(mockups) ||
+        JSON.stringify(initialData.validationErrors || []) !== JSON.stringify(validationErrors);
       
       setHasUnsavedChanges(hasChanges);
+      
+      // Update auto-save when there are changes
+      if (hasChanges) {
+        updateAutoSave({
+          tables,
+          triggers,
+          functions,
+          comments,
+          tasks,
+          mockups,
+          validationErrors
+        });
+      }
     }
-  }, [tables, triggers, functions, comments, tasks, currentProject, isSaving, lastSavedTime]);
-
+  }, [tables, triggers, functions, comments, tasks, mockups, validationErrors, currentProject, updateAutoSave]);
+  
+  // Clear auto-save when saving to server
+  const handleSaveToServer = async () => {
+    if (!id) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Call API to update project
+      await updateProject(id, { 
+        name: projectName, 
+        project_data: {
+          tables,
+          triggers,
+          functions,
+          comments,
+          tasks,
+          mockups,
+          validationErrors
+        } 
+      });
+      
+      // Update the current project in memory to match what we just saved
+      if (currentProject) {
+        currentProject.project_data = {
+          tables,
+          triggers,
+          functions,
+          comments,
+          tasks,
+          mockups,
+          validationErrors
+        };
+      }
+      
+      clearAutoSave();
+      const savedTime = new Date();
+      setLastSaved(savedTime);
+      setHasUnsavedChanges(false);
+      
+      toast({
+        title: 'Project saved',
+        description: 'Your changes have been saved to the server.',
+      });
+      
+      return savedTime;
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      toast({
+        title: 'Failed to save',
+        description: 'Could not save your changes. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
   // Check if mobile view
   useEffect(() => {
     const checkMobile = () => {
@@ -284,7 +406,7 @@ const ProjectEditor = () => {
             setCommentDrawerOpen(true);
             
             // Save the project with the updated comments
-            handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+            handleSaveToServer();
             
             // Update status after save
             setStatusMessage({
@@ -328,7 +450,7 @@ const ProjectEditor = () => {
     setTasks(updatedTasks);
     setCommentDrawerOpen(true);
     // Also save the project with the new task
-    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: `Marked ${elementName} as ${priority} priority task`
@@ -395,7 +517,7 @@ const ProjectEditor = () => {
       setTasks(updatedTasks);
       
       // Save the project with both updates
-      handleSaveProject(tables, triggers, functions, updatedComments, updatedTasks, true);
+      handleSaveToServer();
       
       setStatusMessage({
         status: 'success',
@@ -428,7 +550,7 @@ const ProjectEditor = () => {
       comment.id === commentId ? { ...comment, read: true } : comment
     );
     setComments(updatedComments);
-    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Comment marked as read"
@@ -441,7 +563,7 @@ const ProjectEditor = () => {
       task.id === taskId ? { ...task, completed: true, completedAt: new Date() } : task
     );
     setTasks(updatedTasks);
-    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Task marked as complete"
@@ -454,7 +576,7 @@ const ProjectEditor = () => {
       comment.id === commentId ? { ...comment, content: newContent } : comment
     );
     setComments(updatedComments);
-    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Comment updated successfully"
@@ -465,7 +587,7 @@ const ProjectEditor = () => {
   const handleDeleteComment = (commentId: string) => {
     const updatedComments = comments.filter(comment => comment.id !== commentId);
     setComments(updatedComments);
-    handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Comment deleted successfully"
@@ -478,7 +600,7 @@ const ProjectEditor = () => {
       task.id === taskId ? { ...task, description: newDescription, priority: newPriority } : task
     );
     setTasks(updatedTasks);
-    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Task updated successfully"
@@ -489,7 +611,7 @@ const ProjectEditor = () => {
   const handleDeleteTask = (taskId: string) => {
     const updatedTasks = tasks.filter(task => task.id !== taskId);
     setTasks(updatedTasks);
-    handleSaveProject(tables, triggers, functions, comments, updatedTasks, true);
+    handleSaveToServer();
     setStatusMessage({
       status: 'success',
       message: "Task deleted successfully"
@@ -544,7 +666,7 @@ const ProjectEditor = () => {
       setComments(updatedComments);
       
       // Save the project with the new reply
-      handleSaveProject(tables, triggers, functions, updatedComments, tasks, true);
+      handleSaveToServer();
       
       setStatusMessage({
         status: 'success',
@@ -644,7 +766,7 @@ const ProjectEditor = () => {
       setValidationLoading(false);
       
       // Save the validation results to the project
-      handleSaveProject(tables, triggers, functions, comments, tasks, true);
+      handleSaveToServer();
       
       if (errors.length === 0) {
         setStatusMessage({
@@ -701,7 +823,7 @@ const ProjectEditor = () => {
     // Update local state first
     setTables(importedTables);
     // Persist using the freshly imported tables to avoid saving an empty array
-    handleSaveProject(importedTables, triggers, functions, comments, tasks, true);
+    handleSaveToServer();
   };
 
   const handleAddTable = () => {
@@ -869,7 +991,7 @@ const ProjectEditor = () => {
   // Save canvas changes explicitly
   const handleSaveCanvasChanges = (updatedTables: DatabaseTable[]) => {
     setTables(updatedTables);
-    handleSaveProject(updatedTables, triggers, functions, comments, tasks, false);
+    handleSaveToServer();
   };
 
   /**
@@ -884,85 +1006,6 @@ const ProjectEditor = () => {
    * @param customProjectName - Optional custom project name to use
    */
   const [statusMessage, setStatusMessage] = useState<{ status?: StatusType; message?: string }>({});
-
-  const handleSaveProject = (
-    updatedTables: DatabaseTable[] = tables,
-    updatedTriggers: DatabaseTrigger[] = triggers,
-    updatedFunctions: DatabaseFunction[] = functions,
-    updatedComments: SchemaComment[] = comments,
-    updatedTasks: SchemaTask[] = tasks,
-    silent: boolean = false,
-    customProjectName?: string
-  ) => {
-    if (!id) return;
-    
-    setIsSaving(true);
-    if (!silent) {
-      setStatusMessage({ status: 'loading', message: 'Saving project...' });
-    }
-    
-    // Update local state
-    setTables(updatedTables);
-    setTriggers(updatedTriggers);
-    setFunctions(updatedFunctions);
-    setComments(updatedComments);
-    setTasks(updatedTasks);
-    
-    // Prepare project data for saving
-    const projectData = {
-      tables: updatedTables,
-      triggers: updatedTriggers,
-      functions: updatedFunctions,
-      comments: updatedComments,
-      tasks: updatedTasks,
-      mockups: mockups, // Save mockups with project
-      validationErrors: validationErrors // Save validation errors with project
-    };
-    
-    // Call API to update project
-    updateProject(id, { 
-      name: customProjectName !== undefined ? customProjectName : projectName, 
-      project_data: projectData 
-    })
-      .then(() => {
-        // Update the current project in memory to match what we just saved
-        // This ensures that our change detection works correctly
-        if (currentProject) {
-          currentProject.project_data = projectData;
-        }
-        
-        setIsSaving(false);
-        setHasUnsavedChanges(false);
-        setLastSavedTime(new Date());
-        
-        if (!silent) {
-          setStatusMessage({ status: 'success', message: 'Project saved successfully' });
-        }
-      })
-      .catch(error => {
-        setIsSaving(false);
-        console.error('Failed to save project:', error);
-        setStatusMessage({ status: 'error', message: 'Failed to update project' });
-      });
-  };
-
-  // Save immediately when project name changes
-  const handleProjectNameChange = (name: string) => {
-    setProjectName(name);
-    // Save project name change immediately without debouncing
-    // Pass the new name directly to avoid stale closure issues
-    handleSaveProject(tables, triggers, functions, comments, tasks, false, name);
-  };
-
-
-  
-  // Comment thread functionality - open comment drawer
-  const handleOpenCommentDrawer = () => {
-    if (!leftPanelOpen && rightPanelOpen) {
-      setRightPanelOpen(false);
-    }
-    setLeftPanelOpen(!leftPanelOpen);
-  };
 
   if (!currentProject) {
     return (
@@ -993,19 +1036,24 @@ const ProjectEditor = () => {
             
             <div className="flex items-center gap-2">
               <SaveStatus 
-                status={statusMessage.status as StatusType}
-                message={statusMessage.message}
-                isSaving={isSaving} 
-                isSaved={!hasUnsavedChanges} 
-                className="hidden sm:flex"
+                status={isSaving ? 'saving' : hasUnsavedChanges ? 'unsaved' : 'saved'}
+                message={
+                  isSaving 
+                    ? 'Saving...' 
+                    : hasUnsavedChanges 
+                      ? 'Unsaved changes' 
+                      : lastSaved 
+                        ? `Saved ${lastSaved.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+                        : 'Not saved yet'
+                }
               />
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleSaveProject()}
-                className="h-8"
+                onClick={handleSaveToServer}
+                disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? 'Saving...' : 'Save'}
               </Button>
               <Badge variant="secondary" className="hidden sm:flex">
                 {tables.length} tables
