@@ -3,12 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStripe } from '@/contexts/StripeContext';
-import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
-import { MultiDatabaseManager } from '@/components/subscription/MultiDatabaseManager';
-import { AIFeatures } from '@/components/subscription/AIFeatures';
-import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
-import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
-import { TeamAccessSettings } from '@/components/settings/TeamAccessSettings';
+import { SubscriptionPlans } from '@/components/Settings/Subscription/SubscriptionPlans';
+import { MultiDatabaseManager } from '@/components/Settings/Subscription/MultiDatabaseManager';
+import { AIFeatures } from '@/components/Settings/Subscription/AIFeatures';
+import { SubscriptionStatus } from '@/components/Settings/Subscription/SubscriptionStatus';
+import { AppearanceSettings } from '@/components/Settings/AppearanceSettings';
+import { TeamAccessSettings } from '@/components/Settings/TeamAccessSettings';
 import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 

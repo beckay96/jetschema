@@ -3,6 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+// Global event emitter for index changes
+class IndexEventEmitter {
+  private listeners: ((projectId: string) => void)[] = [];
+  
+  subscribe(callback: (projectId: string) => void) {
+    this.listeners.push(callback);
+    return () => {
+      this.listeners = this.listeners.filter(listener => listener !== callback);
+    };
+  }
+  
+  emit(projectId: string) {
+    this.listeners.forEach(listener => listener(projectId));
+  }
+}
+
+const indexEventEmitter = new IndexEventEmitter();
+
 export interface DatabaseIndex {
   id: string;
   name: string;
@@ -62,6 +80,12 @@ export function useIndexes(projectId?: string) {
       
       setIndexes(prev => [data as DatabaseIndex, ...prev]);
       toast.success('Index created successfully');
+      
+      // Notify other components about the change
+      if (index.project_id) {
+        indexEventEmitter.emit(index.project_id);
+      }
+      
       return data;
     } catch (error) {
       console.error('Error saving index:', error);
@@ -83,6 +107,12 @@ export function useIndexes(projectId?: string) {
       
       setIndexes(prev => prev.map(i => i.id === id ? data as DatabaseIndex : i));
       toast.success('Index updated successfully');
+      
+      // Notify other components about the change
+      if (data && (data as DatabaseIndex).project_id) {
+        indexEventEmitter.emit((data as DatabaseIndex).project_id);
+      }
+      
       return data;
     } catch (error) {
       console.error('Error updating index:', error);
@@ -93,6 +123,9 @@ export function useIndexes(projectId?: string) {
 
   const deleteIndex = async (id: string) => {
     try {
+      // Get the index before deleting to know which project to notify
+      const indexToDelete = indexes.find(i => i.id === id);
+      
       const { error } = await supabase
         .from('database_indexes')
         .delete()
@@ -102,6 +135,11 @@ export function useIndexes(projectId?: string) {
       
       setIndexes(prev => prev.filter(i => i.id !== id));
       toast.success('Index deleted successfully');
+      
+      // Notify other components about the change
+      if (indexToDelete) {
+        indexEventEmitter.emit(indexToDelete.project_id);
+      }
     } catch (error) {
       console.error('Error deleting index:', error);
       toast.error('Failed to delete index');
@@ -112,6 +150,19 @@ export function useIndexes(projectId?: string) {
   useEffect(() => {
     fetchIndexes();
   }, [projectId, user]);
+  
+  // Subscribe to global index changes
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const unsubscribe = indexEventEmitter.subscribe((changedProjectId) => {
+      if (changedProjectId === projectId) {
+        fetchIndexes();
+      }
+    });
+    
+    return unsubscribe;
+  }, [projectId, fetchIndexes]);
 
   return {
     indexes,

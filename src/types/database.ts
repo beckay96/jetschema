@@ -1,3 +1,7 @@
+// ========================
+// Database Core Types
+// ========================
+
 export interface DatabaseField {
   id: string;
   name: string;
@@ -5,6 +9,7 @@ export interface DatabaseField {
   nullable: boolean;
   primaryKey: boolean;
   unique: boolean;
+  indexed?: boolean;
   defaultValue?: string;
   comment?: string;
   foreignKey?: {
@@ -196,6 +201,100 @@ export type DataType =
   | 'MACADDR'
   | 'EMAIL'
   | 'ENUM';
+
+// ========================
+// Database Function & Trigger Types
+// ========================
+
+export interface DatabaseTrigger {
+  id?: string;
+  project_id: string;
+  name: string;
+  table_name: string;
+  trigger_event: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
+  trigger_timing: 'BEFORE' | 'AFTER' | 'INSTEAD OF';
+  function_id?: string;
+  is_active: boolean;
+  conditions?: string;
+  author_id?: string;
+  description?: string;
+}
+
+export interface DatabaseFunction {
+  id?: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  function_type: 'plpgsql' | 'edge' | 'cron';
+  parameters: Array<{ name: string; type: string; default?: string }>;
+  return_type?: string;
+  function_body: string;
+  is_edge_function: boolean;
+  edge_function_name?: string;
+  cron_schedule?: string;
+  is_cron_enabled: boolean;
+  author_id?: string;
+}
+
+// ========================
+// Component Props Types
+// ========================
+
+export const DATA_TYPES: DataType[] = [
+  'UUID', 'TEXT', 'VARCHAR', 'STRING', 'INT', 'INTEGER', 'INT4', 'INT8', 
+  'BIGINT', 'SERIAL', 'BOOLEAN', 'BOOL', 'TIMESTAMP', 'TIMESTAMPTZ', 
+  'DATE', 'TIME', 'JSON', 'JSONB', 'DECIMAL', 'NUMERIC', 'FLOAT', 
+  'REAL', 'EMAIL', 'ENUM', 'ARRAY', 'BYTEA'
+];
+
+export interface TableEditModalProps {
+  table: DatabaseTable;
+  allTables: DatabaseTable[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onTableUpdate: (updatedTable: DatabaseTable) => void;
+  /**
+   * If true, automatically add a new field when the modal opens
+   */
+  addFieldOnOpen?: boolean;
+}
+
+export interface DatabaseSidebarProps {
+  tables: DatabaseTable[];
+  triggers: DatabaseTrigger[];
+  functions: DatabaseFunction[];
+  selectedTable?: DatabaseTable | null;
+  projectId?: string;
+  onAddTable?: () => void;
+  onAddTrigger?: (trigger: Omit<DatabaseTrigger, 'id'>) => void;
+  onAddFunction?: (func: Omit<DatabaseFunction, 'id'>) => void;
+  onSelectTable?: (table: DatabaseTable) => void;
+  onDeleteTable?: (tableId: string) => void;
+  onDeleteTrigger?: (triggerId: string) => void;
+  onDeleteFunction?: (functionId: string) => void;
+  onUpdateTrigger?: (trigger: DatabaseTrigger) => void;
+  onUpdateFunction?: (func: DatabaseFunction) => void;
+  onSaveProject?: () => void;
+  onShare?: () => void;
+  projectName?: string;
+  onProjectNameChange?: (name: string) => void;
+  onReorderTables?: (reorderedTables: DatabaseTable[]) => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
+}
+
+export interface SortableTableCardProps {
+  table: DatabaseTable;
+  isSelected: boolean;
+  isValidated?: boolean;
+  hasWarnings?: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
+}
+
+// ========================
+// Constants
+// ========================
 
 export const DATA_TYPE_CATEGORIES = {
   STRING: ['VARCHAR', 'CHAR', 'TEXT'],

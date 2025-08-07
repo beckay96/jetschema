@@ -1,4 +1,4 @@
-import { TeamManagement } from '@/components/database/TeamManagement';
+import { TeamManagement } from '@/components/database/TeamFeatures/TeamManagement';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 

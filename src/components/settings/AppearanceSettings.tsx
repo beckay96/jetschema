@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { DataType } from '@/types/database';
-import { DataTypePill } from '@/components/database/DataTypePill';
+import { DataTypePill } from '@/components/Settings/DataTypePill';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCcw, Save, Plus, Star, Trash, Check, ChevronDown, Bookmark, Grid, Table } from 'lucide-react';

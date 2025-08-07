@@ -137,69 +137,67 @@ export async function getActiveColorTheme(): Promise<ColorTheme | null> {
 
 // Get user's default view preference
 export async function getUserDefaultView(): Promise<DefaultView> {
+  // Default fallback value
+  const defaultFallback = 'diagram' as const;
+  
   try {
+    console.log('[getUserDefaultView] Starting to get user default view');
+    
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (!user) {
-      console.warn('No authenticated user found when getting default view');
+    if (userError || !userData?.user) {
+      console.warn('[getUserDefaultView] No authenticated user found or error getting user:', userError);
       // Check localStorage fallback
-      const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
-      return fallback === 'table' ? 'table' : 'diagram';
+      try {
+        const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
+        console.log('[getUserDefaultView] Using localStorage fallback:', fallback || 'not set, using default');
+        return fallback === 'table' ? 'table' : defaultFallback;
+      } catch (e) {
+        console.error('[getUserDefaultView] Error accessing localStorage:', e);
+        return defaultFallback;
+      }
     }
     
-    console.log('Getting default view for user:', user.id);
+    const user = userData.user;
+    console.log('[getUserDefaultView] Getting default view for user:', user.id);
     
-    // Check if the default_view column exists by trying to select it first
-    const { data: testData, error: testError } = await supabase
-      .from('profiles')
-      .select('default_view')
-      .limit(1);
-    
-    if (testError && testError.message.includes('default_view')) {
-      console.warn('default_view column does not exist, using localStorage fallback');
-      const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
-      return fallback === 'table' ? 'table' : 'diagram';
-    }
-    
-    // Try both id and user_id fields to handle potential schema differences
-    let { data, error } = await supabase
-      .from('profiles')
-      .select('default_view, id, user_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    // If no result with user_id, try with id field
-    if (error || !data) {
-      console.log('Trying with id field instead of user_id');
-      const result = await supabase
+    try {
+      // First, try to get the profile with a safe query
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('default_view, id, user_id')
-        .eq('id', user.id)
-        .single();
-      data = result.data;
-      error = result.error;
-    }
-    
-    if (error) {
-      console.error('Supabase query error:', error);
-      console.log('Available profile data:', data);
+        .select('default_view')
+        .or(`id.eq.${user.id},user_id.eq.${user.id}`)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.warn('[getUserDefaultView] Error querying profiles table:', profileError);
+        throw profileError;
+      }
+      
+      if (profile?.default_view === 'table' || profile?.default_view === 'diagram') {
+        console.log('[getUserDefaultView] Found valid view preference in profile:', profile.default_view);
+        return profile.default_view;
+      }
+      
+      console.log('[getUserDefaultView] No valid view preference found in profile, using default');
+      return defaultFallback;
+      
+    } catch (error) {
+      console.error('[getUserDefaultView] Error in profile lookup:', error);
       // Fallback to localStorage
-      const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
-      return fallback === 'table' ? 'table' : 'diagram';
+      try {
+        const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
+        console.log('[getUserDefaultView] Using localStorage fallback after error:', fallback || 'not set, using default');
+        return fallback === 'table' ? 'table' : defaultFallback;
+      } catch (e) {
+        console.error('[getUserDefaultView] Error accessing localStorage:', e);
+        return defaultFallback;
+      }
     }
-    
-    // Log result for debugging
-    console.log('Profile found:', data);
-    console.log('Default view preference found:', data?.default_view);
-    
-    // Return the user's preference or default to 'diagram'
-    return (data?.default_view as DefaultView) === 'table' ? 'table' : 'diagram';
   } catch (error) {
-    console.error('Failed to get user default view:', error);
-    // Fallback to localStorage
-    const fallback = localStorage.getItem('jetschema-default-view') as DefaultView;
-    return fallback === 'table' ? 'table' : 'diagram';
+    console.error('[getUserDefaultView] Unexpected error:', error);
+    return defaultFallback;
   }
 }
 

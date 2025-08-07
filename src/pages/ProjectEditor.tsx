@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
-import { DatabaseCanvas } from '@/components/database/DatabaseCanvas';
-import { TableView } from '@/components/database/TableView';
-import { DatabaseSidebar } from '@/components/database/DatabaseSidebar';
-import { SQLEditor } from '@/components/database/SQLEditor';
+import { DatabaseCanvas } from '@/components/database/DatabaseTablesComponents/DatabaseCanvas';
+import { TableView } from '@/components/database/DatabaseTablesComponents/TableView';
+import { DatabaseSidebar } from '@/components/database/LeftSidebarFeatures/DatabaseSidebar';
+import { SQLEditor } from '@/components/database/RightSidebarFeatures/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
-import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/CommentTaskDrawer';
-import { ValidationPanel } from '@/components/database/ValidationPanel';
-import { MockupsPanel } from '@/components/database/MockupsPanel';
-import { UnifiedCommentsPanel } from '@/components/comments/UnifiedCommentsPanel';
+import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/TeamFeatures/Comments/CommentTaskDrawer';
+import { ValidationPanel } from '@/components/database/RightSidebarFeatures/ValidationPanel';
+import { MockupsPanel } from '@/components/database/MockupsComponents/MockupsPanel';
+import { UnifiedCommentsPanel } from '@/components/database/TeamFeatures/Comments/UnifiedCommentsPanel';
 import { ValidationError } from '@/utils/validationUtils';
 import { 
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
 import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SaveStatus, StatusType } from '@/components/SaveStatus';
+import { SaveStatus, StatusType } from '@/components/database/Other/SaveStatus';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
 import { toast } from 'sonner';
@@ -69,17 +69,31 @@ const ProjectEditor = () => {
   
   // Initialize view mode based on user preference
   useEffect(() => {
+    let isMounted = true;
+    
     const loadUserDefaultView = async () => {
       try {
+        // Add a small delay to ensure the app is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const defaultView = await getUserDefaultView();
-        setViewMode(defaultView);
+        if (isMounted) {
+          setViewMode(defaultView);
+        }
       } catch (error) {
         console.error('Failed to load user default view preference:', error);
-        // Keep default 'diagram' view if there's an error
+        // Fallback to 'diagram' view if there's an error
+        if (isMounted) {
+          setViewMode('diagram');
+        }
       }
     };
     
     loadUserDefaultView();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const currentProject = projects.find(p => p.id === id);
@@ -1013,6 +1027,7 @@ const ProjectEditor = () => {
               
               {/* Comments & Tasks Drawer */}
               <CommentTaskDrawer 
+                projectId={id}
                 comments={comments}
                 tasks={tasks}
                 onMarkCommentRead={handleMarkCommentRead}

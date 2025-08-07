@@ -35,7 +35,7 @@
     /* Vibrant Database Theme Colors */
     --db-canvas: 220 20% 97%;
     --db-table: 0 0% 100%;
-    --db-table-header: 0 100% 18%;
+    --db-table-header: 220.2 100% 10%;
     --db-table-border: 220 13% 88%;
     --shadow-table: 0 8px 32px 60px hsl(262 83% 58% / 0.2);
     
@@ -76,6 +76,7 @@
     --status-unique: 0 100% 18%;
     --status-nullable: 0 60% 70%;
     --status-not-null: 120 60% 45%;
+    --status-index: 180 100% 45%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, #ff4400, #b91c1c);
