@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262 83% 58%;
+    --primary: 22 100% 50%;
     --primary-foreground: 210 40% 98%;
     --secondary: 220 14% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -35,12 +35,12 @@
     /* Vibrant Database Theme Colors */
     --db-canvas: 220 20% 97%;
     --db-table: 0 0% 100%;
-    --db-table-header: 262 83% 58%;
+    --db-table-header: 0 100% 18%;
     --db-table-border: 220 13% 88%;
-    --shadow-table: 0 8px 32px -8px hsl(262 83% 58% / 0.2);
+    --shadow-table: 0 8px 32px 60px hsl(262 83% 58% / 0.2);
     
     /* Data Type Colors */
-    --color-uuid: 280 100% 70%;
+    --color-uuid: 22 100% 50%;
     --color-text: 340 100% 65%;
     --color-varchar: 340 100% 65%;
     --color-string: 340 100% 65%;
@@ -58,11 +58,11 @@
     --color-time: 30 100% 65%;
     --color-json: 160 100% 45%;
     --color-jsonb: 160 100% 45%;
-    --color-decimal: 270 100% 65%;
-    --color-numeric: 270 100% 65%;
-    --color-float: 270 100% 65%;
-    --color-real: 270 100% 65%;
-    --color-email: 310 100% 60%;
+    --color-decimal: 0 100% 18%;
+    --color-numeric: 0 100% 18%;
+    --color-float: 0 100% 18%;
+    --color-real: 0 100% 18%;
+    --color-email: 22 100% 50%;
     --color-enum: 60 100% 55%;
     --color-array: 180 100% 50%;
     --color-bytea: 15 100% 60%;
@@ -73,13 +73,13 @@
     /* Status Colors */
     --status-primary-key: 45 100% 55%;
     --status-foreign-key: 220 100% 65%;
-    --status-unique: 280 100% 65%;
+    --status-unique: 0 100% 18%;
     --status-nullable: 0 60% 70%;
     --status-not-null: 120 60% 45%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #8b5cf6, #a855f7);
-    --gradient-secondary: linear-gradient(135deg, #ec4899, #8b5cf6);
+    --gradient-primary: linear-gradient(135deg, #ff4400, #b91c1c);
+    --gradient-secondary: linear-gradient(135deg, #fe3401, #dc2626);
     --gradient-canvas: linear-gradient(135deg, hsl(220 15% 98%), hsl(220 13% 96%));
     --gradient-table: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 98%));
 
@@ -94,6 +94,20 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* Shimmer Animation for Empty Stats */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -101,34 +115,34 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 22 100% 50%;
     --primary-foreground: 222.2 84% 4.9%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 22 100% 50%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+    --border: 22 100% 10%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.0%;
     
     /* Dark mode sidebar */
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 22 100% 50%;
+    --sidebar-primary-foreground: 22 100% 80%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-border: 22 100% 10%;
     --sidebar-ring: 217.2 91.2% 59.8%;
     
     /* Dark mode status colors */
     --status-primary-key: 45 100% 65%;
     --status-foreign-key: 220 80% 75%;
-    --status-unique: 280 80% 75%;
+    --status-unique: 0 80% 25%;
     --status-nullable: 0 70% 80%;
     --status-not-null: 120 70% 55%;
   }

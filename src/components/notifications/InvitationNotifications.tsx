@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Bell, Users, Check, X, Clock } from 'lucide-react';
+import { Bell, Users, Check, X } from 'lucide-react';
 
 interface TeamInvitation {
   id: string;
@@ -144,8 +144,8 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
 
   if (loading) {
     return (
-      <div className={`relative ${className}`}>
-        <Bell className="h-5 w-5 text-gray-400 animate-pulse" />
+      <div className={`bg-background relative ${className}`}>
+        <Bell className="h-5 w-5 text-muted-foreground animate-pulse" />
       </div>
     );
   }
@@ -153,10 +153,10 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
   const hasInvitations = invitations.length > 0;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`bg-background relative ${className}`}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors"
+        className="relative p-2 text-muted-foreground hover:text-muted-foreground/80 transition-colors"
         title={hasInvitations ? `${invitations.length} pending invitation(s)` : 'No pending invitations'}
       >
         <Bell className="h-5 w-5" />
@@ -171,18 +171,21 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 z-10" 
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 z-20 dark:bg-purple-400/10 bg-purple-400/10 backdrop-blur-sm cursor-pointer" 
             onClick={() => setShowDropdown(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setShowDropdown(false)}
           />
           
           {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <div className="absolute right-0 mt-2 w-96 bg-card rounded-lg shadow-lg border border-border z-20">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Team Invitations
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {hasInvitations 
                   ? `You have ${invitations.length} pending invitation${invitations.length === 1 ? '' : 's'}`
                   : 'No pending invitations'
@@ -193,36 +196,36 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
             <div className="max-h-96 overflow-y-auto">
               {hasInvitations ? (
                 invitations.map((invitation) => (
-                  <div key={invitation.id} className="p-4 border-b border-gray-100 last:border-b-0">
+                  <div key={invitation.id} className="p-4 border-b border-border last:border-b-0">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 truncate">
+                        <h4 className="font-semibold text-foreground text-lg">
                           {invitation.team.name}
                         </h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground">
                           Invited by {invitation.inviter.display_name || invitation.inviter.email}
                         </p>
-                        {invitation.team.description && (
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                            {invitation.team.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(invitation.role)}`}>
-                            {invitation.role}
-                          </span>
-                          <span className="text-xs text-gray-400 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(invitation.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
                       </div>
+                    </div>
+                    
+                    {invitation.team.description && (
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                        {invitation.team.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(invitation.role)}`}>
+                        {invitation.role}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        Invited {new Date(invitation.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                     
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => acceptInvitation(invitation)}
-                        className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 bg-primary text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                       >
                         <Check className="h-4 w-4" />
                         Accept
@@ -240,7 +243,9 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
               ) : (
                 <div className="p-8 text-center">
                   <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No pending invitations</p>
+                  <div className="p-6 text-center text-muted-foreground">
+                    <p>No pending invitations</p>
+                  </div>
                   <p className="text-sm text-gray-400 mt-1">
                     When someone invites you to their team, you'll see it here.
                   </p>

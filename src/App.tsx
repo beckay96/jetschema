@@ -67,20 +67,20 @@ function AuthenticatedApp() {
                   <div className="w-full max-w-md p-6 bg-card rounded-lg shadow-lg border text-center">
                     <h2 className="text-xl font-semibold mb-4">Project Loading Error</h2>
                     <p className="mb-6 text-muted-foreground">
-                      There was an error loading the project. This could be due to corrupt project data or a temporary issue.
+                      There was an error loading the page. This could be due to corrupt project data or a temporary issue upon loading, try refreshing! Thank you for your patience as we debug and get this new project perfect for you!
                     </p>
                     <div className="flex gap-4 justify-center">
                       <button 
                         onClick={() => window.location.reload()} 
                         className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
                       >
-                        Try Again
+                        Try Again?
                       </button>
                       <a 
                         href="/projects" 
                         className="px-4 py-2 bg-muted text-muted-foreground rounded hover:bg-muted/90"
                       >
-                        Back to Projects
+                        Back to Projects?
                       </a>
                     </div>
                   </div>

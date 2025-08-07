@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { JetSchemaLogo } from '@/components/ui/JetSchemaLogo';
 // Container component removed as it's not needed
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -54,7 +55,7 @@ const Index = () => {
       <header className="fixed top-0 w-full z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <img src="/rocket-logo.svg" alt="JetSchema Logo" className="h-8 w-8" />
+            <JetSchemaLogo size="large" />
             <span className="text-xl font-bold tracking-tight">JetSchema</span>
           </div>
 

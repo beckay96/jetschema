@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Database, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { JetSchemaLogo } from '@/components/ui/JetSchemaLogo';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -73,10 +74,10 @@ export function Auth() {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <div className="bg-gradient-to-r from-primary to-primary/80 p-3 rounded-xl">
-              <Database className="h-8 w-8 text-white" />
+              <JetSchemaLogo size="large" className="text-white" preserveColor={true} />
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Database Designer Pro
+              JetSchema 🚀
             </h1>
           </div>
           <p className="text-muted-foreground">

@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, CheckSquare, Filter, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
 import { EnhancedComment } from './EnhancedComment';
 import { CommentComposer } from './CommentComposer';
 
@@ -176,7 +172,7 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject }: UnifiedC
           return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
         });
         
-        setComments(filteredComments as UnifiedComment[]);
+        setComments(filteredComments);
       } catch (error) {
         console.error('Error fetching comments:', error);
       } finally {
@@ -209,6 +205,73 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject }: UnifiedC
     }
   };
 
+  const handleCreateComment = async (content: string, isTask: boolean) => {
+    if (!user || !projectId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('unified_comments')
+        .insert({
+          project_id: projectId,
+          author_id: user.id,
+          content,
+          is_task: isTask,
+          object_type: 'project',
+          object_id: projectId,
+          parent_object_id: null,
+          completed: false,
+          assigned_to: null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh comments
+      setComments(prev => [data, ...prev]);
+    } catch (error) {
+      console.error('Error creating comment:', error);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('unified_comments')
+        .update({ content })
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Update local state
+      setComments(prev => 
+        prev.map(comment => 
+          comment.id === commentId 
+            ? { ...comment, content } 
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('unified_comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Update local state
+      setComments(prev => prev.filter(comment => comment.id !== commentId));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    }
+  };
+
   const getObjectTypeLabel = (objectType: string) => {
     switch (objectType) {
       case 'table': return 'Table';
@@ -221,22 +284,11 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject }: UnifiedC
     }
   };
 
-  const getObjectTypeColor = (objectType: string) => {
-    switch (objectType) {
-      case 'table': return 'bg-blue-500';
-      case 'field': return 'bg-green-500';
-      case 'function': return 'bg-purple-500';
-      case 'trigger': return 'bg-orange-500';
-      case 'policy': return 'bg-red-500';
-      case 'mockup': return 'bg-pink-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
   const renderCommentList = () => {
     if (loading) {
-      return Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex gap-4 p-4 border-b">
+      const skeletons = Array.from({ length: 5 });
+      return skeletons.map((_, index) => (
+        <div key={`skeleton-${index}`} className="flex gap-4 p-4 border-b">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-1/4" />
@@ -262,75 +314,30 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject }: UnifiedC
     }
 
     return comments.map(comment => (
-      <div 
-        key={comment.id} 
-        className={cn(
-          "p-4 border-b hover:bg-muted/30 transition-colors",
-          comment.is_task && comment.completed && "bg-muted/20"
-        )}
-      >
-        <div className="flex items-start gap-3">
-          {comment.is_task && (
-            <Checkbox 
-              checked={comment.completed} 
-              onCheckedChange={() => handleToggleTask(comment.id, comment.completed)}
-              className="mt-1"
-            />
-          )}
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={comment.author?.avatar_url || ''} />
-            <AvatarFallback>
-              {comment.author?.full_name?.charAt(0) || comment.author?.email?.charAt(0) || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">
-                {comment.author?.full_name || comment.author?.email || 'Unknown user'}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-              </span>
-              {comment.is_task && (
-                <Badge variant="outline" className={cn("ml-auto", comment.completed && "line-through opacity-50")}>
-                  Task
-                </Badge>
-              )}
-            </div>
-            <p className={cn("text-sm mb-2", comment.is_task && comment.completed && "line-through opacity-70")}>
-              {comment.content}
-            </p>
-            <div className="flex items-center gap-2">
-              <Badge 
-                variant="secondary" 
-                className="cursor-pointer hover:bg-secondary/80"
-                onClick={() => onNavigateToObject(comment.object_type, comment.object_id, comment.parent_object_id || undefined)}
-              >
-                <span className={`w-2 h-2 rounded-full ${getObjectTypeColor(comment.object_type)} mr-1`}></span>
-                {getObjectTypeLabel(comment.object_type)}: {comment.object_id}
-                {comment.parent_object_id && ` (${comment.parent_object_id})`}
-              </Badge>
-              
-              {comment.assigned_to && (
-                <div className="flex items-center gap-1 ml-auto">
-                  <span className="text-xs text-muted-foreground">Assigned to:</span>
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={comment.assignee?.avatar_url || ''} />
-                    <AvatarFallback className="text-[10px]">
-                      {comment.assignee?.full_name?.charAt(0) || comment.assignee?.email?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <EnhancedComment
+        key={comment.id}
+        id={comment.id}
+        content={comment.content}
+        author={comment.author || {
+          id: comment.author_id,
+          email: comment.author?.email || 'unknown@example.com',
+          full_name: comment.author?.full_name || 'Unknown User',
+          avatar_url: comment.author?.avatar_url
+        }}
+        created_at={comment.created_at}
+        updated_at={comment.updated_at}
+        is_task={comment.is_task}
+        completed={comment.completed}
+        currentUserId={user?.id || ''}
+        onUpdate={handleUpdateComment}
+        onToggleTask={handleToggleTask}
+        onDelete={handleDeleteComment}
+      />
     ));
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h3 className="font-semibold text-lg">Comments & Tasks</h3>
@@ -403,16 +410,27 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject }: UnifiedC
           </TabsTrigger>
         </TabsList>
         
-        <div className="border rounded-md mt-4 overflow-hidden">
-          <TabsContent value="all" className="m-0 max-h-[500px] overflow-y-auto">
-            {renderCommentList()}
-          </TabsContent>
-          <TabsContent value="comments" className="m-0 max-h-[500px] overflow-y-auto">
-            {renderCommentList()}
-          </TabsContent>
-          <TabsContent value="tasks" className="m-0 max-h-[500px] overflow-y-auto">
-            {renderCommentList()}
-          </TabsContent>
+        <div className="border rounded-md mt-4 overflow-hidden flex-grow">
+          <ScrollArea className="h-[calc(100vh-300px)]" type="always">
+            <TabsContent value="all" className="m-0">
+              {renderCommentList()}
+            </TabsContent>
+            <TabsContent value="comments" className="m-0">
+              {renderCommentList()}
+            </TabsContent>
+            <TabsContent value="tasks" className="m-0">
+              {renderCommentList()}
+            </TabsContent>
+          </ScrollArea>
+        </div>
+        
+        {/* Comment Input at the bottom */}
+        <div className="border-t mt-auto pt-4">
+          <CommentComposer
+            onSubmit={handleCreateComment}
+            placeholder="Share your thoughts or create a task..."
+            className="border-0 shadow-none"
+          />
         </div>
       </Tabs>
     </div>

@@ -1,6 +1,6 @@
 ## Project info
 
-**URL**: https://lovable.dev/projects/f20890f1-624f-4e32-8996-1d3e7e4e1565
+jetschema.com
 
 ## How can I edit this code?
 

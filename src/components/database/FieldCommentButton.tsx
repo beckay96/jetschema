@@ -46,11 +46,14 @@ export function FieldCommentButton({
   const [showComments, setShowComments] = useState(false);
   const hasComments = comments.length > 0;
 
-  const handleAddComment = () => {
+  const handleAddComment = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
     onAddComment?.('field', fieldId, fieldName);
+    setShowComments(true); // Ensure comments are shown after adding
   };
 
-  const handleViewComments = () => {
+  const handleViewComments = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
     onViewComments?.('field', fieldId, fieldName);
     setShowComments(true);
   };
@@ -66,7 +69,10 @@ export function FieldCommentButton({
               "relative text-blue-600 hover:text-blue-700 hover:bg-blue-50",
               compact ? "h-5 w-5 p-0" : "h-6 w-6 p-0"
             )}
-            onClick={handleViewComments}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewComments(e);
+            }}
           >
             <MessageCircle className={compact ? "h-3 w-3" : "h-4 w-4"} />
             {comments.length > 0 && (
@@ -99,9 +105,16 @@ export function FieldCommentButton({
             ))}
           </div>
           <div className="flex gap-2 pt-3 border-t">
-            <Button onClick={handleAddComment} className="flex-1">
+            <Button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddComment(e);
+              }} 
+              size="sm" 
+              className="flex-1"
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add Comment
+              {hasComments ? 'Add Another Comment' : 'Add Comment'}
             </Button>
           </div>
         </DialogContent>
@@ -119,6 +132,10 @@ export function FieldCommentButton({
             "text-gray-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity",
             compact ? "h-5 w-5 p-0" : "h-6 w-6 p-0"
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddComment(e);
+          }}
         >
           <MessageCircle className={compact ? "h-3 w-3" : "h-4 w-4"} />
         </Button>
@@ -130,12 +147,15 @@ export function FieldCommentButton({
             Click to add a comment and tag this field in chat
           </p>
           <Button 
-            onClick={handleAddComment} 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddComment(e);
+            }} 
             size="sm" 
             className="w-full"
           >
             <Plus className="h-3 w-3 mr-2" />
-            Add Comment
+            {hasComments ? 'Add Another Comment' : 'Add Comment'}
           </Button>
         </div>
       </PopoverContent>

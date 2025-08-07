@@ -286,6 +286,18 @@ export function StreamlinedBugReportModal({
         throw profileCheckError;
       }
 
+      // Get the user's profile ID for the author_id reference
+      const { data: userProfile, error: userProfileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userProfileError) {
+        console.error('Failed to get user profile:', userProfileError);
+        throw new Error('Unable to find your user profile. Please contact support.');
+      }
+      
       // Prepare the feedback data
       const feedbackData = {
         type,
@@ -293,7 +305,7 @@ export function StreamlinedBugReportModal({
         title: title.trim(),
         description: description.trim(),
         priority,
-        author_id: user.id,
+        author_id: userProfile.id, // Use profile.id instead of user.id
         screenshot_url: screenshotUrl,
         browser_logs: captureLogs ? browserLogs : null,
         browser_info: browserInfo,

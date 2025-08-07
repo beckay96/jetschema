@@ -147,10 +147,10 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
 
   if (loading) {
     return (
-      <div className={`space-y-4 ${className}`}>
+      <div className={`space-y-4 bg-background ${className}`}>
         <div className="flex items-center gap-3">
-          <Mail className="h-5 w-5 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900">Team Invitations</h3>
+          <Mail className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">Team Invitations</h3>
         </div>
         <div className="animate-pulse space-y-3">
           <div className="h-20 bg-gray-200 rounded-lg"></div>
@@ -163,17 +163,17 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
   const hasInvitations = invitations.length > 0;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 bg-background ${className}`}>
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-card transition-colors"
         aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-3">
-          <Mail className="h-5 w-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Team Invitations</h3>
+          <Mail className="h-5 w-5 text-foreground" />
+          <h3 className="text-lg font-semibold text-foreground">Team Invitations</h3>
           {hasInvitations && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            <span className="bg-blue-100 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
               {invitations.length} pending
             </span>
           )}
@@ -186,7 +186,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
       </button>
 
       {isExpanded && (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-card rounded-lg border border-gray-200">
           {hasInvitations ? (
             <div className="divide-y divide-gray-200">
               {invitations.map((invitation, index) => (
@@ -195,20 +195,20 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-blue-50 rounded-lg">
-                          <Users className="h-5 w-5 text-blue-600" />
+                          <Users className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900 text-lg">
+                          <h4 className="font-semibold text-foreground text-lg">
                             {invitation.team.name}
                           </h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-foreground">
                             Invited by {invitation.inviter.display_name || invitation.inviter.email}
                           </p>
                         </div>
                       </div>
                       
                       {invitation.team.description && (
-                        <p className="text-gray-700 mb-3 leading-relaxed">
+                        <p className="text-muted-foreground mb-3 leading-relaxed">
                           {invitation.team.description}
                         </p>
                       )}
@@ -217,7 +217,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
                         <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getRoleBadgeColor(invitation.role)}`}>
                           {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           Invited {new Date(invitation.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -226,14 +226,14 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => acceptInvitation(invitation)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors flex items-center gap-2"
                       >
                         <Check className="h-4 w-4" />
                         Accept
                       </button>
                       <button
                         onClick={() => declineInvitation(invitation)}
-                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                        className="bg-card text-card-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-card transition-colors flex items-center gap-2"
                       >
                         <X className="h-4 w-4" />
                         Decline
@@ -244,7 +244,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
               ))}
             </div>
           ) : (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 text-center text-muted-foreground">
               <p>No pending invitations</p>
             </div>
           )}

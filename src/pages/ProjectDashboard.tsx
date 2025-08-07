@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Database, GitMerge, Activity, CheckCircle } from 'lucide-react';
+import { GitMerge, Activity, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { JetSchemaLogo } from '@/components/ui/JetSchemaLogo';
 
 /**
  * Project Dashboard - Shows comprehensive project statistics
@@ -25,7 +26,7 @@ function ProjectDashboard() {
       {/* Quick Actions */}
       <div className="flex gap-4 mb-8">
         <Button onClick={() => navigate('/projects')} className="flex items-center gap-2">
-          <Database className="h-4 w-4" />
+          <JetSchemaLogo size="small" />
           View All Projects
         </Button>
         <Button onClick={() => navigate('/merge')} variant="outline" className="flex items-center gap-2">
@@ -39,7 +40,7 @@ function ProjectDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <JetSchemaLogo size="small" className="text-muted-foreground" preserveColor={true} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0</div>
@@ -73,7 +74,7 @@ function ProjectDashboard() {
       {/* Welcome Message */}
       <Card>
         <CardContent className="text-center py-12">
-          <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <JetSchemaLogo className="h-16 w-16 mx-auto mb-4 text-muted-foreground" preserveColor={true} />
           <h3 className="text-xl font-medium mb-2">Welcome to JetSchema Dashboard</h3>
           <p className="text-muted-foreground mb-6">
             Your project statistics and merge tools will appear here once you create some projects.

@@ -35,7 +35,7 @@ import { Database, Table, Plus, Settings, Zap, Code, Search, FileText, Save, Tra
 import { DatabaseTable } from '@/types/database';
 // Use the hook's interface definitions for database functions and triggers
 import { useTriggersFunctions } from '@/hooks/useTriggersFunctions';
-import { useRLSPolicies } from '@/hooks/useRLSPolicies';
+import { useRLSPolicies, RLSPolicy } from '@/hooks/useRLSPolicies';
 
 // Define interfaces matching the Supabase database schema
 interface DatabaseTrigger {
@@ -208,7 +208,9 @@ export function DatabaseSidebar({
   projectId,
   onProjectNameChange,
   onReorderTables,
-  onAddComment
+  onAddComment,
+  onDeleteTrigger,
+  onDeleteFunction
 }: DatabaseSidebarProps) {
   // Function to handle table reordering
   const handleTableReorder = (event: DragEndEvent) => {
@@ -251,6 +253,7 @@ export function DatabaseSidebar({
   const [showRLSModal, setShowRLSModal] = useState(false);
   const [editingTrigger, setEditingTrigger] = useState<DatabaseTrigger | null>(null);
   const [editingFunction, setEditingFunction] = useState<DatabaseFunction | null>(null);
+  const [editingPolicy, setEditingPolicy] = useState<RLSPolicy | null>(null);
   const [activeTab, setActiveTab] = useState('tables');
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
   const [isResizing, setIsResizing] = useState(false);
@@ -696,7 +699,10 @@ export function DatabaseSidebar({
                   </div>
                 ) : policies.length > 0 ? (
                   policies.map(policy => (
-                    <Card key={policy.id} className="cursor-pointer hover:bg-muted/50">
+                    <Card key={policy.id} className="cursor-pointer hover:bg-muted/50" onClick={() => {
+                      setEditingPolicy(policy);
+                      setShowRLSModal(true);
+                    }}>
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-medium text-sm">{policy.name}</h4>
@@ -768,9 +774,13 @@ export function DatabaseSidebar({
       <TriggerFunctionModal 
         mode="trigger" 
         open={showTriggerModal} 
-        onOpenChange={setShowTriggerModal} 
+        onOpenChange={(open) => {
+          setShowTriggerModal(open);
+          if (!open) setEditingTrigger(null); // Reset editing trigger when modal closes
+        }} 
         tables={tables} 
         functions={functions} 
+        existingTrigger={editingTrigger}
         onSave={trigger => {
           const modalTrigger = trigger as any;
           const dbTrigger: Omit<DatabaseTrigger, 'id'> = {
@@ -791,9 +801,13 @@ export function DatabaseSidebar({
       <TriggerFunctionModal 
         mode="function" 
         open={showFunctionModal} 
-        onOpenChange={setShowFunctionModal} 
+        onOpenChange={(open) => {
+          setShowFunctionModal(open);
+          if (!open) setEditingFunction(null); // Reset editing function when modal closes
+        }} 
         tables={tables} 
         functions={functions} 
+        existingFunction={editingFunction}
         onSave={func => {
           const modalFunc = func as any;
           const dbFunc: Omit<DatabaseFunction, 'id'> = {
@@ -817,9 +831,13 @@ export function DatabaseSidebar({
       
       <RLSPolicyModal
         open={showRLSModal}
-        onOpenChange={setShowRLSModal}
+        onOpenChange={(open) => {
+          setShowRLSModal(open);
+          if (!open) setEditingPolicy(null); // Reset editing policy when modal closes
+        }}
         tables={tables}
         projectId={projectId || ''}
+        editingPolicy={editingPolicy}
         onSave={async (policy) => {
           if (!projectId) {
             console.error('Cannot save RLS policy: projectId is undefined');

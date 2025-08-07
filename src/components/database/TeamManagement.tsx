@@ -251,15 +251,17 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
         setMembers([]);
       }
 
-      // Load pending team invitations
+      // Load pending team invitations with better error handling
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('team_invitations')
-        .select('*')
+        .select('id, team_id, email, role, invited_by, invited_user_id, expires_at, accepted_at, created_at')
         .eq('team_id', teamId)
         .is('accepted_at', null); // Only get pending invitations
         
       if (invitationsError) {
         console.error('Failed to load team invitations:', invitationsError);
+        // Don't show error to user for invitations - it's not critical
+        // The error might be due to RLS policies that need fixing
         setInvitations([]);
       } else {
         console.log('Team invitations loaded successfully:', invitationsData);
@@ -279,13 +281,27 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
 
     try {
       // First, check if the user exists in the system
-      const { data: existingUser, error: userLookupError } = await supabase
+      // Try profiles table first, then fall back to auth.users if needed
+      let existingUser = null;
+      let userLookupError = null;
+      
+      const { data: profileUser, error: profileError } = await supabase
         .from('profiles')
         .select('id, user_id, email, display_name')
         .eq('email', inviteEmail.toLowerCase().trim())
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid errors when no rows found
 
-      if (userLookupError || !existingUser) {
+      if (profileError) {
+        console.error('Profile lookup error:', profileError);
+        // If profiles lookup fails, we can't proceed with invitation
+        toast.error(`Error looking up user: ${profileError.message}`);
+        return;
+      }
+      
+      if (profileUser) {
+        existingUser = profileUser;
+      } else {
+        // User not found in profiles - they need to sign up first
         toast.error(`No JetSchema user found with email ${inviteEmail}. Users must have a JetSchema account to be invited.`);
         return;
       }
@@ -326,7 +342,7 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
           role: inviteRole,
           invited_by: user.id,
           invited_user_id: existingUser.user_id, // Store the actual user ID for notifications
-          expires_at: null // No expiration for in-app invitations
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days expiration
         })
         .select()
         .single();
