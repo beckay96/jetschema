@@ -1,0 +1,1774 @@
+[
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "title",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "version",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "feature_request_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "created_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "changelog",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "message_text",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "tagged_fields",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "reply_to_message_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "chat_messages",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "table_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "constraint_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "definition",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "columns",
+      "data_type": "ARRAY"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_constraints",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "table_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "data_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "is_nullable",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "is_primary_key",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "is_unique",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "default_value",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "order_index",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_fields",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "function_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "parameters",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "return_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "function_body",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "is_edge_function",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "edge_function_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "cron_schedule",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "is_cron_enabled",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_functions",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "columns",
+      "data_type": "ARRAY"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "index_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "is_unique",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "is_partial",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "where_clause",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_indexes",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "command",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "role",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "using_expression",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "with_check_expression",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "is_permissive",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_policies",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "project_data",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "is_public",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_projects",
+      "column_name": "team_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "source_table_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "source_field_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "target_table_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "target_field_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "relationship_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "on_delete_action",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "on_update_action",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_relationships",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "schema_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "position_x",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "position_y",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "color",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_tables",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "trigger_event",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "trigger_timing",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "function_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "is_active",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "conditions",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_triggers",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "validation_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "message",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "suggestion",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "affected_element_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "affected_element_id",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "affected_element_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "database_validations",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "feature_request_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "content",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_comments",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "title",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "status",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "admin_notes",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "vote_count",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "comment_count",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_requests",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_votes",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_votes",
+      "column_name": "feature_request_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_votes",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_votes",
+      "column_name": "vote_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "feature_votes",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "field_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "comment_text",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "is_read",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments",
+      "column_name": "is_completed",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "comment_text",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "field_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "is_completed",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "is_read",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "field_comments_view",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "error_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "severity",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "component",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "function_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "file_path",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "line_number",
+      "data_type": "integer"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "error_message",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "error_code",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "stack_trace",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "error_details",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "session_id",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "user_agent",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "ip_address",
+      "data_type": "inet"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "team_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "url_path",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "action_attempted",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "request_payload",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "table_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "query_text",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "query_parameters",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "environment",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "app_version",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "browser_version",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "device_info",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "is_resolved",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "resolved_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "resolved_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "resolution_notes",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "debug_context",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "reproduction_steps",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "expected_behavior",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "jetschema_error_logs",
+      "column_name": "actual_behavior",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "mockup_id",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "content",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "annotations",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "is_task",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "completed",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "assigned_to",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "mockup_comments",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "message",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "related_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "is_read",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "sender_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "notifications",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "display_name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "avatar_url",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "default_view",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "column_name": "user_type",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "team_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "role",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "invited_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "token",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "expires_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "accepted_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_invitations",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "team_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "role",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "invited_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "team_members",
+      "column_name": "joined_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "created_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "teams",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "content",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "object_type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "object_id",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "parent_object_id",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "is_task",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "completed",
+      "data_type": "boolean"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "assigned_to",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "unified_comments",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "type",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "feature",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "title",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "steps_to_reproduce",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "expected_behavior",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "priority",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "screenshot_url",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "browser_logs",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "browser_info",
+      "data_type": "jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "url",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "user_agent",
+      "data_type": "text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_feedback",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    }
+  ]
+
+  // Already exactly like this in Supabase - this is a direct export of the latest database structure

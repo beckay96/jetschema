@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, FolderOpen, Users, User, LogOut, Home, Settings, Sparkles } from 'lucide-react';
+import { Menu, FolderOpen, Users, User, LogOut, Home, Settings, Sparkles, MapPin } from 'lucide-react';
 
 interface HeaderMenuProps {
   isSubscribed?: boolean;
@@ -47,6 +47,11 @@ export function HeaderMenu({ isSubscribed = false }: HeaderMenuProps) {
         <DropdownMenuItem onClick={() => navigate('/team')}>
           <Users className="h-4 w-4 mr-2" />
           Team
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem onClick={() => navigate('/roadmap')}>
+          <MapPin className="h-4 w-4 mr-2" />
+          Feature Roadmap
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={() => navigate('/settings')}>

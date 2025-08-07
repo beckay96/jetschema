@@ -1,17 +1,125 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { User, Mail, Shield, ArrowLeft } from 'lucide-react';
+import { User, Mail, Shield, ArrowLeft, Edit, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Account() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load user profile on component mount
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Try to get existing profile
+      let { data: existingProfile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create one
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email || '',
+            display_name: user.email?.split('@')[0] || 'User'
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Failed to create profile:', createError);
+          toast.error('Failed to create user profile');
+          return;
+        }
+
+        existingProfile = newProfile;
+      } else if (error) {
+        console.error('Failed to load profile:', error);
+        toast.error('Failed to load user profile');
+        return;
+      }
+
+      setProfile(existingProfile);
+      setDisplayName(existingProfile.display_name || '');
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast.error('Failed to load user profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveDisplayName = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setIsSaving(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          display_name: displayName.trim() || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Failed to update display name:', error);
+        toast.error('Failed to update username');
+        return;
+      }
+
+      // Update local profile state
+      setProfile(prev => prev ? { ...prev, display_name: displayName.trim() || null } : null);
+      setIsEditing(false);
+      toast.success('Username updated successfully');
+    } catch (error) {
+      console.error('Error updating display name:', error);
+      toast.error('Failed to update username');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setDisplayName(profile?.display_name || '');
+    setIsEditing(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -38,6 +146,60 @@ export default function Account() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  {isEditing ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        id="username"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="Enter your username"
+                        className="flex-1"
+                        disabled={isSaving}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={saveDisplayName}
+                        disabled={isSaving || !displayName.trim()}
+                      >
+                        {isSaving ? '...' : <Check className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={cancelEdit}
+                        disabled={isSaving}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        id="username"
+                        value={isLoading ? 'Loading...' : (profile?.display_name || 'Not set')}
+                        disabled
+                        className="flex-1"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                        disabled={isLoading}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This is how your name will appear to other team members
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <div className="flex items-center gap-2">

@@ -21,7 +21,6 @@ import '@xyflow/react/dist/style.css';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DatabaseTable, DataType } from '@/types/database';
 import { DatabaseTableNode } from './DatabaseTableNode';
-import { DiagramSticker, StickerData } from './DiagramSticker';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,9 +95,6 @@ interface DatabaseCanvasProps {
   onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
   onMarkAsTask?: (elementType: 'table' | 'field', elementId: string, elementName: string, priority: 'low' | 'medium' | 'high') => void;
   onNavigateToElement?: (elementType: string, elementId: string) => void;
-  // Add stickers properties (optional to maintain backward compatibility)
-  stickers?: StickerData[];
-  onSaveStickers?: (stickers: StickerData[]) => void;
 }
 
 interface DatabaseTableNodeProps {
@@ -111,85 +107,14 @@ interface DatabaseTableNodeProps {
     onDeleteField?: (tableId: string, fieldId: string) => void;
     onAddField?: (tableId: string, field?: any) => void;
     onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
-    onMarkAsTask?: (elementType: 'table' | 'field', elementId: string, elementName: string, priority: 'low' | 'medium' | 'high') => void;
     onNavigateToElement?: (elementType: string, elementId: string) => void;
   };
 }
 
-// We'll remove this interface as it's not needed anymore
-
-// Type definition for sticker node data as passed to ReactFlow
-interface StickerNodeData extends StickerData {
-  onDelete?: (id: string) => void;
-  onUpdate?: (id: string, data: Partial<StickerData>) => void;
-}
-
-// Wrapped sticker component to adapt to ReactFlow's node props structure
-const StickerNodeWrapper = (props: NodeProps) => {
-  // Extract the node data and provide the required props to DiagramSticker
-  const { id, data } = props;
-  
-  // Safely handle the data with type checking
-  const isValidStickerData = data && 
-    typeof data === 'object' &&
-    'text' in data &&
-    'position' in data &&
-    'type' in data;
-  
-  // Fall back to empty data if invalid to prevent crashes
-  const stickerData = isValidStickerData ? data : {
-    id: id || 'fallback-id',
-    text: 'Error',
-    position: { x: 0, y: 0 },
-    type: 'sticker' as const
-  };
-  
-  // Create handler functions that access the handlers stored in the node data
-  const handleDelete = useCallback((id: string) => {
-    if (data && typeof data === 'object' && 'onDelete' in data && typeof data.onDelete === 'function') {
-      data.onDelete(id);
-    }
-  }, [data]);
-  
-  const handleUpdate = useCallback((id: string, newData: Partial<StickerData>) => {
-    if (data && typeof data === 'object' && 'onUpdate' in data && typeof data.onUpdate === 'function') {
-      data.onUpdate(id, newData);
-    }
-  }, [data]);
-  
-  // Convert to StickerNodeData with proper typing
-  const typedData: StickerData = {
-    id: typeof stickerData.id === 'string' ? stickerData.id : id || 'fallback-id',
-    text: typeof stickerData.text === 'string' ? stickerData.text : 'Error',
-    position: stickerData.position && 
-              typeof stickerData.position === 'object' && 
-              'x' in stickerData.position && 
-              'y' in stickerData.position ? 
-              { x: Number(stickerData.position.x) || 0, y: Number(stickerData.position.y) || 0 } : 
-              { x: 0, y: 0 },
-    type: stickerData.type === 'tag' ? 'tag' : 'sticker',
-    color: typeof stickerData.color === 'string' ? stickerData.color : undefined,
-    rotation: typeof stickerData.rotation === 'number' ? stickerData.rotation : 0,
-    size: ['small', 'medium', 'large'].includes(stickerData.size as string) ? 
-      stickerData.size as 'small' | 'medium' | 'large' : undefined
-  };
-  
-  return (
-    <DiagramSticker 
-      data={typedData} 
-      onDelete={handleDelete} 
-      onUpdate={handleUpdate} 
-    />
-  );
-};
-
-// Now the nodeTypes object matches ReactFlow's expected structure
 const nodeTypes: NodeTypes = {
   databaseTable: DatabaseTableNode,
-  sticker: StickerNodeWrapper,
 };
 
-// List of common emoji keywords for the help tooltip
 const emojiKeywords = [
   { keyword: 'star', emoji: '⭐' },
   { keyword: 'fire', emoji: '🔥' },
@@ -225,17 +150,12 @@ export function DatabaseCanvas({
   onSave,
   onAddComment,
   onMarkAsTask,
-  onNavigateToElement,
-  stickers: initialStickers = [],
-  onSaveStickers
+  onNavigateToElement
 }: DatabaseCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [stickers, setStickers] = useState<StickerData[]>(initialStickers);
-  const [isAddingStickerMode, setIsAddingStickerMode] = useState(false);
-  const [newStickerText, setNewStickerText] = useState('');
-  const [previewColor, setPreviewColor] = useState('#FFD700'); // Default color - gold
-  const [newStickerType, setNewStickerType] = useState<'sticker' | 'tag'>('sticker');
+
+
   const reactFlowWrapperRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
@@ -296,73 +216,7 @@ export function DatabaseCanvas({
     return fkEdges;
   };
 
-  // Convert tables to nodes
-  const tableNodes: Node[] = tables.map(table => ({
-    id: table.id,
-    type: 'databaseTable',
-    position: table.position,
-    // Apply saved width and height if available
-    style: {
-      width: table.width,
-      height: table.height
-    },
-    data: {
-      table,
-      allTables: tables,
-      selected: selectedTable?.id === table.id,
-      onEditTable: (updatedTable: DatabaseTable) => {
-        console.log('🔄 Updating table:', updatedTable.name);
-        // Handle table editing
-        const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
-        setTables?.(updatedTables);
-      },
-      onEditField: (field: any) => {
-        // Handle field editing
-        console.log('Edit field:', field);
-      },
-      onDeleteField: (tableId: string, fieldId: string) => {
-        // Handle field deletion
-        const updatedTables = tables.map(t => {
-          if (t.id === tableId) {
-            return {
-              ...t,
-              fields: t.fields.filter(f => f.id !== fieldId)
-            };
-          }
-          return t;
-        });
-        setTables?.(updatedTables);
-      },
-      onAddField: (tableId: string) => {
-        console.log('➕ Adding field to table:', tableId);
-        // Handle adding new field
-        const updatedTables = tables.map(t => {
-          if (t.id === tableId) {
-            const newField = {
-              id: `field-${Date.now()}`,
-              name: `new_field_${t.fields.length + 1}`,
-              type: 'VARCHAR' as DataType,
-              nullable: true,
-              primaryKey: false,
-              unique: false,
-              foreignKey: null,
-              defaultValue: null,
-              comment: null
-            };
-            console.log('📝 New field created:', newField.name, 'for table:', t.name);
-            return {
-              ...t,
-              fields: [...t.fields, newField]
-            };
-          }
-          return t;
-        });
-        setTables?.(updatedTables);
-      },
-      onAddComment: onAddComment
-    },
-    dragHandle: '.table-drag-handle'
-  }));
+  // Legacy tableNodes code removed - now handled by useMemo below
 
   // Note: useEffect moved after handler functions are declared
 
@@ -384,17 +238,16 @@ export function DatabaseCanvas({
       setIsDragging(true);
       
       // Save current positions when drag starts
-      tables.forEach(table => {
+      tablesRef.current.forEach(table => {
         lastPositionsRef.current[table.id] = { ...table.position };
       });
     }
     
     // Handle dimension changes (resizing nodes)
     if (dimensionChanges.length > 0 && setTables) {
-      console.log('Node resize detected:', dimensionChanges);
       let hasRealChanges = false;
       
-      const updatedTables = tables.map(table => {
+      const updatedTables = tablesRef.current.map(table => {
         const sizeChange = dimensionChanges.find(change => change.id === table.id);
         if (sizeChange && sizeChange.dimensions) {
           // Only update if dimensions actually changed
@@ -418,7 +271,6 @@ export function DatabaseCanvas({
       // Only update and save if real changes were detected
       if (hasRealChanges) {
         setTables(updatedTables);
-        // Auto-save size changes
         onSave?.(updatedTables);
       }
     }
@@ -427,7 +279,7 @@ export function DatabaseCanvas({
     if (dragEndChanges.length > 0 && isDragging && setTables) {
       setIsDragging(false);
       
-      const updatedTables = tables.map(table => {
+      const updatedTables = tablesRef.current.map(table => {
         const positionChange = dragEndChanges.find(change => change.id === table.id);
         if (positionChange) {
           return {
@@ -446,12 +298,10 @@ export function DatabaseCanvas({
       
       if (hasPositionChanges) {
         setTables(updatedTables);
-        
-        // Also call onSave if provided, for auto-save functionality
         onSave?.(updatedTables);
       }
     }
-  }, [onNodesChange, tables, setTables, onSave, isDragging]);
+  }, [onNodesChange, setTables, onSave, isDragging]);
 
   const onConnect = useCallback(
     (params: any) => {
@@ -481,68 +331,70 @@ export function DatabaseCanvas({
   // Apply theme class to the container
   const themeClass = theme === 'dark' ? 'dark' : 'light';
   
-  // Handle adding sticker on canvas click when in sticker add mode
-  const handleCanvasClick = useCallback((event: React.MouseEvent) => {
-    if (!isAddingStickerMode || !reactFlowWrapperRef.current) return;
-    
-    // Get click position relative to the ReactFlow container
-    const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
-    const position = {
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top
-    };
-    
-    // Create new sticker
-    const newSticker: StickerData = {
-      id: `sticker-${Date.now()}`,
-      text: newStickerText || 'New Sticker',
-      position,
-      type: newStickerType,
-      rotation: Math.floor(Math.random() * 20) - 10,
-      size: 'medium'
-    };
-    
-    // Add to stickers
-    const updatedStickers = [...stickers, newSticker];
-    setStickers(updatedStickers);
-    
-    // Save stickers if callback provided
-    onSaveStickers?.(updatedStickers);
-    
-    // Reset sticker text and exit add mode
-    setNewStickerText('');
-    setIsAddingStickerMode(false);
-    
-    toast.success(`${newStickerType === 'tag' ? 'Tag' : 'Sticker'} added!`);
-  }, [isAddingStickerMode, newStickerText, newStickerType, stickers, onSaveStickers]);
-  
-  // Handle sticker update (position, type, etc)
-  const handleUpdateSticker = useCallback((id: string, data: Partial<StickerData>) => {
-    const updatedStickers = stickers.map(sticker => 
-      sticker.id === id ? { ...sticker, ...data } : sticker
-    );
-    setStickers(updatedStickers);
-    onSaveStickers?.(updatedStickers);
-  }, [stickers, onSaveStickers]);
-  
-  // Handle sticker deletion
-  const handleDeleteSticker = useCallback((id: string) => {
-    const updatedStickers = stickers.filter(sticker => sticker.id !== id);
-    setStickers(updatedStickers);
-    onSaveStickers?.(updatedStickers);
-    toast.success('Sticker removed');
-  }, [stickers, onSaveStickers]);
+  // Use ref to access current tables without causing re-renders
+  const tablesRef = useRef(tables);
+  tablesRef.current = tables;
 
-  // Update nodes when tables change or theme changes
-  React.useEffect(() => {
-    console.log('Tables changed, updating nodes:', tables.length);
-    
-    // Generate table nodes directly from tables instead of using tableNodes variable
-    const updatedTableNodes = tables.map(table => ({
+  // Memoize callback functions to prevent infinite re-renders - remove tables from dependencies
+  const handleEditTable = useCallback((updatedTable: DatabaseTable) => {
+    console.log('🔄 Updating table:', updatedTable.name);
+    const updatedTables = tablesRef.current.map(t => t.id === updatedTable.id ? updatedTable : t);
+    setTables?.(updatedTables);
+  }, [setTables]);
+
+  const handleEditField = useCallback((field: any) => {
+    console.log('Edit field:', field);
+    const fieldTable = tablesRef.current.find(t => t.fields.some(f => f.id === field.id));
+    if (fieldTable) {
+      setSelectedTable?.(fieldTable);
+      onEditField?.(fieldTable.id, field.id, field);
+    }
+  }, [setSelectedTable, onEditField]);
+
+  const handleDeleteField = useCallback((tableId: string, fieldId: string) => {
+    const updatedTables = tablesRef.current.map(t => {
+      if (t.id === tableId) {
+        return {
+          ...t,
+          fields: t.fields.filter(f => f.id !== fieldId)
+        };
+      }
+      return t;
+    });
+    setTables?.(updatedTables);
+  }, [setTables]);
+
+  const handleAddField = useCallback((tableId: string) => {
+    console.log('➕ Adding field to table:', tableId);
+    const updatedTables = tablesRef.current.map(t => {
+      if (t.id === tableId) {
+        const newField = {
+          id: `field-${Date.now()}`,
+          name: `new_field_${t.fields.length + 1}`,
+          type: 'VARCHAR' as DataType,
+          nullable: true,
+          primaryKey: false,
+          unique: false,
+          foreignKey: null,
+          defaultValue: null,
+          comment: null
+        };
+        return {
+          ...t,
+          fields: [...t.fields, newField]
+        };
+      }
+      return t;
+    });
+    setTables?.(updatedTables);
+  }, [setTables]);
+
+  // Generate table nodes - use useMemo to prevent unnecessary recalculations
+  const tableNodes = useMemo(() => {
+    return tables.map(table => ({
       id: table.id,
       type: 'databaseTable',
       position: table.position,
-      // Apply saved width and height if available
       style: {
         width: table.width,
         height: table.height,
@@ -552,128 +404,32 @@ export function DatabaseCanvas({
         table,
         allTables: tables,
         selected: selectedTable?.id === table.id,
-        onEditTable: (updatedTable: DatabaseTable) => {
-          console.log('🔄 Updating table:', updatedTable.name);
-          // Handle table editing
-          const updatedTables = tables.map(t => t.id === updatedTable.id ? updatedTable : t);
-          setTables?.(updatedTables);
-        },
-        onEditField: (field: any) => {
-          // Handle field editing - find the table and open edit modal
-          console.log('Edit field:', field);
-          const fieldTable = tables.find(t => t.fields.some(f => f.id === field.id));
-          if (fieldTable) {
-            setSelectedTable?.(fieldTable);
-            // Call the parent onEditField callback if provided
-            onEditField?.(fieldTable.id, field.id, field);
-          }
-        },
-        onDeleteField: (tableId: string, fieldId: string) => {
-          // Handle field deletion
-          const updatedTables = tables.map(t => {
-            if (t.id === tableId) {
-              return {
-                ...t,
-                fields: t.fields.filter(f => f.id !== fieldId)
-              };
-            }
-            return t;
-          });
-          setTables?.(updatedTables);
-        },
-        onAddField: (tableId: string) => {
-          console.log('➕ Adding field to table:', tableId);
-          // Handle adding new field
-          const updatedTables = tables.map(t => {
-            if (t.id === tableId) {
-              const newField = {
-                id: `field-${Date.now()}`,
-                name: `new_field_${t.fields.length + 1}`,
-                type: 'VARCHAR' as DataType,
-                nullable: true,
-                primaryKey: false,
-                unique: false,
-                foreignKey: null,
-                defaultValue: null,
-                comment: null
-              };
-              console.log('📝 New field created:', newField.name, 'for table:', t.name);
-              return {
-                ...t,
-                fields: [...t.fields, newField]
-              };
-            }
-            return t;
-          });
-          setTables?.(updatedTables);
-        },
-        onAddComment: onAddComment
+        onEditTable: handleEditTable,
+        onEditField: handleEditField,
+        onDeleteField: handleDeleteField,
+        onAddField: handleAddField,
+        onDeleteTable,
+        onAddComment,
+        onNavigateToElement
       },
       dragHandle: '.table-drag-handle'
     }));
-    
-    // Convert stickers to ReactFlow nodes
-    const stickerNodes = stickers.map(sticker => ({
-      id: sticker.id,
-      type: 'sticker',
-      position: sticker.position,
-      data: {
-        ...sticker,
-        onDelete: handleDeleteSticker,
-        onUpdate: handleUpdateSticker
-      },
-      draggable: true,
-      selectable: true
-    }));
-    
-    // Combine table nodes and sticker nodes
-    setNodes([...updatedTableNodes, ...stickerNodes]);
-    setEdges(generateForeignKeyEdges(tables));
-  }, [tables, selectedTable, stickers, setNodes, setEdges, theme, handleDeleteSticker, handleUpdateSticker]);
+  }, [tables, selectedTable, theme, handleEditTable, handleEditField, handleDeleteField, handleAddField, onDeleteTable, onAddComment, onNavigateToElement]);
 
-  // Handle bulk import of stickers from JSON
-  const handleImportStickers = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedStickers = JSON.parse(event.target?.result as string);
-        if (Array.isArray(importedStickers) && importedStickers.length > 0) {
-          // Validate that imported data has required fields
-          const validStickers = importedStickers.filter((sticker: any) => 
-            sticker.id && sticker.text && sticker.position && sticker.type
-          );
-          
-          if (validStickers.length !== importedStickers.length) {
-            toast.warning(`Imported ${validStickers.length} valid stickers out of ${importedStickers.length}`);
-          } else {
-            toast.success(`Imported ${validStickers.length} stickers`);
-          }
-          
-          const updatedStickers = [...stickers, ...validStickers];
-          setStickers(updatedStickers);
-          onSaveStickers?.(updatedStickers);
-        } else {
-          toast.error('No valid stickers found in file');
-        }
-      } catch (error) {
-        toast.error('Failed to parse sticker data');
-        console.error('Sticker import error:', error);
-      }
-    };
-    reader.readAsText(file);
-    
-    // Reset the input
-    e.target.value = '';
-  }, [stickers, onSaveStickers]);
+  // Update nodes and edges only when tables actually change
+  React.useEffect(() => {
+    setNodes(tableNodes);
+  }, [tableNodes]);
+
+  // Update edges when tables change
+  React.useEffect(() => {
+    setEdges(generateForeignKeyEdges(tables));
+  }, [tables, setEdges]);
 
   return (
     <div 
       ref={reactFlowWrapperRef}
       className={`h-full w-full bg-gradient-to-br from-white to-gray-200 dark:from-gray-900 dark:to-black ${themeClass}`}
-      onClick={handleCanvasClick} // Handle canvas click for sticker placement
     >
       <ReactFlow
         nodes={nodes}
@@ -699,8 +455,6 @@ export function DatabaseCanvas({
         // The dragHandle functionality will be handled by the data-draghandle attribute
         // in each node component instead of here
       >
-        {/* Stickers are now handled through the nodeTypes system */}
-        
         <Background 
           color="hsl(var(--border))" 
           gap={20} 
@@ -710,202 +464,9 @@ export function DatabaseCanvas({
           className="bg-card/80 text-black border border-border/50 rounded-lg shadow-lg backdrop-blur-sm hover:border-blue-500/50 active:border-blue-500/80"
           showInteractive={false}
         />
-        
-        {/* Sticker Panel */}
-        <Panel position="top-right" className="bg-background/95 p-2 rounded-lg shadow-md border border-border backdrop-blur-sm">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Sticker className="h-4 w-4" />
-                {isAddingStickerMode ? 'Cancel Sticker' : 'Add Sticker'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-3">
-              <Tabs defaultValue="sticker">
-                <div className="flex items-center justify-between mb-4">
-                  <TabsList>
-                    <TabsTrigger value="sticker" onClick={() => setNewStickerType('sticker')}>
-                      <Sticker className="h-4 w-4 mr-2" /> Sticker
-                    </TabsTrigger>
-                    <TabsTrigger value="tag" onClick={() => setNewStickerType('tag')}>
-                      <Hash className="h-4 w-4 mr-2" /> Tag
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 ml-2"
-                        title="View emoji keywords"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-3">
-                      <div className="text-sm font-medium mb-2">Available Emoji Keywords</div>
-                      <div className="text-xs text-muted-foreground mb-3">
-                        Start your sticker text with these keywords to use specific emojis.
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {emojiKeywords.map(item => (
-                          <div key={item.keyword} className="flex items-center gap-2 text-sm">
-                            <span className="text-base">{item.emoji}</span>
-                            <span>{item.keyword}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label>Text</Label>
-                    <Input 
-                      placeholder="Enter sticker text..." 
-                      value={newStickerText} 
-                      onChange={(e) => setNewStickerText(e.target.value)}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Tip: Start with keywords like "star", "fire", "idea" for special emojis
-                    </p>
-                    
-                    {/* Preview section */}
-                    {newStickerText && (
-                      <div className="mt-3">
-                        <Label>Preview</Label>
-                        <div className="mt-1 border rounded-md p-3 flex items-center justify-center">
-                          <div 
-                            className={cn(
-                              "p-2 rounded-md text-center max-w-[200px] transition-all",
-                              newStickerType === 'tag' ? 
-                                'bg-primary/20 border border-primary/30 text-primary-foreground' :
-                                ''
-                            )}
-                            style={{ 
-                              backgroundColor: newStickerType === 'sticker' ? `${previewColor.substring(0, 7)}20` : '',
-                              borderColor: newStickerType === 'sticker' ? `${previewColor.substring(0, 7)}50` : '' 
-                            }}
-                          >
-                            {newStickerType === 'sticker' && newStickerText && (
-                                <span className="text-lg mr-1">
-                                  {getEmojiForKeyword(newStickerText.split(' ')[0] || '')}
-                                </span>
-                            )}
-                            <span>{newStickerType === 'tag' ? '#' + newStickerText : newStickerText}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex justify-between items-center mt-4">
-                      <div className="flex gap-2 items-center">
-                        <Label className="text-xs">Color:</Label>
-                        <input 
-                          type="color" 
-                          value={previewColor}
-                          onChange={(e) => setPreviewColor(e.target.value)}
-                          className="w-8 h-8 rounded-md cursor-pointer"
-                        />
-                      </div>
-                      {newStickerType === 'sticker' ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => setIsAddingStickerMode(true)}
-                          disabled={isAddingStickerMode || !newStickerText.trim()}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Place Sticker
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            // For tags, create directly at a default position without requiring placement
-                            if (!newStickerText.trim()) return;
-                            
-                            const defaultPosition = {
-                              x: 100, // Default X position
-                              y: 100  // Default Y position
-                            };
-                            
-                            // Find an open spot to avoid stacking tags
-                            const usedPositions = stickers
-                              .filter(s => s.type === 'tag')
-                              .map(s => s.position);
-                              
-                            // Offset position if there are existing tags
-                            if (usedPositions.length > 0) {
-                              defaultPosition.y += (usedPositions.length * 40);
-                            }
-                            
-                            // Create new tag directly
-                            const newTag: StickerData = {
-                              id: `tag-${Date.now()}`,
-                              text: newStickerText,
-                              position: defaultPosition,
-                              type: 'tag',
-                              rotation: 0, // No rotation for tags
-                            };
-                            
-                            // Add to stickers
-                            const updatedStickers = [...stickers, newTag];
-                            setStickers(updatedStickers);
-                            
-                            // Save stickers if callback provided
-                            onSaveStickers?.(updatedStickers);
-                            
-                            // Reset sticker text
-                            setNewStickerText('');
-                            
-                            toast.success('Tag added!');
-                          }}
-                          disabled={!newStickerText.trim()}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Tag
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="mt-4">
-                      <input
-                        type="file"
-                        id="sticker-import"
-                        className="hidden"
-                        accept=".json"
-                        onChange={handleImportStickers}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => document.getElementById('sticker-import')?.click()}
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        Import Stickers/Tags
-                      </Button>
-                    </div>
-                    
-                    {isAddingStickerMode && (
-                      <div className="text-sm bg-muted p-2 mt-4 rounded-md text-muted-foreground">
-                        Click anywhere on the canvas to place your {newStickerType}...
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Tabs>
-            </PopoverContent>
-          </Popover>
-        </Panel>
       </ReactFlow>
     </div>
-    );
+  );
 }
 
 

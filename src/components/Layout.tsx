@@ -2,6 +2,8 @@ import { Database } from "lucide-react";
 import { HeaderMenu } from "./HeaderMenu";
 import { ThemeToggle } from "./ThemeToggle";
 import { useStripe } from "@/contexts/StripeContext";
+import { InvitationNotifications } from "./notifications/InvitationNotifications";
+import { useAuth } from "@/hooks/useAuth";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -10,6 +12,7 @@ type LayoutProps = {
 export function Layout({ children }: LayoutProps) {
   // Get subscription status for conditional rendering in menu
   const { isSubscribed } = useStripe();
+  const { user } = useAuth();
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -25,6 +28,7 @@ export function Layout({ children }: LayoutProps) {
           {/* Right side navigation elements */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            {user && <InvitationNotifications />}
             <HeaderMenu isSubscribed={isSubscribed} />
           </div>
         </div>

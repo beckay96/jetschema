@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import { EnhancedComment } from './EnhancedComment';
+import { CommentComposer } from './CommentComposer';
 
 // Legacy field comment type for proper typing
 interface LegacyFieldComment {

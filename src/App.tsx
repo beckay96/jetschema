@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import ProjectEditor from "./pages/ProjectEditor";
 import Account from "./pages/Account";
@@ -9,21 +8,22 @@ import { Auth } from "./pages/Auth";
 import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
-import { HeaderMenu } from "./components/HeaderMenu";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { StripeProvider } from "./contexts/StripeContext";
 import { SettingsPage } from "./pages/SettingsPage";
 import ProjectDashboard from './pages/ProjectDashboard';
 import ProjectMerge from './pages/ProjectMerge';
+import EnhancedFeatureRoadmap from './pages/EnhancedFeatureRoadmap';
+import InviteAccept from './pages/InviteAccept';
 // MainNavigation removed - consolidated with HeaderMenu
 import { AIFeatures } from "./components/subscription/AIFeatures";
+import { FloatingFeedbackButton } from "./components/feedback/FloatingFeedbackButton";
 import { Toaster } from "sonner";
 import { Layout } from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
 function AuthenticatedApp() {
   const {
     user,
-    signOut,
     loading
   } = useAuth();
   const navigate = useNavigate();
@@ -46,18 +46,18 @@ function AuthenticatedApp() {
     <ThemeProvider>
       <StripeProvider>
         <Toaster position="top-right" />
-        <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/team" element={<Team />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/projects" element={
-          <Layout>
-            <Projects />
-          </Layout>
-        } />
-        <Route path="/project/:id" element={
-          <Layout>
+        <Layout>
+          {user && <FloatingFeedbackButton />}
+          <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/account" element={<Account />} />
+          <Route
+            path="/"
+            element={user ? <ProjectDashboard /> : <LandingPage />}
+          />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/project/:id" element={
             <ErrorBoundary
               onError={(error) => {
                 console.error("Project editor error:", error);
@@ -89,40 +89,24 @@ function AuthenticatedApp() {
             >
               <ProjectEditor />
             </ErrorBoundary>
-          </Layout>
         } />
         <Route path="/" element={
-          user ? (
-            <Layout>
-              <Projects />
-            </Layout>
-          ) : null
+          user ? <Projects /> : null
         } />
-        <Route path="/dashboard" element={
-          <Layout>
-            <ProjectDashboard />
-          </Layout>
-        } />
-        <Route path="/merge" element={
-          <Layout>
-            <ProjectMerge />
-          </Layout>
-        } />
-        <Route path="/settings" element={
-          <Layout>
-            <SettingsPage />
-          </Layout>
-        } />
+        <Route path="/dashboard" element={<ProjectDashboard />} />
+        <Route path="/merge" element={<ProjectMerge />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/ai-features" element={
-          <Layout>
             <div className="container py-10">
               <h1 className="text-3xl font-bold mb-6">AI-Powered Features</h1>
               <AIFeatures />
             </div>
-          </Layout>
         } />
+        <Route path="/roadmap" element={<EnhancedFeatureRoadmap />} />
+        <Route path="/invite/:token" element={<InviteAccept />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+        </Layout>
       </StripeProvider>
     </ThemeProvider>
   );

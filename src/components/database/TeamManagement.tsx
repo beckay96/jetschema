@@ -12,24 +12,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { InvitationManagement } from '@/components/notifications/InvitationManagement';
 
+// Types based on the actual database schema
 interface TeamMember {
   id: string;
   user_id: string;
   team_id: string;
   role: 'owner' | 'admin' | 'editor' | 'viewer';
+  invited_by: string;
   joined_at: string;
   profiles: {
     email: string;
-    full_name: string;
+    display_name: string;
   } | null;
 }
 
 interface TeamInvitation {
   id: string;
+  team_id: string;
   email: string;
   role: 'owner' | 'admin' | 'editor' | 'viewer';
   invited_by: string;
+  token: string;
+  expires_at: string;
+  accepted_at: string | null;
   created_at: string;
 }
 
@@ -37,7 +44,9 @@ interface Team {
   id: string;
   name: string;
   description: string;
+  created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface TeamManagementProps {
@@ -59,6 +68,7 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
   const [newTeamDescription, setNewTeamDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -69,216 +79,195 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
   const loadTeamData = async () => {
     if (!user) {
       console.log('No user found, cannot load teams');
+      setError('User not authenticated');
+      setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      setError(null);
       console.log('Loading teams for user:', user.id);
       
-      // EXTREME WORKAROUND: Using direct REST API call to completely bypass RLS policies
-      // Get teams for the current user using a custom SQL query via the REST API
-      // Get Supabase URL and anon key from environment variables
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-      
-      // Log for debugging
-      console.log('Using direct REST API approach to bypass RLS');
-      
-      // Approach 1: Try to get teams directly from the database using REST API
-      try {
-        console.log('Attempting to call Supabase directly with URL:', supabaseUrl);
-        const response = await fetch(
-          `${supabaseUrl}/rest/v1/teams?select=*`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`,
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          // If direct query fails, log the error and try a different approach
-          console.error('Direct team query failed:', response.status, response.statusText);
-          throw new Error(`Failed to fetch teams: ${response.statusText || response.status}`);
-        }
-        
-        const teamsData = await response.json();
-        console.log('Teams loaded via RPC:', teamsData);
-        setTeams(teamsData || []);
-        setLoading(false);
-        
-        // If we have teams, load the selected one
-        if (teamsData && teamsData.length > 0) {
-          const teamToSelect = selectedTeamId ? 
-            teamsData.find((t: Team) => t.id === selectedTeamId) : teamsData[0];
-          
-          if (teamToSelect) {
-            setSelectedTeamId(teamToSelect.id);
-            // Simply set the selected team ID, no need to load additional details here
-          }
-        }
+      // Load teams where the user is a member
+      const { data: userTeamMemberships, error: teamsError } = await supabase
+        .from('team_members')
+        .select(`
+          team_id,
+          role,
+          teams (
+            id,
+            name,
+            description,
+            created_by,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (teamsError) {
+        console.error('Failed to load user teams:', teamsError);
+        setError('Failed to load teams');
+        toast.error('Failed to load teams');
+        setTeams([]);
         return;
-      } catch (directError) {
-        console.error('Error in direct teams query:', directError);
-        toast.error(`Failed to load teams: ${directError.message}`);
-        
-        // As a last fallback, try using Supabase client directly again but with a much simpler query
-        try {
-          console.log('Trying simple Supabase client query as last resort');
-          const { data: simpleTeamsData, error: simpleTeamsError } = await supabase
-            .from('teams')
-            .select('*')
-            .limit(100);
-            
-          if (simpleTeamsError) {
-            console.error('Last resort query failed too:', simpleTeamsError);
-            setTeams([]);
-          } else {
-            console.log('Teams loaded via simple query:', simpleTeamsData);
-            setTeams(simpleTeamsData || []);
-          }
-        } catch (finalError) {
-          console.error('All team loading attempts failed:', finalError);
-          setTeams([]);
-        }
       }
-      
-      // Note: We're setting teams directly in the try/catch blocks above
-      setLoading(false);
-      
-      
-      // Get team details
+
+      // Extract teams from the join result and ensure they have all required properties
+      const teamsData = userTeamMemberships?.map(membership => {
+        const team = membership.teams;
+        return team ? {
+          id: team.id,
+          name: team.name,
+          description: team.description || '',
+          created_by: team.created_by || '',
+          created_at: team.created_at,
+          updated_at: team.updated_at || team.created_at
+        } : null;
+      }).filter(Boolean) || [];
+      console.log('Teams loaded successfully:', teamsData);
+      setTeams(teamsData as Team[]);
+
+      // Determine which team to load details for
       let teamId = null;
       
       if (projectId) {
         // If we have a project ID, get its team
-        const { data: project } = await supabase
+        const { data: project, error: projectError } = await supabase
           .from('database_projects')
           .select('team_id')
           .eq('id', projectId)
           .single();
-        teamId = project?.team_id;
-      } else {
-        // Get teams from current state
-        const currentTeams = teams;
-        if (currentTeams.length > 0) {
-          teamId = currentTeams[0].id;
+          
+        if (projectError) {
+          console.error('Failed to load project team:', projectError);
+        } else {
+          teamId = project?.team_id;
         }
+      } else if (selectedTeamId && teamsData.find(t => t.id === selectedTeamId)) {
+        // Use the selected team if it exists
+        teamId = selectedTeamId;
+      } else if (teamsData.length > 0) {
+        // Default to the first team
+        teamId = teamsData[0].id;
+        setSelectedTeamId(teamId);
       }
       
-      if (!teamId && teams.length === 0) {
-        // No teams found
-        setLoading(false);
+      if (!teamId) {
+        // No teams found or no valid team ID
         setTeam(null);
+        setMembers([]);
+        setInvitations([]);
         return;
       }
 
-      // Get team details
-      const { data: teamData } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('id', teamId)
-        .single();
+      // Load team details
+      const selectedTeam = teamsData.find(t => t.id === teamId);
+      if (selectedTeam) {
+        setTeam(selectedTeam);
+      }
 
-      // Get team members with profiles using a safer approach to avoid RLS recursion
-      try {
-        console.log('Loading team members using direct query for team:', teamId);
-        const { data: membersData, error: membersError } = await supabase
-          .from('team_members')
-          .select('id, user_id, team_id, role, joined_at')
-          .eq('team_id', teamId);
+      // Load team members with their profiles
+      const { data: membersData, error: membersError } = await supabase
+        .from('team_members')
+        .select('id, user_id, team_id, role, invited_by, joined_at')
+        .eq('team_id', teamId);
         
-        if (membersError) {
-          console.error('Failed to load team members:', membersError);
-          throw membersError;
+      if (membersError) {
+        console.error('Failed to load team members:', membersError);
+        toast.error('Failed to load team members');
+        setMembers([]);
+      } else if (membersData && membersData.length > 0) {
+        // Load profiles separately to avoid relation issues
+        const userIds = membersData.map(m => m.user_id);
+        
+        // Make sure to include the current user's ID to get their profile too
+        if (user && !userIds.includes(user.id)) {
+          userIds.push(user.id);
         }
         
-        console.log('Team members basic data loaded:', membersData);
-                // Now load profiles separately with a simplified approach
-        if (membersData && membersData.length > 0) {
-          const userIds = membersData.map(m => m.user_id);
-          console.log('Loading profiles for user IDs:', userIds);
+        console.log('Fetching profiles for user IDs:', userIds);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, user_id, email, display_name')
+          .in('user_id', userIds);
+        
+        // Debug profiles data
+        console.log('Profiles data:', profilesData);
           
-          try {
-            // Focus on email field which is standard in Supabase Auth
-            const { data: profilesData, error: profilesError } = await supabase
-              .from('profiles')
-              .select('id, email')
-              .in('id', userIds);
-              
-            if (profilesError) {
-              console.error('Failed to load profiles:', profilesError);
-              throw profilesError;
+        if (profilesError) {
+          console.error('Failed to load profiles:', profilesError);
+          // Use members without detailed profile data
+          const membersWithoutProfiles = membersData.map(member => ({
+            ...member,
+            invited_by: member.invited_by || '',
+            profiles: {
+              email: 'Loading...',
+              display_name: 'Loading...'
+            }
+          }));
+          setMembers(membersWithoutProfiles);
+        } else {
+          // Join the data manually
+          const membersWithProfiles = membersData.map(member => {
+            // Find the matching profile by user_id
+            const profile = profilesData?.find(p => p.user_id === member.user_id);
+            
+            // Log for debugging
+            if (!profile) {
+              console.log(`No profile found for user_id: ${member.user_id}`);
             }
             
-            console.log('Profiles loaded:', profilesData);
-            
-            // Join the data manually with safer property access
-            const membersWithProfiles = membersData.map(member => {
-              // Find matching profile with type safety
-              const profile = profilesData && Array.isArray(profilesData) ? 
-                profilesData.find(p => p && p.id === member.user_id) : null;
-                
+            // If this is the current user and there's no profile, use auth info
+            if (member.user_id === user?.id && !profile && user?.email) {
               return {
                 ...member,
-                profiles: profile ? { 
-                  email: profile.email || 'No email', 
-                  full_name: 'User ' + member.user_id.substring(0, 8)
-                } : null
+                invited_by: member.invited_by || '',
+                profiles: {
+                  email: user.email,
+                  display_name: user.email.split('@')[0] // Use email username as display name
+                }
               };
-            });
+            }
             
-            console.log('Members with profiles joined:', membersWithProfiles);
-            setMembers(membersWithProfiles || []);
-          } catch (profileError) {
-            console.error('Error joining profiles:', profileError);
-            // Fall back to basic member data without profiles
-            const basicMembers = membersData.map(member => ({
+            return {
               ...member,
-              profiles: {
-                email: 'user@example.com',
-                full_name: 'User ' + member.user_id.substring(0, 8)
+              invited_by: member.invited_by || '',
+              profiles: profile ? {
+                email: profile.email || '',
+                display_name: profile.display_name || profile.email?.split('@')[0] || ''
+              } : {
+                email: `User ID: ${member.user_id.substring(0, 8)}...`,
+                display_name: `User ${member.user_id.substring(0, 8)}...`
               }
-            }));
-            setMembers(basicMembers);
-          }
-          // Code removed - already handled in try/catch above
-        } else {
-          setMembers([]);
+            };
+          });
+          
+          console.log('Team members loaded successfully:', membersWithProfiles);
+          setMembers(membersWithProfiles);
         }
-      } catch (error) {
-        console.error('Error loading team members:', error);
-        toast.error('Failed to load team members');
+      } else {
         setMembers([]);
       }
 
-      // Get pending invitations
-      try {
-        const { data: invitationsData, error: invitationsError } = await supabase
-          .from('team_invitations')
-          .select('*')
-          .eq('team_id', teamId);
-          
-        if (invitationsError) {
-          console.error('Failed to load invitations:', invitationsError);
-          throw invitationsError;
-        }
+      // Load pending team invitations
+      const { data: invitationsData, error: invitationsError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('team_id', teamId)
+        .is('accepted_at', null); // Only get pending invitations
         
-        setInvitations(invitationsData || []);
-      } catch (error) {
-        console.error('Error loading team invitations:', error);
-        toast.error('Failed to load team invitations');
+      if (invitationsError) {
+        console.error('Failed to load team invitations:', invitationsError);
         setInvitations([]);
+      } else {
+        console.log('Team invitations loaded successfully:', invitationsData);
+        setInvitations(invitationsData || []);
       }
-
-      setTeam(teamData);
-      // Members and invitations are already set in their respective try/catch blocks
     } catch (error) {
       console.error('Error loading team data:', error);
+      setError('Failed to load team data');
       toast.error('Failed to load team data');
     } finally {
       setLoading(false);
@@ -289,21 +278,72 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
     if (!inviteEmail || !team || !user) return;
 
     try {
-      const { error } = await supabase
+      // First, check if the user exists in the system
+      const { data: existingUser, error: userLookupError } = await supabase
+        .from('profiles')
+        .select('id, user_id, email, display_name')
+        .eq('email', inviteEmail.toLowerCase().trim())
+        .single();
+
+      if (userLookupError || !existingUser) {
+        toast.error(`No JetSchema user found with email ${inviteEmail}. Users must have a JetSchema account to be invited.`);
+        return;
+      }
+
+      // Check if user is already a team member
+      const { data: existingMember, error: memberCheckError } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('user_id', existingUser.user_id)
+        .single();
+
+      if (existingMember) {
+        toast.error(`${inviteEmail} is already a member of this team.`);
+        return;
+      }
+
+      // Check if there's already a pending invitation
+      const { data: existingInvitation, error: inviteCheckError } = await supabase
+        .from('team_invitations')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('email', inviteEmail.toLowerCase().trim())
+        .is('accepted_at', null)
+        .single();
+
+      if (existingInvitation) {
+        toast.error(`There is already a pending invitation for ${inviteEmail}.`);
+        return;
+      }
+
+      // Create the invitation (no token needed for in-app notifications)
+      const { data: invitationData, error } = await supabase
         .from('team_invitations')
         .insert({
           team_id: team.id,
-          email: inviteEmail,
+          email: inviteEmail.toLowerCase().trim(),
           role: inviteRole,
-          invited_by: user.id
-        });
+          invited_by: user.id,
+          invited_user_id: existingUser.user_id, // Store the actual user ID for notifications
+          expires_at: null // No expiration for in-app invitations
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Invitation sent successfully');
+      toast.success(`Invitation sent to ${existingUser.display_name || inviteEmail}! They will see it in their notifications.`);
+      
       setInviteEmail('');
       setShowInviteDialog(false);
       loadTeamData();
+      
+      // Log invitation details for development
+      console.log('🎉 Team Invitation Created:');
+      console.log('📧 Email:', inviteEmail);
+      console.log('👤 User:', existingUser.display_name || existingUser.email);
+      console.log('👥 Team:', team.name);
     } catch (error) {
       console.error('Error inviting user:', error);
       toast.error('Failed to send invitation');
@@ -484,6 +524,10 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Editor
           </Button>
+        </div>
+
+        <div className="space-y-6">
+          <InvitationManagement />
         </div>
         
         <Card>
@@ -675,10 +719,10 @@ export function TeamManagement({ projectId }: TeamManagementProps) {
                   <div key={member.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">
-                        {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
+                        {member.profiles?.display_name || member.profiles?.email?.split('@')[0] || `User ${member.user_id.substring(0, 8)}...`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {member.profiles?.email || 'No email'}
+                        {member.profiles?.email || `ID: ${member.user_id.substring(0, 8)}...`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

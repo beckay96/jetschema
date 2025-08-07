@@ -27,11 +27,14 @@ export default function Team() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Team Management</h1>
             <p className="text-muted-foreground mt-2">
-              Manage your team members and their permissions.
+              Manage your team members, invitations, and permissions.
             </p>
           </div>
           
-          <TeamManagement />
+          <div className="space-y-8">            
+            {/* Team Management Section */}
+            <TeamManagement />
+          </div>
         </div>
       </div>
     </div>
