@@ -112,7 +112,7 @@ const getEmojiForKeyword = (keyword: string): string => {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Sticker, Hash, Upload, HelpCircle } from 'lucide-react';
+import { Plus, Sticker, Hash, Upload, HelpCircle, Pencil } from 'lucide-react';
 import './DatabaseCanvas.css';
 
 interface DatabaseCanvasProps {
@@ -189,12 +189,58 @@ const DatabaseTableNode = React.memo(({ data }: DatabaseTableNodeProps) => {
       <Handle type="source" position={Position.Right} id={`${table.id}-source`} />
       <div className="table-header">
         <h3>{table.name}</h3>
+        {isHovered && data.onEditTable && (
+          <button 
+            className="edit-table-btn"
+            onClick={(e) => {
+              // Stop propagation in all possible ways
+              e.stopPropagation();
+              e.preventDefault();
+              
+              // Add a small delay to ensure event doesn't get captured
+              setTimeout(() => {
+                console.log('Edit table clicked for', table.name);
+                if (data.onEditTable) {
+                  data.onEditTable(table.id, {});
+                }
+              }, 0);
+              
+              return false;
+            }}
+            title="Edit table"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
       </div>
       <div className="table-fields">
         {table.fields?.map(field => (
           <div key={field.id} className="table-field">
             <span className="field-name">{field.name}</span>
             <DataTypePill type={field.type} size="sm" className="field-type" />
+            {isHovered && data.onEditField && (
+              <button 
+                className="edit-field-btn"
+                onClick={(e) => {
+                  // Stop propagation in all possible ways
+                  e.stopPropagation();
+                  e.preventDefault();
+                  
+                  // Add a small delay to ensure event doesn't get captured
+                  setTimeout(() => {
+                    console.log('Edit field clicked for', field.name, 'in table', table.name);
+                    if (data.onEditField) {
+                      data.onEditField(table.id, field.id, {});
+                    }
+                  }, 0);
+                  
+                  return false;
+                }}
+                title="Edit field"
+              >
+                <Pencil size={12} />
+              </button>
+            )}
           </div>
         ))}
         
@@ -701,11 +747,24 @@ export function DatabaseCanvas({
 
   // Render error state
   if (error) {
+    // Check if it's the ReactFlow onNodesChange error and provide better message
+    const isNodeChangesError = typeof error === 'string' && 
+      (error.includes("onNodesChange") || error.includes("not initialized"));
+    
     return (
       <div className="database-canvas error">
         <div className="error-message">
           <h3>Error Loading Database Schema</h3>
-          <p>{error}</p>
+          {isNodeChangesError ? (
+            <>
+              <p>There was an issue initializing the database diagram.</p>
+              <p>This usually happens when trying to interact with tables that aren't fully loaded.</p>
+              <p>Please try refreshing the page and then try again.</p>
+              <p>If the problem persists, try adding a new table first.</p>
+            </>
+          ) : (
+            <p>{error}</p>
+          )}
           <button 
             onClick={() => window.location.reload()}
             className="retry-btn"

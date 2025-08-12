@@ -47,6 +47,9 @@
   padding: 8px 12px;
   border-bottom: 1px solid hsl(var(--border));
   border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .table-header h3 {
@@ -146,4 +149,27 @@
 
 .retry-btn:hover {
   background: hsl(var(--primary) / 0.9);
+}
+
+/* Edit buttons for table and fields */
+.edit-table-btn,
+.edit-field-btn {
+  background: none;
+  border: none;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.edit-table-btn:hover,
+.edit-field-btn:hover {
+  opacity: 1;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
 }

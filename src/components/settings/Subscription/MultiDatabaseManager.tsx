@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStripe } from '@/contexts/StripeContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, Plus, Trash2, Edit } from 'lucide-react';
@@ -27,6 +28,7 @@ interface DatabaseProject {
 }
 
 export function MultiDatabaseManager() {
+  const navigate = useNavigate();
   const { canUseMultipleDBs } = useStripe();
   const [databases, setDatabases] = useState<DatabaseProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,7 +237,12 @@ export function MultiDatabaseManager() {
             </CardHeader>
             <CardFooter className="pt-3 border-t bg-muted/50">
               <div className="flex w-full justify-between">
-                <Button variant="ghost" size="sm" className="gap-1.5">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1.5"
+                  onClick={() => navigate(`/project/${db.id}`)}
+                >
                   <Edit className="h-4 w-4" />
                   Edit
                 </Button>

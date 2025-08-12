@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DatabaseTable, DataType, DatabaseField as DatabaseFieldType } from '@/types/database';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -19,6 +20,8 @@ interface TableViewProps {
   onDeleteTable?: (tableId: string) => void;
   onAddComment?: (tableName: string, fieldName: string) => void;
   selectedTable?: DatabaseTable | null;
+  projectId?: string;
+  onEditProject?: (projectId: string, tableId?: string) => void;
 }
 
 /**
@@ -32,8 +35,11 @@ export function TableView({
   onAddTable,
   onDeleteTable,
   onAddComment,
-  selectedTable 
+  selectedTable,
+  projectId,
+  onEditProject
 }: TableViewProps) {
+  const navigate = useNavigate();
   const [editingTable, setEditingTable] = useState<DatabaseTable | null>(null);
   const [editingField, setEditingField] = useState<{tableId: string, field: DatabaseFieldType} | null>(null);
   
@@ -112,7 +118,7 @@ export function TableView({
     setEditingField(null);
   };
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
+    <div className="h-screen flex flex-col p-4 overflow-hidden">
       <h2 className="text-lg font-semibold mb-4">Database Tables</h2>
       
       {tables.length === 0 ? (
@@ -143,10 +149,19 @@ export function TableView({
                         className="h-7 w-7 p-0" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleEditTable(table);
+                          if (onEditProject && projectId) {
+                            // Navigate to project editor with this table selected
+                            onEditProject(projectId, table.id);
+                          } else if (projectId) {
+                            // Direct navigation if no callback provided
+                            navigate(`/project/${projectId}?table=${table.id}`);
+                          } else {
+                            // Fall back to modal if no project navigation is possible
+                            handleEditTable(table);
+                          }
                         }}
                       >
-                        <Settings className="h-4 w-4" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardTitle>

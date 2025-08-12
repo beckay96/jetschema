@@ -1,0 +1,524 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { TablePropertiesPanel } from '@/components/database/RightSidebarFeatures/TablePropertiesPanel';
+import { useProjects } from '@/hooks/useProjects';
+import { DatabaseCanvas } from '@/components/database/DatabaseTablesComponents/DatabaseCanvas';
+import { HowToStartProjectModal } from '@/components/database/OnboardingComponents/HowToStartProjectModal';
+import { TableView } from '@/components/database/DatabaseTablesComponents/TableView';
+import DatabaseSidebar from '@/components/database/LeftSidebarFeatures/DatabaseSidebar';
+import { SQLEditor } from '@/components/database/RightSidebarFeatures/SQLEditor';
+import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
+import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/TeamFeatures/Comments/CommentTaskDrawer';
+import { ValidationPanel } from '@/components/database/RightSidebarFeatures/ValidationPanel';
+import { MockupsPanel } from '@/components/database/MockupsComponents/MockupsPanel';
+import { UnifiedCommentsPanel } from '@/components/database/TeamFeatures/Comments/UnifiedCommentsPanel';
+import { ValidationError } from '@/utils/validationUtils';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Database, Code, Palette, PanelLeft, PanelRight, ArrowLeft, X, Grid, Layers, AlertTriangle, ImageIcon, Plus, MessageSquare, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SaveStatus, StatusType } from '@/components/database/Other/SaveStatus';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import '@/styles/panel-styles.css'; // Custom panel styles (replacing missing package CSS)
+import { toast } from 'sonner';
+import { getUserDefaultView } from '@/api/userSettings';
+
+const ProjectEditor = () => {
+  // Keep all the existing code until line ~1545, which is right before the problematic area
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { projects, updateProject } = useProjects();
+  
+  const [tables, setTables] = useState<DatabaseTable[]>([]);
+  const [triggers, setTriggers] = useState<DatabaseTrigger[]>([]);
+  const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
+  const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
+  const [projectName, setProjectName] = useState('');
+  
+  // Comments and tasks state
+  const [comments, setComments] = useState<SchemaComment[]>([]);
+  const [tasks, setTasks] = useState<SchemaTask[]>([]);
+  const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
+  
+  // Mockup state
+  const [mockups, setMockups] = useState<ProjectMockupCategory[]>([]);
+  
+  // State for the onboarding modal
+  const [showStartProjectModal, setShowStartProjectModal] = useState(false);
+  
+  // State for saving status
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({ status: 'info', message: 'Ready to edit' });
+  
+  // State for validation
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  
+  // Mobile responsiveness state
+  const [isMobile, setIsMobile] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  
+  // Right panel tab state
+  const [activeRightPanelTab, setActiveRightPanelTab] = useState('properties');
+  
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Load project data when component mounts
+    const loadProjectData = async () => {
+      if (!id) return;
+      
+      console.log("Loading project data:", currentProject?.name);
+      
+      try {
+        if (!currentProject) {
+          return;
+        }
+        
+        const projectData = currentProject.data || { tables: [], triggers: [], functions: [], comments: [], tasks: [] };
+        
+        // Set project data to state
+        if (isMounted) {
+          setTables(projectData.tables || []);
+          setTriggers(projectData.triggers || []);
+          setFunctions(projectData.functions || []);
+          setComments(projectData.comments || []);
+          setTasks(projectData.tasks || []);
+          setProjectName(currentProject.name);
+          
+          // If project has no tables, show the onboarding modal
+          if (projectData.tables?.length === 0) {
+            setShowStartProjectModal(true);
+          }
+          
+          console.log("Project data loaded successfully");
+        }
+      } catch (error) {
+        console.error("Error loading project data:", error);
+        toast.error("Failed to load project data");
+      }
+    };
+    
+    // Get user default view preference
+    const loadUserDefaultView = async () => {
+      try {
+        const defaultView = await getUserDefaultView();
+        if (defaultView && isMounted) {
+          // Set default view based on user preference
+        }
+      } catch (error) {
+        console.error("Error loading default view:", error);
+      }
+    };
+    
+    loadProjectData();
+    loadUserDefaultView();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [id, projects]);
+  
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Auto-save project data whenever tables change
+  useEffect(() => {
+    if (tables.length > 0) {
+      // Mark project as having unsaved changes
+      setHasUnsavedChanges(true);
+      setStatusMessage({ status: 'warning', message: 'Unsaved changes' });
+      
+      // Set up auto-save debounce
+      const saveTimer = setTimeout(() => {
+        handleSaveProject();
+      }, 2000);
+      
+      return () => clearTimeout(saveTimer);
+    }
+  }, [tables]);
+  
+  // Panel toggle handlers
+  const toggleLeftPanel = () => {
+    setLeftPanelOpen(!leftPanelOpen);
+    if (leftPanelOpen && rightPanelOpen) {
+      setRightPanelOpen(false);
+    }
+  };
+  
+  const toggleRightPanel = () => {
+    setRightPanelOpen(!rightPanelOpen);
+    if (leftPanelOpen && rightPanelOpen) {
+      setLeftPanelOpen(false);
+    }
+  };
+
+  if (!currentProject) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Project not found</p>
+          <Button onClick={() => navigate('/projects')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Projects
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Header */}
+      <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        <div className="px-2 sm:px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/projects')} className="shrink-0">
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Projects</span>
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <SaveStatus 
+                status={statusMessage.status as StatusType}
+                message={statusMessage.message}
+                isSaving={isSaving} 
+                isSaved={!hasUnsavedChanges} 
+                className="hidden sm:flex"
+              />
+              
+              <div className="flex items-center gap-1">
+                {validationErrors.length > 0 && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="gap-1 text-orange-500 hover:text-orange-600"
+                    onClick={() => setActiveRightPanelTab('validation')}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Issues</span>
+                    <Badge variant="outline" className="ml-1 h-5 text-xs">{validationErrors.length}</Badge>
+                  </Button>
+                )}
+                
+                <Button size="sm" variant="ghost" onClick={() => handleRefreshValidation()}>
+                  <span className="hidden sm:inline mr-1">Validate</span>
+                </Button>
+              </div>
+              
+              <Button 
+                size="sm" 
+                onClick={handleOpenCommentDrawer}
+                variant="ghost"
+                className="gap-1"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Comments</span>
+                {comments.filter(c => !c.isRead).length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 text-xs">
+                    {comments.filter(c => !c.isRead).length}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {isMobile ? (
+        <div className="flex h-[calc(100vh-80px)] relative">
+          {/* Mobile Layout */}
+        </div>
+      ) : (
+        <PanelGroup direction="horizontal" className="h-[calc(100vh-80px)]">
+          {/* Left Sidebar - Desktop resizable */}
+          <Panel 
+            defaultSize={20} 
+            minSize={0}
+            collapsible={true}
+          >
+            <div className="h-full border-r bg-background">
+              <DatabaseSidebar 
+                tables={tables}
+                selectedTable={selectedTable}
+                onTableSelect={setSelectedTable}
+                onAddTable={handleAddTable}
+                onReorderTables={handleReorderTables}
+                triggers={triggers}
+                functions={functions}
+                onAddFunction={handleAddFunction}
+                onAddTrigger={handleAddTrigger}
+                onUpdateFunction={handleUpdateFunction}
+                onDeleteFunction={handleDeleteFunction}
+                onUpdateTrigger={handleUpdateTrigger}
+                onDeleteTrigger={handleDeleteTrigger}
+                onTablesImported={handleTablesImported}
+                comments={comments}
+                tasks={tasks}
+                validationErrors={validationErrors}
+              />
+            </div>
+          </Panel>
+          
+          <PanelResizeHandle className="w-1 bg-muted hover:bg-primary/50 transition-colors" />
+          
+          {/* Main Content Panel */}
+          <Panel defaultSize={60}>
+            <div className="h-full flex flex-col relative bg-card/40">
+              <DatabaseCanvas
+                tables={tables}
+                onSaveChanges={handleSaveCanvasChanges}
+                onTableSelect={setSelectedTable}
+                onEditTable={handleEditTable}
+                onDeleteTable={handleDeleteTable}
+                onEditField={handleEditField}
+                onDeleteField={handleDeleteField}
+                onAddField={handleAddField}
+                onAddComment={(elementType, elementId, elementName) => {
+                  handleAddComment(elementType, elementId, elementName);
+                }}
+                onMarkAsTask={(elementType, elementId, elementName, priority) => {
+                  handleMarkAsTask(elementType, elementId, elementName, priority);
+                }}
+              />
+            </div>
+          </Panel>
+          
+          <PanelResizeHandle className="w-1 bg-muted hover:bg-primary/50 transition-colors" />
+          
+          {/* Right Properties Panel */}
+          <Panel 
+            defaultSize={20} 
+            minSize={0} 
+            collapsible={true}
+          >
+            <div className="h-full border-l bg-card/40">
+              <div className="h-full flex flex-col">
+                <div className="border-b p-2 bg-card/40">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-between">
+                        <div className="flex items-center gap-2">
+                          {activeRightPanelTab === 'properties' && (
+                            <>
+                              <Database className="w-4 h-4" />
+                              Properties
+                            </>
+                          )}
+                          {activeRightPanelTab === 'sql' && (
+                            <>
+                              <Code className="w-4 h-4" />
+                              SQL Editor
+                            </>
+                          )}
+                          {activeRightPanelTab === 'validation' && (
+                            <>
+                              <AlertTriangle className="w-4 h-4" />
+                              Validation
+                            </>
+                          )}
+                          {activeRightPanelTab === 'mockups' && (
+                            <>
+                              <ImageIcon className="w-4 h-4" />
+                              Mockups
+                            </>
+                          )}
+                          {activeRightPanelTab === 'comments' && (
+                            <>
+                              <MessageSquare className="w-4 h-4" />
+                              Comments
+                            </>
+                          )}
+                        </div>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setActiveRightPanelTab('properties')}>
+                        <Database className="mr-2 h-4 w-4" />
+                        <span>Properties</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveRightPanelTab('sql')}>
+                        <Code className="mr-2 h-4 w-4" />
+                        <span>SQL Editor</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveRightPanelTab('validation')}>
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                        <span>Validation</span>
+                        {validationErrors.length > 0 && (
+                          <Badge variant="outline" className="ml-auto">{validationErrors.length}</Badge>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveRightPanelTab('mockups')}>
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        <span>Mockups</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveRightPanelTab('comments')}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        <span>Comments</span>
+                        {comments.filter(c => !c.isRead).length > 0 && (
+                          <Badge variant="outline" className="ml-auto">
+                            {comments.filter(c => !c.isRead).length}
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                {activeRightPanelTab === 'properties' && (
+                  <div className="flex-1 overflow-auto">
+                    {selectedTable ? (
+                      <TablePropertiesPanel 
+                        table={selectedTable}
+                        tables={tables}
+                        onEditTable={handleEditTable}
+                        onEditField={handleEditField}
+                        onDeleteField={handleDeleteField}
+                        onAddField={handleAddField}
+                        onAddComment={(elementType, elementId, elementName) => {
+                          handleAddComment(elementType, elementId, elementName);
+                        }}
+                      />
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        <p>Select a table to view properties</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {activeRightPanelTab === 'sql' && (
+                  <div className="flex-1 overflow-auto">
+                    <SQLEditor 
+                      tables={tables} 
+                      triggers={triggers}
+                      functions={functions}
+                    />
+                  </div>
+                )}
+                
+                {activeRightPanelTab === 'validation' && (
+                  <div className="flex-1 overflow-auto">
+                    <ValidationPanel 
+                      validationErrors={validationErrors} 
+                      onNavigateToElement={handleNavigateToElement}
+                      onRefreshValidation={handleRefreshValidation}
+                    />
+                  </div>
+                )}
+                
+                {activeRightPanelTab === 'mockups' && (
+                  <div className="flex-1 overflow-auto">
+                    <MockupsPanel
+                      projectId={id || ''}
+                      mockups={mockups}
+                      onAddMockup={(category, mockup) => {
+                        // Handle adding mockup
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {activeRightPanelTab === 'comments' && (
+                  <div className="flex-1 p-4 pt-2 overflow-auto">
+                    <UnifiedCommentsPanel 
+                      projectId={id || ''}
+                      onNavigateToObject={(objectType, objectId, parentObjectId) => {
+                        if (objectType === 'table') {
+                          handleNavigateToElement('table', objectId);
+                        } else if (objectType === 'field') {
+                          handleNavigateToElement('field', objectId);
+                          
+                          // Find parent table for field if not provided
+                          if (!parentObjectId) {
+                            parentObjectId = findParentTableForField(objectId);
+                          }
+                          
+                          // Select parent table if found
+                          if (parentObjectId) {
+                            const table = tables.find(t => t.id === parentObjectId);
+                            if (table) {
+                              setSelectedTable(table);
+                            }
+                          }
+                        } else if (objectType === 'mockup') {
+                          // Handle mockup navigation
+                          toast.info(`Navigated to mockup: ${objectId}`);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </Panel>
+        </PanelGroup>
+      )}
+
+      {/* Mobile backdrop - Only shown on mobile */}
+      {isMobile && (leftPanelOpen || rightPanelOpen) && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+          onClick={() => {
+            setLeftPanelOpen(false);
+            setRightPanelOpen(false);
+          }} 
+        />
+      )}
+      
+      {/* How to Start Project Modal - Shows when project is empty */}
+      <HowToStartProjectModal
+        open={showStartProjectModal}
+        onOpenChange={setShowStartProjectModal}
+        onAddTableClick={() => {
+          // Trigger the Add Table action in the sidebar
+          const addTableButton = document.querySelector('[data-add-table-button="true"]');
+          if (addTableButton instanceof HTMLElement) {
+            addTableButton.click();
+          } else {
+            // Fallback if button can't be found
+            const newTable: DatabaseTable = {
+              id: crypto.randomUUID(),
+              name: 'new_table',
+              fields: [
+                {
+                  id: crypto.randomUUID(),
+                  name: 'id',
+                  type: 'UUID',
+                  primaryKey: true,
+                  unique: true,
+                  nullable: false,
+                  defaultValue: 'gen_random_uuid()'
+                }
+              ],
+              position: { x: 100, y: 100 }
+            };
+            setTables([...tables, newTable]);
+            setSelectedTable(newTable);
+            setActiveRightPanelTab('properties');
+            toast.success('New table created! Add fields to get started.');
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+export default ProjectEditor;

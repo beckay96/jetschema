@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TablePropertiesPanel } from '@/components/database/RightSidebarFeatures/TablePropertiesPanel';
 import { useProjects } from '@/hooks/useProjects';
 import { DatabaseCanvas } from '@/components/database/DatabaseTablesComponents/DatabaseCanvas';
-import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
 import { HowToStartProjectModal } from '@/components/database/OnboardingComponents/HowToStartProjectModal';
 import { TableView } from '@/components/database/DatabaseTablesComponents/TableView';
 import DatabaseSidebar from '@/components/database/LeftSidebarFeatures/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/RightSidebarFeatures/SQLEditor';
+import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
 import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/TeamFeatures/Comments/CommentTaskDrawer';
 import { ValidationPanel } from '@/components/database/RightSidebarFeatures/ValidationPanel';
 import { MockupsPanel } from '@/components/database/MockupsComponents/MockupsPanel';
@@ -60,34 +60,6 @@ const ProjectEditor = () => {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [activeRightPanelTab, setActiveRightPanelTab] = useState<'sql' | 'properties' | 'validation' | 'mockups' | 'comments'>('sql');
-  const [highlightPropertiesPanel, setHighlightPropertiesPanel] = useState(false);
-  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Function to highlight the properties panel
-  const highlightProperties = useCallback(() => {
-    // Clear any existing timeout
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
-    }
-    
-    // Set highlight to true and switch to properties tab
-    setHighlightPropertiesPanel(true);
-    setActiveRightPanelTab('properties');
-    
-    // Automatically remove highlight after 3 seconds
-    highlightTimeoutRef.current = setTimeout(() => {
-      setHighlightPropertiesPanel(false);
-    }, 3000);
-  }, []);
-
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-      }
-    };
-  }, []);
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -1362,268 +1334,217 @@ const ProjectEditor = () => {
   The dropdown below is the sole way to switch between right panel tabs.
 */}
 <div className="h-full flex flex-col">
-  <div className="p-4 pb-0">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <div className="flex items-center">
-            {(() => {
-              switch (activeRightPanelTab) {
-                case 'sql':
-                  return (
-                    <>
-                      <Code className="h-4 w-4 mr-2" />
-                      SQL
-                    </>
-                  );
-                case 'properties':
-                  return (
-                    <>
-                      <Palette className="h-4 w-4 mr-2" />
-                      Properties
-                    </>
-                  );
-                case 'validation':
-                  return (
-                    <>
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Validation
-                    </>
-                  );
-                case 'mockups':
-                  return (
-                    <>
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Mockups
-                    </>
-                  );
-                case 'comments':
-                  return (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Comments
-                    </>
-                  );
-                default:
-                  return (
-                    <>
-                      <Code className="h-4 w-4 mr-2" />
-                      SQL
-                    </>
-                  );
-              }
-            })()} 
-          </div>
-          <ChevronDown className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuItem onClick={() => setActiveRightPanelTab('sql')}>
-          <Code className="h-4 w-4 mr-2" />
-          SQL
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setActiveRightPanelTab('properties')}>
-          <Palette className="h-4 w-4 mr-2" />
-          Properties
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setActiveRightPanelTab('validation')}>
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          Validation
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setActiveRightPanelTab('mockups')}>
-          <ImageIcon className="h-4 w-4 mr-2" />
-          Mockups
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setActiveRightPanelTab('comments')}>
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Comments
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+
+            <div className="p-4 pb-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <div className="flex items-center">
+                      {(() => {
+                        switch (activeRightPanelTab) {
+                          case 'sql':
+                            return (
+                              <>
+                                <Code className="h-4 w-4 mr-2" />
+                                SQL
+                              </>
+                            );
+                          case 'properties':
+                            return (
+                              <>
+                                <Palette className="h-4 w-4 mr-2" />
+                                Properties
+                              </>
+                            );
+                          case 'validation':
+                            return (
+                              <>
+                                <AlertTriangle className="h-4 w-4 mr-2" />
+                                Validation
+                              </>
+                            );
+                          case 'mockups':
+                            return (
+                              <>
+                                <ImageIcon className="h-4 w-4 mr-2" />
+                                Mockups
+                              </>
+                            );
+                          case 'comments':
+                            return (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Comments
+                              </>
+                            );
+                          default:
+                            return (
+                              <>
+                                <Code className="h-4 w-4 mr-2" />
+                                SQL
+                              </>
+                            );
+                        }
+                      })()} 
+                    </div>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('sql')}>
+                    <Code className="h-4 w-4 mr-2" />
+                    SQL
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('properties')}>
+                    <Palette className="h-4 w-4 mr-2" />
+                    Properties
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('validation')}>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Validation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('mockups')}>
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Mockups
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveRightPanelTab('comments')}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Comments
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* SQL Tab Content */}
+{activeRightPanelTab === 'sql' && (
+  <div className="flex-1 p-4 pt-2">
+    <SQLEditor onTablesImported={handleTablesImported} currentTables={tables} />
   </div>
+)}
 
-  {/* SQL Tab Content */}
-  {activeRightPanelTab === 'sql' && (
-    <div className="flex-1 p-4 pt-2">
-      <SQLEditor onTablesImported={handleTablesImported} currentTables={tables} />
+            {/* Properties Tab Content */}
+{activeRightPanelTab === 'properties' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <div className="h-full">
+      {selectedTable ? (
+        <div>
+          <TablePropertiesPanel 
+            table={selectedTable} 
+            allTables={tables} 
+            onTableUpdate={(updatedTable) => {
+              const updatedTables = tables.map(t => 
+                t.id === updatedTable.id ? updatedTable : t
+              );
+              setTables(updatedTables);
+              setSelectedTable(updatedTable);
+            }} 
+          />
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Select a table to edit properties</p>
+        </div>
+      )}
     </div>
-  )}
-
-  {/* Properties Tab Content */}
-  {activeRightPanelTab === 'properties' && (
-    <div 
-      className={`flex-1 p-4 pt-2 overflow-auto transition-all duration-500 ${
-        highlightPropertiesPanel 
-          ? 'bg-gradient-to-br from-primary/5 to-primary/10 ring-2 ring-primary/50' 
-          : ''
-      }`}
-    >
-      <div className="h-full">
-        {selectedTable ? (
-          <div>
-            <TablePropertiesPanel 
-              table={selectedTable} 
-              allTables={tables}
-              onHighlightRequested={highlightProperties}
-              onTableUpdate={(updatedTable) => {
-                const updatedTables = tables.map(t => 
-                  t.id === updatedTable.id ? updatedTable : t
-                );
-                setTables(updatedTables);
-                setSelectedTable(updatedTable);
-              }} 
-            />
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Select a table to edit properties</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )}
+  </div>
+)}
             
-  {/* Validation Tab Content */}
-  {activeRightPanelTab === 'validation' && (
-    <div className="flex-1 p-4 pt-2 overflow-auto">
-      <div className="h-full">
-        <ValidationPanel
-          errors={validationErrors}
-          onRefreshValidation={handleRefreshValidation}
-          onNavigateToElement={handleNavigateToElement}
-          loading={validationLoading}
-        />
-      </div>
+            {/* 
+              ValidationPanel Tab - Shows schema validation issues
+              Displays errors and warnings for the current project schema
+              Allows users to refresh validation and navigate to problematic elements
+              Provides suggestions for fixing issues
+            */}
+            {/* Validation Tab Content */}
+{activeRightPanelTab === 'validation' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <div className="h-full">
+      <ValidationPanel
+        errors={validationErrors}
+        onRefreshValidation={handleRefreshValidation}
+        onNavigateToElement={handleNavigateToElement}
+        loading={validationLoading}
+      />
     </div>
-  )}
+  </div>
+)}
             
-  {/* Mockups Tab Content */}
-  {activeRightPanelTab === 'mockups' && (
-    <div className="flex-1 p-4 pt-2 overflow-auto">
-      <MockupsPanel mockups={mockups} onMockupsChange={setMockups} projectId={id || ''} />
-    </div>
-  )}
+            {/* Mockups Tab Content */}
+{activeRightPanelTab === 'mockups' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <MockupsPanel mockups={mockups} onMockupsChange={setMockups} projectId={id || ''} />
+  </div>
+)}
             
-  {/* Comments Tab Content */}
-  {activeRightPanelTab === 'comments' && (
-    <div className="flex-1 p-4 pt-2 overflow-auto">
-      <UnifiedCommentsPanel 
-        projectId={id || ''}
-        onNavigateToObject={(objectType, objectId, parentObjectId) => {
-          // Handle navigation to different object types
-          if (objectType === 'table') {
-            const table = tables.find(t => t.id === objectId || t.name === objectId);
-            if (table) {
+            {/* Comments Tab Content */}
+{activeRightPanelTab === 'comments' && (
+  <div className="flex-1 p-4 pt-2 overflow-auto">
+    <UnifiedCommentsPanel 
+      projectId={id || ''}
+      onNavigateToObject={(objectType, objectId, parentObjectId) => {
+        // Handle navigation to different object types
+        if (objectType === 'table') {
+          const table = tables.find(t => t.id === objectId || t.name === objectId);
+          if (table) {
+            setSelectedTable(table);
+            setViewMode('diagram');
+          }
+        } else if (objectType === 'field') {
+          // Find which table contains this field
+          for (const table of tables) {
+            const field = table.fields.find(f => f.id === objectId || f.name === objectId);
+            if (field && (!parentObjectId || table.name === parentObjectId || table.id === parentObjectId)) {
               setSelectedTable(table);
               setViewMode('diagram');
-              highlightProperties();
-            }
-          } else if (objectType === 'field') {
-            // Find which table contains this field
-            for (const table of tables) {
-              const field = table.fields.find(f => f.id === objectId || f.name === objectId);
-              if (field && (!parentObjectId || table.name === parentObjectId || table.id === parentObjectId)) {
-                setSelectedTable(table);
-                setViewMode('diagram');
-                highlightProperties();
-                break;
-              }
-            }
-          } else if (objectType === 'function') {
-            // Navigate to function in sidebar
-            // This would typically open the function modal or highlight it in the sidebar
-            const func = functions.find(f => f.id === objectId || f.name === objectId);
-            if (func) {
-              // Implement function navigation (could open a modal)
-              toast.info(`Navigated to function: ${func.name}`);
-            }
-          } else if (objectType === 'trigger') {
-            // Navigate to trigger in sidebar
-            const trigger = triggers.find(t => t.id === objectId || t.name === objectId);
-            if (trigger) {
-              // Implement trigger navigation (could open a modal)
-              toast.info(`Navigated to trigger: ${trigger.name}`);
-              // If trigger has a table, select that table
-              const table = tables.find(t => t.name === trigger.table_name);
-              if (table) {
-                setSelectedTable(table);
-              }
-            }
-          } else if (objectType === 'policy') {
-            // Navigate to RLS policy
-            // This would typically open the policy modal or highlight it in the sidebar
-            toast.info(`Navigated to RLS policy: ${objectId}`);
-            // If policy has a table, select that table
-            if (parentObjectId) {
-              const table = tables.find(t => t.name === parentObjectId || t.id === parentObjectId);
-              if (table) {
-                setSelectedTable(table);
-              }
-            }
-          } else if (objectType === 'mockup') {
-            // Navigate to mockup tab and potentially highlight the specific mockup
-            const tabsList = document.querySelector('[role="tablist"]');
-            const mockupsTab = tabsList?.querySelector('[value="mockups"]');
-            if (mockupsTab instanceof HTMLElement) {
-              mockupsTab.click();
-              toast.info(`Navigated to mockup: ${objectId}`);
+              break;
             }
           }
-        }}
-      />
-    </div>
-  )}
-</div>
-
-      {/* Mobile backdrop - Only shown on mobile */}
-      {isMobile && (leftPanelOpen || rightPanelOpen) && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40" 
-          onClick={() => {
-            setLeftPanelOpen(false);
-            setRightPanelOpen(false);
-          }} 
-        />
-      )}
-      
-      {/* How to Start Project Modal - Shows when project is empty */}
-      <HowToStartProjectModal
-        open={showStartProjectModal}
-        onOpenChange={setShowStartProjectModal}
-        onAddTableClick={() => {
-          // Trigger the Add Table action in the sidebar
-          const addTableButton = document.querySelector('[data-add-table-button="true"]');
-          if (addTableButton instanceof HTMLElement) {
-            addTableButton.click();
-          } else {
-            // Fallback if button can't be found
-            const newTable: DatabaseTable = {
-              id: crypto.randomUUID(),
-              name: 'new_table',
-              fields: [
-                {
-                  id: crypto.randomUUID(),
-                  name: 'id',
-                  type: 'UUID',
-                  primaryKey: true,
-                  unique: true,
-                  nullable: false,
-                  defaultValue: 'gen_random_uuid()'
-                }
-              ],
-              position: { x: 100, y: 100 }
-            };
-            setTables([...tables, newTable]);
-            setSelectedTable(newTable);
-            setActiveRightPanelTab('properties');
-            toast.success('New table created! Add fields to get started.');
+        } else if (objectType === 'function') {
+          // Navigate to function in sidebar
+          // This would typically open the function modal or highlight it in the sidebar
+          const func = functions.find(f => f.id === objectId || f.name === objectId);
+          if (func) {
+            // Implement function navigation (could open a modal)
+            toast.info(`Navigated to function: ${func.name}`);
           }
-        }}
-      />
-            </div>
-          </Panel>
-        </PanelGroup>
+        } else if (objectType === 'trigger') {
+          // Navigate to trigger in sidebar
+          const trigger = triggers.find(t => t.id === objectId || t.name === objectId);
+          if (trigger) {
+            // Implement trigger navigation (could open a modal)
+            toast.info(`Navigated to trigger: ${trigger.name}`);
+            // If trigger has a table, select that table
+            const table = tables.find(t => t.name === trigger.table_name);
+            if (table) {
+              setSelectedTable(table);
+            }
+          }
+        } else if (objectType === 'policy') {
+          // Navigate to RLS policy
+          // This would typically open the policy modal or highlight it in the sidebar
+          toast.info(`Navigated to RLS policy: ${objectId}`);
+          // If policy has a table, select that table
+          if (parentObjectId) {
+            const table = tables.find(t => t.name === parentObjectId || t.id === parentObjectId);
+            if (table) {
+              setSelectedTable(table);
+            }
+          }
+        } else if (objectType === 'mockup') {
+          // Navigate to mockup tab and potentially highlight the specific mockup
+          const tabsList = document.querySelector('[role="tablist"]');
+          const mockupsTab = tabsList?.querySelector('[value="mockups"]');
+          if (mockupsTab instanceof HTMLElement) {
+            mockupsTab.click();
+            toast.info(`Navigated to mockup: ${objectId}`);
+          }
+        }
+      }}
+    />  
+  </div>
+        </Panel>
+      </PanelGroup>
       )}
 
       {/* Mobile backdrop - Only shown on mobile */}
