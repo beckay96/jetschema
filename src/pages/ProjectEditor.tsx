@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
 import { DatabaseCanvas } from '@/components/database/DatabaseTablesComponents/DatabaseCanvas';
 import { TableView } from '@/components/database/DatabaseTablesComponents/TableView';
-import { DatabaseSidebar } from '@/components/database/LeftSidebarFeatures/DatabaseSidebar';
+import DatabaseSidebar from '@/components/database/LeftSidebarFeatures/DatabaseSidebar';
 import { SQLEditor } from '@/components/database/RightSidebarFeatures/SQLEditor';
 import { DatabaseTable, DatabaseTrigger, DatabaseFunction, ProjectMockupCategory } from '@/types/database';
 import { CommentTaskDrawer, SchemaComment, SchemaTask } from '@/components/database/TeamFeatures/Comments/CommentTaskDrawer';

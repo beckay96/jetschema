@@ -123,6 +123,7 @@ export function CommentTaskDrawer({
           <UnifiedCommentsPanel
             projectId={projectId}
             onNavigateToObject={handleNavigateToObject}
+            isOpen={isOpen}
           />
         </div>
       </SheetContent>

@@ -10,16 +10,20 @@ interface TeamInvitation {
   email: string;
   role: 'owner' | 'admin' | 'editor' | 'viewer';
   invited_by: string;
-  invited_user_id?: string; // Optional for backward compatibility
+  token: string;
+  expires_at: string;
+  invited_user_id?: string; // Optional as per schema
+  accepted_at: string | null;
   created_at: string;
   team: {
     id: string;
     name: string;
     description?: string;
   };
-  inviter: {
-    display_name?: string;
-    email: string;
+  // Inviter is not directly linked in the schema, we'll need to fetch profiles separately
+  inviter?: {
+    display_name?: string | null;
+    email?: string | null;
   };
 }
 
@@ -47,7 +51,7 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
     if (!user) return;
 
     try {
-      // Use email-based lookup for compatibility
+      // 1) Load invitations + team via FK that exists; skip joining profiles here
       const { data, error } = await supabase
         .from('team_invitations')
         .select(`
@@ -56,9 +60,12 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
           email,
           role,
           invited_by,
+          token,
+          expires_at,
+          accepted_at,
+          invited_user_id,
           created_at,
-          team:teams(id, name, description),
-          inviter:profiles!team_invitations_invited_by_fkey(display_name, email)
+          team:teams(id, name, description)
         `)
         .eq('email', user.email)
         .is('accepted_at', null)
@@ -70,7 +77,35 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
         return;
       }
 
-      setInvitations(data || []);
+      const baseInvites = data || [];
+
+      // 2) Hydrate inviter profiles in a separate query (no schema FK required)
+      const inviterIds = Array.from(new Set(baseInvites.map(i => i.invited_by).filter(Boolean)));
+      let profilesById: Record<string, { display_name: string | null; email: string | null }> = {};
+
+      if (inviterIds.length > 0) {
+        const { data: profs, error: profErr } = await supabase
+          .from('profiles')
+          .select('id, user_id, display_name, email')
+          .in('user_id', inviterIds);
+
+        if (profErr) {
+          console.warn('Unable to load inviter profiles:', profErr);
+        } else {
+          profilesById = (profs || []).reduce((acc, p: any) => {
+            acc[p.user_id] = { display_name: p.display_name ?? null, email: p.email ?? null };
+            return acc;
+          }, {} as Record<string, { display_name: string | null; email: string | null }>);
+        }
+      }
+
+      // 3) Merge
+      const merged = baseInvites.map((i: any) => ({
+        ...i,
+        inviter: profilesById[i.invited_by] ?? { display_name: null, email: null },
+      }));
+
+      setInvitations(merged);
     } catch (error) {
       console.error('Error loading invitations:', error);
       setInvitations([]);
@@ -91,6 +126,7 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
           team_id: invitation.team_id,
           user_id: user.id,
           role: invitation.role as 'owner' | 'admin' | 'editor' | 'viewer',
+          invited_by: invitation.invited_by, // Track who invited the user
           joined_at: new Date().toISOString()
         });
 
@@ -105,6 +141,30 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
         .eq('id', invitation.id);
 
       if (inviteError) throw inviteError;
+
+      // 3. Create notification for team owner/admins (optional)
+      try {
+        const { data: teamAdmins } = await supabase
+          .from('team_members')
+          .select('user_id')
+          .eq('team_id', invitation.team_id)
+          .in('role', ['owner', 'admin']);
+          
+        if (teamAdmins?.length) {
+          const notifications = teamAdmins.map(admin => ({
+            user_id: admin.user_id,
+            type: 'team_invite',
+            message: `${user.email} has joined your team ${invitation.team.name}`,
+            sender_id: user.id,
+            is_read: false
+          }));
+          
+          await supabase.from('notifications').insert(notifications);
+        }
+      } catch (notifError) {
+        console.warn('Failed to create notifications, but invitation was accepted', notifError);
+        // Non-critical error, don't block the invitation acceptance
+      }
 
       toast.success(`Welcome to ${invitation.team.name}! You are now a team member.`);
       loadInvitations(); // Refresh the list
@@ -203,7 +263,7 @@ export const InvitationNotifications: React.FC<InvitationNotificationsProps> = (
                           {invitation.team.name}
                         </h4>
                         <p className="text-sm text-muted-foreground">
-                          Invited by {invitation.inviter.display_name || invitation.inviter.email}
+                          Invited by {invitation.inviter?.display_name || invitation.inviter?.email || 'unknown user'}
                         </p>
                       </div>
                     </div>

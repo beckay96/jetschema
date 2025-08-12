@@ -280,6 +280,11 @@ export interface DatabaseSidebarProps {
   onProjectNameChange?: (name: string) => void;
   onReorderTables?: (reorderedTables: DatabaseTable[]) => void;
   onAddComment?: (elementType: 'table' | 'field', elementId: string, elementName: string) => void;
+  // Props for unified resizing control
+  width?: number;
+  isCollapsed?: boolean;
+  onResize?: (newWidth: number) => void;
+  onToggleCollapse?: () => void;
 }
 
 export interface SortableTableCardProps {

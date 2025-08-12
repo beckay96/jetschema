@@ -265,13 +265,13 @@ END;`;
             <SelectTrigger>
               <SelectValue placeholder="Select table" />
             </SelectTrigger>
-            <SelectContent>
-              {tables.map(table => (
-                <SelectItem key={table.id} value={table.name}>
-                  {table.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+          <SelectContent>
+            {tables.map((table, i) => (
+              <SelectItem key={`tbl-${table.id ?? table.name}-${i}`} value={table.name}>
+                {table.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
           </Select>
         </div>
       </div>
@@ -322,11 +322,13 @@ END;`;
             <SelectValue placeholder="Select function" />
           </SelectTrigger>
           <SelectContent>
-            {functions.filter(f => f.function_type === 'plpgsql').map(func => (
-              <SelectItem key={func.id} value={func.id!}>
-                {func.name}
-              </SelectItem>
-            ))}
+            {functions
+              .filter(f => f.function_type === 'plpgsql' && !!f.id)
+              .map((func, i) => (
+                <SelectItem key={`fn-${func.id}-${i}`} value={String(func.id)}>
+                  {func.name}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>
@@ -510,7 +512,7 @@ END;`;
 
             <div className="space-y-2">
               {functionData.parameters.map((param, index) => (
-                <div key={index} className="flex items-center justify-between p-2 border rounded">
+                <div key={`${param.name}-${param.type}-${index}`} className="flex items-center justify-between p-2 border rounded">
                   <div className="flex gap-2">
                     <Badge variant="outline">{param.name}</Badge>
                     <Badge variant="secondary">{param.type}</Badge>

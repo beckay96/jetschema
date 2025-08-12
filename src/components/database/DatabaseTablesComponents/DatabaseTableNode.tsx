@@ -357,7 +357,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-6 h-6 p-0 text-white hover:bg-white/20"
+                  className="w-6 h-6 p-0 bg-white dark:bg-black text-black dark:text-white"
                   onClick={() => {
                     setShowEditModal(true);
                     setAddFieldOnOpen(false);
@@ -369,7 +369,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-6 h-6 p-0 text-white hover:bg-white/20"
+                  className="w-6 h-6 p-0 bg-white dark:bg-black text-black dark:text-white hover:bg-white/20"
                   onClick={() => {
                     setShowEditModal(true);
                     setAddFieldOnOpen(true);
@@ -451,7 +451,7 @@ export function DatabaseTableNode({ data }: DatabaseTableNodeProps) {
             variant="ghost"
             size="sm"
             className={cn(
-              "w-full justify-start text-muted-foreground hover:text-foreground",
+              "w-full justify-start hover:text-foreground bg-white dark:bg-black text-black dark:text-white",
               (isCompact || isMobile) ? "h-7 text-xs" : "h-8 text-sm"
             )}
             onClick={() => onAddField?.(table.id)}

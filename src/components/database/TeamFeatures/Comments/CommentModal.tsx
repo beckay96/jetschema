@@ -106,7 +106,7 @@ export function CommentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg overflow-y-auto">
+      <DialogContent className="sm:max-w-lg overflow-y-auto bg-background text-secondary">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function CommentModal({
           </div>
 
           <div className="space-y-2 relative">
-            <label htmlFor="comment" className="text-sm font-medium">
+            <label htmlFor="comment" className="text-sm font-medium text-secondary">
               Comment
             </label>
             <div className="relative">
@@ -140,7 +140,7 @@ export function CommentModal({
                 value={comment}
                 onChange={handleCommentChange}
                 onKeyDown={handleKeyDown}
-                className="min-h-[100px] resize-none pr-10"
+                className="min-h-[100px] resize-none pr-10 text-black dark:text-white bg-background"
                 autoFocus
               />
               
@@ -150,7 +150,7 @@ export function CommentModal({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground dark:text-white"
                     onClick={() => setShowMentionPicker(!showMentionPicker)}
                   >
                     <AtSign className="h-4 w-4" />
@@ -171,7 +171,7 @@ export function CommentModal({
                             <Users className="h-4 w-4 mr-2" />
                             <div className="flex flex-col">
                               <span className="font-medium">{member.display_name}</span>
-                              <span className="text-xs text-muted-foreground">{member.email}</span>
+                              <span className="text-xs text-muted-foreground dark:text-white">{member.email}</span>
                             </div>
                           </CommandItem>
                         ))}
@@ -184,7 +184,7 @@ export function CommentModal({
             
             {mentions.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                <span className="text-xs text-muted-foreground">Mentioning:</span>
+                <span className="text-xs text-muted-foreground dark:text-white">Mentioning:</span>
                 {mentions.map((mentionId, index) => {
                   const member = teamMembers.find(m => m.id === mentionId);
                   return member ? (
@@ -196,12 +196,12 @@ export function CommentModal({
               </div>
             )}
             
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground dark:text-white">
               Tip: Use @ to mention team members, or Ctrl+Enter to submit quickly
             </p>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-3 p-3 bg-primary/10 text-secondary rounded-lg border border-primary/20">
             <input
               type="checkbox"
               id="tagInChat"
@@ -209,9 +209,9 @@ export function CommentModal({
               onChange={(e) => setTagInChat(e.target.checked)}
               className="rounded"
             />
-            <label htmlFor="tagInChat" className="text-sm text-primary flex-1">
+            <label htmlFor="tagInChat" className="text-sm text-secondary flex-1">
               <span className="font-medium">Tag this field in team chat</span>
-              <div className="text-xs text-primary/80 mt-1">
+              <div className="text-xs text-secondary/80 mt-1">
                 This will create a chat message with this field tagged so your team can discuss it
               </div>
             </label>

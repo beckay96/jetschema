@@ -77,19 +77,44 @@ function SortableTableCard({
     opacity: isDragging ? 0.8 : 1,
   };
   
+  // Handler to prevent drag events from triggering onClick
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only trigger select if we're not dragging
+    if (!isDragging) {
+      onSelect();
+    }
+  };
+  
   return (
-    <div ref={setNodeRef} style={style} {...attributes} className="touch-manipulation">
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      className={cn(
+        "touch-manipulation",
+        isDragging ? "shadow-lg" : ""
+      )}
+    >
       <Card 
-        className={`card-enhanced cursor-pointer group ${
-          isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
-        } ${isValidated ? 'card-validated' : hasWarnings ? 'card-warning' : ''}`}
+        className={cn(
+          "card-enhanced group transition-all duration-150",
+          "border border-border",
+          isSelected ? "ring-2 ring-primary bg-primary/5" : "",
+          isValidated ? "card-validated" : hasWarnings ? "card-warning" : "",
+          isDragging ? "shadow-xl scale-[1.02]" : "" // Enhanced visual feedback during dragging
+        )}
+        onClick={handleCardClick}
       >
         <CardContent className="p-2">
+          {/* Card Header with Drag Handle */}
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-sm truncate">
-              <div className="flex items-center gap-1" {...listeners}>
-                <div className="cursor-grab active:cursor-grabbing">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-grip opacity-60 hover:opacity-100">
+              <div 
+                className="flex items-center gap-1 drag-handle w-full cursor-grab active:cursor-grabbing" 
+                {...listeners}
+              >
+                <div className="drag-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-grip opacity-60 group-hover:opacity-100">
                     <circle cx="9" cy="6" r="2"/>
                     <circle cx="9" cy="18" r="2"/>
                     <circle cx="15" cy="6" r="2"/>
@@ -98,19 +123,19 @@ function SortableTableCard({
                     <circle cx="15" cy="12" r="2"/>
                   </svg>
                 </div>
-                <span onClick={onSelect}>{table.name}</span>
+                <span className="cursor-pointer">{table.name}</span>
               </div>
             </h4>
             <div className="flex gap-1">
               {onAddComment && (
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon" onClick={e => {
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon z-10" onClick={e => {
                   e.stopPropagation();
                   onAddComment('table', table.id, table.name);
                 }}>
                   <MessageCircle className="h-3 w-3 text-muted-foreground" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon" onClick={e => {
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover-icon z-10" onClick={e => {
                 e.stopPropagation();
                 onDelete();
               }}>
@@ -119,15 +144,18 @@ function SortableTableCard({
             </div>
           </div>
           
+          {/* Table Fields - Part of the draggable component but with separate click handling */}
           <div className="space-y-1 text-xs text-muted-foreground">
             {table.fields.slice(0, 3).map(field => 
-              <div key={field.id} className="flex items-center justify-between" onClick={onSelect}>
+              <div key={field.id} className="flex items-center justify-between cursor-pointer" onClick={handleCardClick}>
                 <div className="truncate flex-1">{field.name}</div>
                 <DataTypePill type={field.type} size="sm" />
               </div>)}
-            {table.fields.length > 3 && <div className="text-xs text-muted-foreground" onClick={onSelect}>
+            {table.fields.length > 3 && 
+              <div className="text-xs text-muted-foreground cursor-pointer" onClick={handleCardClick}>
                 +{table.fields.length - 3} more fields
-              </div>}
+              </div>
+            }
           </div>
         </CardContent>
       </Card>
@@ -135,28 +163,30 @@ function SortableTableCard({
   );
 }
 
-const MIN_WIDTH = 300; // Minimum width in pixels before auto-closing
+// No minimum width needed - relies on parent Panel's minSize
 
-export function DatabaseSidebar({
+const DatabaseSidebar = ({
   tables,
   triggers,
   functions,
   selectedTable,
+  projectId,
   onAddTable,
   onAddTrigger,
   onAddFunction,
   onSelectTable,
   onDeleteTable,
+  onDeleteTrigger,
+  onDeleteFunction,
+  onUpdateTrigger,
+  onUpdateFunction,
   onSaveProject,
-  onShare,
-  projectName: externalProjectName,
-  projectId,
+  projectName = 'Untitled Project',
   onProjectNameChange,
   onReorderTables,
   onAddComment,
-  onDeleteTrigger,
-  onDeleteFunction
-}: DatabaseSidebarProps) {
+  // No resize props needed - handled by parent Panel component
+}: DatabaseSidebarProps) => {
   // Function to handle table reordering
   const handleTableReorder = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -189,8 +219,9 @@ export function DatabaseSidebar({
   );
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [projectName, setProjectName] = useState(externalProjectName || 'Database Schema');
-  const [editedProjectName, setEditedProjectName] = useState(externalProjectName || 'Database Schema');
+  // Use the projectName prop directly
+  const [localProjectName, setLocalProjectName] = useState(projectName || 'Database Schema');
+  const [editedProjectName, setEditedProjectName] = useState(projectName || 'Database Schema');
   const [isEditingName, setIsEditingName] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
@@ -204,11 +235,7 @@ export function DatabaseSidebar({
   const [editingStorageBucket, setEditingStorageBucket] = useState(null);
   const [editingPolicy, setEditingPolicy] = useState<RLSPolicy | null>(null);
   const [activeTab, setActiveTab] = useState('tables');
-  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
-  const [isResizing, setIsResizing] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const resizeRef = useRef(null);
-  const sidebarRef = useRef(null);
+  // No longer using collapse state from props - controlled by parent Panel
   
   // RLS policies
   const { policies, loading: policiesLoading, savePolicy, updatePolicy, deletePolicy, refetch: refetchPolicies } = useRLSPolicies(projectId);
@@ -219,67 +246,29 @@ export function DatabaseSidebar({
   // Storage Buckets
   const { buckets, loading: bucketsLoading, createStorageBucket, updateStorageBucket, deleteStorageBucket } = useStorageBuckets(projectId || '');
   
-  // Resize handler setup
-  const startResizing = (e) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
+  // Reference for the sidebar container element
+  const sidebarRef = useRef<HTMLDivElement>(null);
   
-  const stopResizing = () => {
-    setIsResizing(false);
-    // Auto collapse if width is less than MIN_WIDTH
-    if (sidebarWidth <= MIN_WIDTH) {
-      setIsCollapsed(true);
-    }
-  };
+  // No custom resize handlers - we'll rely on the parent Panel's resize handle
   
-  const resize = (e) => {
-    if (isResizing) {
-      const newWidth = e.clientX;
-      // Limit minimum width
-      if (newWidth >= 180) { // Absolute minimum for visibility
-        setSidebarWidth(newWidth);
-      }
-    }
-  };
-  
-  // Add event listeners for resize
+  // Update local state when project name prop changes
   useEffect(() => {
-    window.addEventListener('mousemove', resize);
-    window.addEventListener('mouseup', stopResizing);
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing]);
-  
-  // Function to toggle sidebar collapse state
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-    if (isCollapsed) {
-      // When expanding, reset to last known width or default
-      setSidebarWidth(sidebarWidth < 180 ? 320 : sidebarWidth);
-    }
-  };
-  
-  // Update local state when external project name changes
-  useEffect(() => {
-    if (externalProjectName) {
-      setProjectName(externalProjectName);
+    if (projectName) {
+      setLocalProjectName(projectName);
       // Only update the edited name if we're not currently editing
       if (!isEditingName) {
-        setEditedProjectName(externalProjectName);
+        setEditedProjectName(projectName);
       }
     }
-  }, [externalProjectName, isEditingName]);
+  }, [projectName, isEditingName]);
   
   // Function to save project name changes
   const saveProjectName = () => {
-    // Only update if the name has actually changed
-    if (editedProjectName !== projectName) {
-      setProjectName(editedProjectName);
-      // Call the parent component's handler to persist the change
-      onProjectNameChange?.(editedProjectName);
+    if (projectName !== editedProjectName) {
+      setLocalProjectName(editedProjectName);
+      if (onProjectNameChange) {
+        onProjectNameChange(editedProjectName);
+      }
     }
     setIsEditingName(false);
   };
@@ -297,28 +286,14 @@ export function DatabaseSidebar({
   
   return (
     <>
-      {/* Collapsed state toggle button */}
-      {isCollapsed && (
-        <button 
-          className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-primary text-white p-2 rounded-r-md shadow-md z-10"
-          onClick={toggleSidebar}
-          aria-label="Expand sidebar"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
-      )}
+      {/* No longer using custom collapse button - using parent Panel's collapse functionality */}
       
-      <Card 
-        ref={sidebarRef} 
-        className={cn(
-          "h-screen flex flex-col transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-0 opacity-0 overflow-hidden" : "opacity-100"
-        )}
-        style={{ width: isCollapsed ? 0 : sidebarWidth }}
+      <div 
+        ref={sidebarRef}
+        className="h-screen flex flex-col transition-all duration-300 ease-in-out bg-background relative opacity-100"
+        // No fixed width - adapt to parent Panel width
       >
-      <CardHeader className="pb-3">
+      <div className="pb-3 px-4 pt-4 border-b border-border bg-background w-full">
         <div className="flex items-center gap-2">
           <RocketIcon className="h-5 w-5 text-primary" />
           <CardTitle className="text-lg">Your JetSchema</CardTitle>
@@ -404,12 +379,12 @@ export function DatabaseSidebar({
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 pt-2 pb-2 px-2 overflow-hidden">
+      <div className="flex-1 pt-0 px-2 overflow-hidden bg-background">
         <div className="h-full flex flex-col overflow-hidden">
           {/* Dropdown menu for tab selection - fixed position */}
-          <div className="flex items-center justify-center mb-4 flex-shrink-0">
+          <div className="flex items-center justify-center mt-3 mb-2 flex-shrink-0">
             <div className="flex-1">
               <TabsDropdown activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
@@ -418,7 +393,7 @@ export function DatabaseSidebar({
 
           {activeTab === "tables" && (
             <div className="flex-1 overflow-hidden flex flex-col h-full">
-              <div className="flex-shrink-0 space-y-2 mb-4 pt-2 pl-2">
+              <div className="flex-shrink-0 space-y-2 mb-2 pt-1 pl-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="p-2 h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -444,7 +419,7 @@ export function DatabaseSidebar({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full!" type="always">
+            <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden h-full! px-0.5" type="always">
               <div className="space-y-2">
                 {filteredTables.length > 0 ? (
                   <DndContext 
@@ -456,7 +431,7 @@ export function DatabaseSidebar({
                       items={filteredTables.map(table => table.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2 pt-1 px-2 w-full">
+                      <div className="space-y-1.5 pt-1 w-full">
                         {filteredTables.map(table => {
                           const hasWarnings = table.fields.length < 2 || !table.fields.some(f => f.primaryKey);
                           const isValidated = table.fields.length >= 2 && 
@@ -744,14 +719,9 @@ export function DatabaseSidebar({
             />
           )}
         </div>
-      </CardContent>
+      </div>
 
-      <div
-        ref={resizeRef}
-        className="absolute top-0 right-0 w-1 h-full bg-border cursor-col-resize hover:bg-primary active:bg-primary transition-colors"
-        onMouseDown={startResizing}
-        title="Drag to resize (auto-collapses below 300px)"
-      />
+      {/* No custom resize handle - using parent Panel's resize handle */}
 
       <ExportModal 
         tables={tables} 
@@ -913,7 +883,9 @@ export function DatabaseSidebar({
           }
         } : undefined}
       />
-    </Card>
+    </div>
     </>
   );
-}
+};
+
+export default DatabaseSidebar;

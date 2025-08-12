@@ -16,11 +16,65 @@ import {
   NodeTypes,
   NodeProps,
   MarkerType,
-  ReactFlowProvider
+  ReactFlowProvider,
+  Handle,
+  Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DatabaseTable, DataType, DatabaseField } from '@/types/database';
+import { DataTypePill } from '@/components/Settings/DataTypePill';
+
+/**
+ * Validate that all edges reference existing nodes and normalize ID types.
+ * Edges whose source or target is missing are dropped and logged. This
+ * prevents invalid edges from crashing the diagram.
+ */
+function validateGraph(nodes: Node[] = [], edges: Edge[] = []): Edge[] {
+  // Convert node IDs to strings to ensure consistent comparisons
+  const nodeIds = new Set(nodes.map(n => String(n.id)));
+  const valid: Edge[] = [];
+  const dropped: Edge[] = [];
+  edges.forEach((e, idx) => {
+    const source = String(e.source);
+    const target = String(e.target);
+    // Only keep edges whose source and target both exist in the node set
+    if (nodeIds.has(source) && nodeIds.has(target)) {
+      const id = e.id ?? `e-${source}-${target}-${idx}`;
+      valid.push({ ...e, id, source, target });
+    } else {
+      dropped.push(e);
+    }
+  });
+  if (dropped.length) {
+    console.warn('Dropped invalid edges:', dropped.map(e => e.id ?? `${e.source}->${e.target}`));
+  }
+  return valid;
+}
+
+/**
+ * Normalise edge handle ids. React Flow throws Error 008 when an edge has
+ * sourceHandle/targetHandle set to null, the string "null"/"undefined",
+ * or an empty string. Removing those properties makes RF fall back to the
+ * node's default port instead of crashing.
+ */
+function normalizeEdgeHandles(edges: Edge[] = []): Edge[] {
+  const clean = (h?: string | null) =>
+    h === null || h === undefined || h === '' || h === 'null' || h === 'undefined'
+      ? undefined
+      : String(h);
+
+  return edges.map((e) => {
+    const next: Edge = { ...e } as Edge;
+    const sh = clean((e as any).sourceHandle);
+    const th = clean((e as any).targetHandle);
+
+    if (sh === undefined) delete (next as any).sourceHandle; else (next as any).sourceHandle = sh;
+    if (th === undefined) delete (next as any).targetHandle; else (next as any).targetHandle = th;
+
+    return next;
+  });
+}
 
 // Emoji utility function (moved to top to avoid duplicates)
 import { Button } from "@/components/ui/button";
@@ -130,6 +184,9 @@ const DatabaseTableNode = React.memo(({ data }: DatabaseTableNodeProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Default handles so edges can always attach */}
+      <Handle type="target" position={Position.Left} id={`${table.id}-target`} />
+      <Handle type="source" position={Position.Right} id={`${table.id}-source`} />
       <div className="table-header">
         <h3>{table.name}</h3>
       </div>
@@ -137,7 +194,7 @@ const DatabaseTableNode = React.memo(({ data }: DatabaseTableNodeProps) => {
         {table.fields?.map(field => (
           <div key={field.id} className="table-field">
             <span className="field-name">{field.name}</span>
-            <span className="field-type">{field.type}</span>
+            <DataTypePill type={field.type} size="sm" className="field-type" />
           </div>
         ))}
         
@@ -158,11 +215,19 @@ const DatabaseTableNode = React.memo(({ data }: DatabaseTableNodeProps) => {
             >
               <option value="VARCHAR">VARCHAR</option>
               <option value="INTEGER">INTEGER</option>
+              <option value="BIGINT">BIGINT</option>
               <option value="BOOLEAN">BOOLEAN</option>
+              <option value="UUID">UUID</option>
               <option value="DATE">DATE</option>
+              <option value="TIME">TIME</option>
               <option value="TIMESTAMP">TIMESTAMP</option>
+              <option value="TIMESTAMPTZ">TIMESTAMPTZ</option>
               <option value="TEXT">TEXT</option>
               <option value="JSONB">JSONB</option>
+              <option value="JSON">JSON</option>
+              <option value="ARRAY">ARRAY</option>
+              <option value="DECIMAL">DECIMAL</option>
+              <option value="FLOAT">FLOAT</option>
             </select>
             <button onClick={handleAddField}>Add</button>
             <button onClick={() => setIsAddingField(false)}>Cancel</button>
@@ -263,6 +328,22 @@ export function DatabaseCanvas({
   const { theme } = useTheme();
   const prevFkSignature = useRef<string>('');
   const [isPending, startTransition] = useTransition();
+  
+  // Validate edges whenever nodes or edges change to prevent crashes
+  const safeEdges = useMemo(() => {
+    console.log('Validating edges:', { nodeCount: nodes.length, edgeCount: edges.length });
+    const validatedEdges = validateGraph(nodes, edges);
+    const cleaned = normalizeEdgeHandles(validatedEdges);
+    console.log('Validation result:', { validEdgeCount: cleaned.length });
+    return cleaned;
+  }, [nodes, edges]);
+
+  useEffect(() => {
+    const cleaned = edges.filter((e: any) => e?.sourceHandle == null || e?.sourceHandle === 'null' || e?.targetHandle == null || e?.targetHandle === 'null');
+    if (cleaned.length) {
+      console.warn('Normalised edge handles for', cleaned.map((e: any) => e.id));
+    }
+  }, [edges]);
 
   // Generate foreign key edges between tables
   const generateForeignKeyEdges = useCallback((tables: DatabaseTable[]): Edge[] => {
@@ -276,42 +357,32 @@ export function DatabaseCanvas({
           
           // Validate both source and target tables exist before creating edge
           if (sourceTableId && targetTableId) {
-            // Validate the source and target fields exist
-            const sourceHandle = `${sourceTableId}-${field.id}-source`;
-            const targetHandle = `${targetTableId}-${field.foreignKey.field}-target`;
-            
-            // Create a more prominent edge for foreign keys
             fkEdges.push({
               id: `fk-${sourceTableId}-${field.id}-${targetTableId}`,
               source: sourceTableId,
               target: targetTableId,
-              // Use bezier curve for smoother visualization
+              sourceHandle: `${sourceTableId}-source`,
+              targetHandle: `${targetTableId}-target`,
               type: 'default',
               animated: true,
-              // Make the lines more visible with enhanced styling
-              style: { 
-                stroke: 'hsl(var(--primary))', 
+              style: {
+                stroke: 'hsl(var(--primary))',
                 strokeWidth: 3,
                 strokeOpacity: 0.8,
-                // Remove dash array for solid lines
               },
-              // Make the label more descriptive
               label: `${field.name} → ${field.foreignKey.field}`,
               labelShowBg: true,
-              labelStyle: { 
-                fill: 'hsl(var(--primary))', 
+              labelStyle: {
+                fill: 'hsl(var(--primary))',
                 fontSize: 12,
                 fontWeight: 600
               },
-              labelBgStyle: { 
-                fill: 'hsl(var(--background))', 
+              labelBgStyle: {
+                fill: 'hsl(var(--background))',
                 fillOpacity: 0.9,
-                // Remove rx property as it's not supported in this type
-                // Add border radius through other means if needed
               },
-              // Add arrow markers for clearer direction
               markerEnd: {
-                type: MarkerType.Arrow, // Using proper MarkerType enum
+                type: MarkerType.Arrow,
                 width: 20,
                 height: 20,
                 color: 'hsl(var(--primary))',
@@ -324,7 +395,7 @@ export function DatabaseCanvas({
     });
     
     return fkEdges;
-  }, [tables]); // Add tables as dependency since we use it in the function
+  }, [tables]);
 
   // Memoize the foreign key edges to prevent unnecessary recalculations
   const foreignKeyEdges = useMemo(() => {
@@ -652,7 +723,7 @@ export function DatabaseCanvas({
         <ReactFlowProvider>
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={safeEdges} /* Use validated edges to prevent crashes */
             onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={{ databaseTable: DatabaseTableNode as any }}

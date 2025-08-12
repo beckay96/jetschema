@@ -138,7 +138,7 @@ export function CommentComposer({
   const hasContent = content.trim().length > 0;
 
   return (
-    <div className={cn("border rounded-lg p-3 bg-background", className)}>
+    <div className={cn("border rounded-lg p-3 bg-background text-foreground", className)}>
       <div className="space-y-3">
         {/* Comment Type Toggle */}
         <div className="flex items-center space-x-2">
@@ -169,107 +169,116 @@ export function CommentComposer({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={placeholder}
-            className="min-h-[80px] resize-none"
+            className="min-h-[80px] resize-none bg-background text-foreground border-input"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
             autoFocus={autoFocus}
           />
+          
+          {/* Emoji and Tag Buttons */}
+          <div className="absolute right-2 bottom-2 flex items-center space-x-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  aria-label="Insert emoji"
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-2 bg-popover text-popover-foreground" align="end">
+                <div className="grid grid-cols-8 gap-1">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      className="text-2xl p-1 hover:bg-accent rounded-md transition-colors"
+                      onClick={() => insertEmoji(emoji)}
+                      type="button"
+                      aria-label={`Insert ${emoji} emoji`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  aria-label="Insert tag"
+                >
+                  <Hash className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-2 bg-popover text-popover-foreground" align="end">
+                <div className="grid grid-cols-2 gap-1">
+                  {QUICK_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      className="text-xs p-1 hover:bg-accent rounded-md transition-colors text-left"
+                      onClick={() => insertTag(tag)}
+                      type="button"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Preview */}
         {hasContent && (
-          <div className="p-2 bg-background rounded border text-sm">
-            <div className="text-xs text-secondary mb-1">Preview:</div>
-            <div className="flex items-center space-x-2">
+          <div className="p-2 bg-muted/50 rounded border text-sm">
+            <div className="text-xs text-muted-foreground mb-1">Preview:</div>
+            <div className="flex flex-wrap items-center gap-2">
               {isTask && (
                 <div className="flex items-center space-x-1">
                   <CheckSquare className="h-3 w-3 text-primary" />
                   <span className="text-xs text-primary">Task</span>
                 </div>
               )}
-              <div>{renderPreview(content)}</div>
+              {renderPreview(content)}
             </div>
           </div>
         )}
 
-        {/* Tools and Actions */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {/* Emoji Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 px-2">
-                  <Smile className="h-3 w-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 p-3">
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-secondary">Quick Emojis</div>
-                  <div className="grid grid-cols-10 gap-1">
-                    {QUICK_EMOJIS.map((emoji) => (
-                      <Button
-                        key={emoji}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-primary hover:text-black"
-                        onClick={() => insertEmoji(emoji)}
-                      >
-                        {emoji}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Tag Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 px-2">
-                  <Hash className="h-3 w-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2">
-                <div className="space-y-1">
-                  <div className="text-xs font-medium text-secondary px-2 py-1">Quick Tags</div>
-                  {QUICK_TAGS.map((tag) => (
-                    <Button
-                      key={tag}
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start h-7 text-xs hover:bg-primary hover:text-black"
-                      onClick={() => insertTag(tag)}
-                    >
-                      {tag}
-                    </Button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
-            {onCancel && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-                className="h-7"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Cancel
-              </Button>
-            )}
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end space-x-2">
+          {onCancel && (
             <Button
+              variant="ghost"
               size="sm"
-              onClick={handleSubmit}
-              disabled={!hasContent || isSubmitting}
-              className="h-7"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+              className="h-8"
             >
-              <Send className="h-3 w-3 mr-1" />
-              {isSubmitting ? 'Sending...' : 'Send'}
+              <X className="h-4 w-4 mr-1" />
+              Cancel
             </Button>
-          </div>
+          )}
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!hasContent || isSubmitting}
+            className="h-8"
+          >
+            <Send className="h-4 w-4 mr-1" />
+            {isSubmitting ? 'Sending...' : 'Send'}
+          </Button>
         </div>
       </div>
     </div>

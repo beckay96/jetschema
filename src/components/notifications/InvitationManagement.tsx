@@ -17,9 +17,9 @@ interface TeamInvitation {
     name: string;
     description?: string;
   };
-  inviter: {
-    display_name?: string;
-    email: string;
+  inviter?: {
+    display_name?: string | null;
+    email?: string | null;
   };
 }
 
@@ -49,7 +49,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
     if (!user) return;
 
     try {
-      // First try with invited_user_id (new column), fallback to email-based lookup
+      // 1) Load invitations + team via FK that exists; skip joining profiles here
       let { data, error } = await supabase
         .from('team_invitations')
         .select(`
@@ -59,8 +59,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
           role,
           invited_by,
           created_at,
-          team:teams(id, name, description),
-          inviter:profiles!team_invitations_invited_by_fkey(display_name, email)
+          team:teams(id, name, description)
         `)
         .eq('email', user.email)
         .is('accepted_at', null)
@@ -68,12 +67,39 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
 
       if (error) {
         console.error('Error loading invitations:', error);
-        // If there's an error, set empty array to prevent crashes
         setInvitations([]);
         return;
       }
 
-      setInvitations(data || []);
+      const baseInvites = data || [];
+
+      // 2) Hydrate inviter profiles in a separate query (no schema FK required)
+      const inviterIds = Array.from(new Set(baseInvites.map(i => i.invited_by).filter(Boolean)));
+      let profilesById: Record<string, { display_name: string | null; email: string | null }> = {};
+
+      if (inviterIds.length > 0) {
+        const { data: profs, error: profErr } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .in('id', inviterIds);
+
+        if (profErr) {
+          console.warn('Unable to load inviter profiles:', profErr);
+        } else {
+          profilesById = (profs || []).reduce((acc, p: any) => {
+            acc[p.id] = { display_name: p.display_name ?? null, email: p.email ?? null };
+            return acc;
+          }, {} as Record<string, { display_name: string | null; email: string | null }>);
+        }
+      }
+
+      // 3) Merge
+      const merged = baseInvites.map((i: any) => ({
+        ...i,
+        inviter: profilesById[i.invited_by] ?? { display_name: null, email: null },
+      }));
+
+      setInvitations(merged);
     } catch (error) {
       console.error('Error loading invitations:', error);
       toast.error('Failed to load invitations');
@@ -202,7 +228,7 @@ export const InvitationManagement: React.FC<InvitationManagementProps> = ({ clas
                             {invitation.team.name}
                           </h4>
                           <p className="text-sm text-foreground">
-                            Invited by {invitation.inviter.display_name || invitation.inviter.email}
+                            Invited by {invitation.inviter?.display_name || invitation.inviter?.email || 'unknown user'}
                           </p>
                         </div>
                       </div>

@@ -30,7 +30,7 @@ interface LegacyFieldComment {
   author?: {
     id: string;
     email: string;
-    full_name?: string;
+    display_name?: string;
     avatar_url?: string;
   };
 }
@@ -51,33 +51,35 @@ interface UnifiedComment {
   author?: {
     id: string;
     email: string;
-    full_name?: string;
+    display_name?: string;
     avatar_url?: string;
   };
   assignee?: {
     id: string;
     email: string;
-    full_name?: string;
+    display_name?: string;
     avatar_url?: string;
   };
   is_read?: boolean;
   read_at?: string;
 }
 
-interface UnifiedCommentsPanelProps {
-  projectId: string;
-  onNavigateToObject: (objectType: string, objectId: string, parentObjectId?: string) => void;
-  // Target element for automatic tagging
-  targetElement?: {
-    type: 'table' | 'field' | 'function' | 'trigger' | 'policy' | 'mockup';
-    id: string;
-    name: string;
-    parentId?: string; // For fields, this would be the table ID
-    parentName?: string; // For fields, this would be the table name
-  };
+export interface TargetElement {
+  type: 'table' | 'field' | 'function' | 'trigger' | 'policy' | 'mockup' | string;
+  id: string;
+  name: string;
+  parentId?: string;
+  parentName?: string;
 }
 
-export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElement }: UnifiedCommentsPanelProps) {
+interface UnifiedCommentsPanelProps {
+  projectId: string;
+  onNavigateToObject?: (objectType: string, objectId: string, parentObjectId?: string) => void;
+  targetElement?: TargetElement;
+  isOpen?: boolean; // Add this prop to detect when the panel is opened
+}
+
+export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElement, isOpen = true }: UnifiedCommentsPanelProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'comments' | 'tasks'>('all');
   const [filter, setFilter] = useState<string>('all');
   const [comments, setComments] = useState<UnifiedComment[]>([]);
@@ -100,9 +102,9 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
     setLoading(true);
 
     try {
-      // First try unified comments - fetch comments and profiles separately to avoid FK issues
+      // Fetch unified comments with author_name stored directly in the table
       console.log('Querying unified_comments table...');
-      const { data: unifiedData, error: unifiedError } = await supabase
+      const { data: comments, error } = await supabase
         .from('unified_comments')
         .select(`
           id,
@@ -116,124 +118,33 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
           completed,
           assigned_to,
           created_at,
-          updated_at
+          updated_at,
+          author_name
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (unifiedError) {
-        console.error('Error fetching unified comments:', unifiedError);
-        throw unifiedError;
+      if (error) {
+        console.error('Error fetching comments:', error);
+        throw error;
       }
 
-      console.log('Unified comments fetched:', unifiedData?.length || 0);
+      console.log('Comments fetched:', comments?.length || 0);
 
-      // Fetch author profiles separately
-      let authorProfiles: { [key: string]: any } = {};
-      if (unifiedData && unifiedData.length > 0) {
-        const authorIds = [...new Set(unifiedData.map(comment => comment.author_id).filter(Boolean))];
-        console.log('Fetching profiles for author IDs:', authorIds);
-        
-        if (authorIds.length > 0) {
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, email, display_name, avatar_url')
-            .in('id', authorIds);
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-          } else if (profilesData) {
-            console.log('Profiles fetched successfully:', profilesData.length);
-            authorProfiles = profilesData.reduce((acc, profile) => {
-              acc[profile.id] = profile;
-              return acc;
-            }, {} as { [key: string]: any });
-          }
-        }
-      }
-
-      // Convert unified comments to the expected format
-      const unifiedComments: UnifiedComment[] = (unifiedData || []).map(comment => ({
+      // Transform comments to the expected format using stored author_name
+      const formattedComments: UnifiedComment[] = (comments || []).map(comment => ({
         ...comment,
-        author: authorProfiles[comment.author_id] || {
+        author: {
           id: comment.author_id,
-          email: 'Unknown User',
-          display_name: 'Unknown User'
+          email: comment.author_name, // Use author_name as fallback for email display
+          display_name: comment.author_name || 'Team Member'
         },
         is_read: false, // We'll handle read status separately if needed
         read_at: undefined
       }));
 
-      // Get legacy comments from field_comments table
-      const { data: legacyData, error: legacyError } = await supabase
-        .from('field_comments')
-        .select(`
-          id,
-          project_id,
-          author_id,
-          comment_text,
-          field_name,
-          table_name,
-          is_completed,
-          created_at,
-          updated_at
-        `)
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-
-      if (legacyError) throw legacyError;
-
-      // Fetch author profiles for legacy comments if needed
-      if (legacyData && legacyData.length > 0) {
-        const legacyAuthorIds = [...new Set(legacyData.map(comment => comment.author_id))];
-        const newAuthorIds = legacyAuthorIds.filter(id => !authorProfiles[id]);
-        
-        if (newAuthorIds.length > 0) {
-          const { data: additionalProfilesData, error: additionalProfilesError } = await supabase
-            .from('profiles')
-            .select('id, email, display_name, avatar_url')
-            .in('id', newAuthorIds);
-
-          if (!additionalProfilesError && additionalProfilesData) {
-            additionalProfilesData.forEach(profile => {
-              authorProfiles[profile.id] = profile;
-            });
-          }
-        }
-      }
-
-      // Transform legacy comments to match unified format
-      const transformedLegacyData = (legacyData || []).map(item => ({
-        id: item.id,
-        project_id: item.project_id,
-        author_id: item.author_id,
-        content: item.comment_text,
-        object_id: item.field_name,
-        parent_object_id: item.table_name,
-        completed: item.is_completed,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        author: authorProfiles[item.author_id] || {
-          id: item.author_id,
-          email: 'Unknown User',
-          display_name: 'Unknown User'
-        },
-        is_read: false,
-        read_at: undefined,
-        object_type: 'field' as const,
-        is_task: false,
-        assigned_to: null,
-        assignee: null
-      }));
-
-      // Combine both data sources, ensuring proper typing
-      const allComments: UnifiedComment[] = [
-        ...unifiedData as unknown as UnifiedComment[],
-        ...transformedLegacyData as unknown as UnifiedComment[]
-      ];
-
       // Apply filters
-      let filteredComments = allComments;
+      let filteredComments = formattedComments;
 
       if (activeTab === 'comments') {
         filteredComments = filteredComments.filter(comment => !comment.is_task);
@@ -265,6 +176,14 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
   useEffect(() => {
     fetchComments();
   }, [projectId, activeTab, filter, sortOrder]);
+  
+  // Reload comments when the panel is opened
+  useEffect(() => {
+    if (isOpen && projectId) {
+      console.log('Comments panel opened, reloading comments for project:', projectId);
+      fetchComments();
+    }
+  }, [isOpen, projectId]);
 
   /**
    * Creates a new comment or task in the database and updates the UI
@@ -286,6 +205,8 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
       console.error(errorMsg);
       throw new Error(errorMsg);
     }
+    
+    console.log('Creating comment with author_id:', user.id, '(matches auth.users.id)');
 
     // If we have a target element, auto-tag it in the content
     let finalContent = content;
@@ -301,20 +222,30 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
 
     console.log('Creating comment with content:', finalContent);
     
+    // Get user's display name from profile
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('display_name, email')
+      .eq('user_id', user.id)
+      .single();
+
+    const authorName = userProfile?.display_name || userProfile?.email || user.email || 'Team Member';
+    
     try {
-      // Insert the new comment into the database
+      // Insert the new comment into the database with author_name
       const { data, error: insertError } = await supabase
         .from('unified_comments')
         .insert({
           project_id: projectId,
-          author_id: user.id,
+          author_id: user.id, // This is auth.users.id which has FK relationship
           content: finalContent,
+          object_type: targetElement?.type || 'general',
+          object_id: targetElement?.name || '',
+          parent_object_id: targetElement?.parentName || null,
           is_task: isTask,
-          object_type: targetElement?.type || 'project',
-          object_id: targetElement?.id || projectId,
-          parent_object_id: targetElement?.parentId || null,
           completed: false,
-          assigned_to: null
+          assigned_to: null,
+          author_name: authorName // Store the display name directly in the comment
         })
         .select('*')
         .single();
@@ -326,26 +257,13 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
 
       console.log('Comment created successfully:', data);
 
-      // Fetch the author profile for the new comment
-      const { data: authorProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.warn('Could not fetch author profile:', profileError);
-        // Continue with a fallback profile
-      }
-
-      // Create the comment object with author info
-      const commentWithAuthor: UnifiedComment = {
+      // Create the comment object with author info for immediate UI update (using stored author_name)
+      const commentWithAuthor = {
         ...data,
-        author: authorProfile || {
+        author: {
           id: user.id,
-          email: user.email || 'user@example.com',
-          display_name: user.user_metadata?.display_name || user.email || 'User',
-          avatar_url: user.user_metadata?.avatar_url || ''
+          email: authorName,
+          display_name: authorName
         }
       };
       
@@ -437,8 +355,8 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
         .from('unified_comments')
         .update({ 
           completed, 
-          updated_at: new Date().toISOString(),
-          ...(completed && { completed_at: new Date().toISOString() }) // Track when task was completed
+          updated_at: new Date().toISOString()
+          // Note: completed_at column will be added in a future migration
         })
         .eq('id', commentId);
 
@@ -450,8 +368,8 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
           ? { 
               ...comment, 
               completed, 
-              updated_at: new Date().toISOString(),
-              ...(completed && { completed_at: new Date().toISOString() })
+              updated_at: new Date().toISOString()
+              // Note: completed_at field will be added in a future migration
             }
           : comment
       ));
@@ -478,17 +396,28 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
   };
 
   /**
-   * Deletes a comment from the database and updates the UI
+   * Handles deleting a comment or task
    * @param {string} commentId - The ID of the comment to delete
    * @throws {Error} If there's an error deleting the comment
    */
   const handleDeleteComment = async (commentId: string) => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to delete comments.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Store the comment being deleted for potential undo
     const commentToDelete = comments.find(c => c.id === commentId);
-    
-    // Optimistically remove from UI
-    setComments(prev => prev.filter(comment => comment.id !== commentId));
-    
+    if (!commentToDelete) return;
+
+    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('unified_comments')
@@ -497,14 +426,16 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
 
       if (error) throw error;
 
+      // Update local state by removing the deleted comment
+      setComments(prev => prev.filter(comment => comment.id !== commentId));
+
       // Show success toast with undo option
       toast({
         title: 'Comment Deleted',
         description: 'The comment has been deleted.',
-        action: commentToDelete ? (
-          <Button 
-            variant="outline" 
-            size="sm"
+        action: (
+          <button
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             onClick={async () => {
               try {
                 // Try to restore the comment
@@ -528,26 +459,21 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
                 console.error('Error restoring comment:', restoreError);
                 toast({
                   title: 'Error',
-                  description: 'Failed to restore comment',
+                  description: 'Failed to restore comment.',
                   variant: 'destructive',
                 });
               }
             }}
           >
+            <span className="mr-1">↩️</span>
             Undo
-          </Button>
-        ) : undefined,
+          </button>
+        ),
         variant: 'default',
-        duration: 10000, // Give user more time to undo
+        duration: 10000, // 10 seconds to undo
       });
     } catch (error) {
       console.error('Error deleting comment:', error);
-      
-      // Revert UI on error
-      if (commentToDelete) {
-        setComments(prev => [commentToDelete, ...prev]);
-      }
-      
       const errorMsg = error instanceof Error ? error.message : 'Failed to delete comment';
       
       toast({
@@ -626,59 +552,67 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
   };
 
   const renderCommentList = () => {
-    if (loading) {
-      const skeletons = Array.from({ length: 5 });
-      return skeletons.map((_, index) => (
-        <div key={`skeleton-${index}`} className="flex gap-4 p-4 border-b">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <div className="flex-1 space-y-2 bg-background dark:text-white text-black">
-            <Skeleton className="h-4 w-1/4 bg-background dark:text-white text-black" />
-            <Skeleton className="h-4 w-3/4 bg-background dark:text-white text-black" />
-            <Skeleton className="h-4 w-1/2 bg-background dark:text-white text-black" />
-          </div>
+  if (loading) {
+    const skeletons = Array.from({ length: 5 });
+    return skeletons.map((_, index) => (
+      <div key={`skeleton-${index}`} className="flex gap-4 p-4 border-b">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
-      ));
-    }
-
-    if (comments.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-background dark:text-white text-black">
-          <MessageSquare className="h-12 w-12 mb-2 opacity-20 bg-background dark:text-white text-black" />
-          <p>No {activeTab === 'all' ? 'comments or tasks' : activeTab} found</p>
-          <p className="text-sm mt-1 bg-background dark:text-white text-black">
-            {activeTab === 'tasks' 
-              ? 'Create tasks to track work items' 
-              : 'Add comments to collaborate with your team'}
-          </p>
-        </div>
-      );
-    }
-
-    return comments.map(comment => (
-      <EnhancedComment
-        key={comment.id}
-        id={comment.id}
-        content={comment.content}
-        author={comment.author!}
-        created_at={comment.created_at}
-        updated_at={comment.updated_at}
-        is_task={comment.is_task}
-        completed={comment.completed}
-        currentUserId={user?.id || ''}
-        onUpdate={handleUpdateComment}
-        onToggleTask={handleToggleTask}
-        onNavigateToElement={onNavigateToObject}
-        onConvertToTask={handleConvertToTask}
-      />
+      </div>
     ));
-  };
+  }
+
+  // Filter comments based on active tab
+  const filteredComments = comments.filter(comment => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'comments') return !comment.is_task;
+    if (activeTab === 'tasks') return comment.is_task;
+    return true;
+  });
+
+  if (filteredComments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <MessageSquare className="h-12 w-12 mb-2 opacity-20 text-muted-foreground" />
+        <p className="text-foreground">No {activeTab === 'all' ? 'comments or tasks' : activeTab} found</p>
+        <p className="text-sm mt-1 text-muted-foreground">
+          {activeTab === 'tasks' 
+            ? 'Create tasks to track work items' 
+            : 'Add comments to collaborate with your team'}
+        </p>
+      </div>
+    );
+  }
+
+  return filteredComments.map(comment => (
+    <EnhancedComment
+      key={comment.id}
+      id={comment.id}
+      content={comment.content}
+      author={comment.author!}
+      created_at={comment.created_at}
+      updated_at={comment.updated_at}
+      is_task={comment.is_task}
+      completed={comment.completed}
+      currentUserId={user?.id || ''}
+      onUpdate={handleUpdateComment}
+      onToggleTask={handleToggleTask}
+      onNavigateToElement={onNavigateToObject}
+      onConvertToTask={handleConvertToTask}
+    />
+  ));
+};  
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto mx-2 bg-background dark:text-white text-black">
+    <div className="h-full flex flex-col overflow-y-auto mx-2">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="font-semibold text-lg">Comments & Tasks</h3>
-          <p className="text-sm bg-background dark:text-white text-black">
+          <h3 className="font-semibold text-lg text-foreground">Comments & Tasks</h3>
+          <p className="text-sm text-muted-foreground">
             Track discussions and work items across your project
           </p>
         </div>
@@ -749,13 +683,13 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
         
         <div className="border rounded-md mt-4 overflow-hidden flex-grow">
           <ScrollArea className="h-[calc(100vh-300px)]" type="always">
-            <TabsContent value="all" className="m-0 bg-background dark:text-white text-black">
+            <TabsContent value="all" className="m-0">
               {renderCommentList()}
             </TabsContent>
-            <TabsContent value="comments" className="m-0 bg-background dark:text-white text-black">
+            <TabsContent value="comments" className="m-0">
               {renderCommentList()}
             </TabsContent>
-            <TabsContent value="tasks" className="m-0 bg-background dark:text-white text-black">
+            <TabsContent value="tasks" className="m-0">
               {renderCommentList()}
             </TabsContent>
           </ScrollArea>
@@ -766,7 +700,7 @@ export function UnifiedCommentsPanel({ projectId, onNavigateToObject, targetElem
           <CommentComposer
             onSubmit={handleCreateComment}
             placeholder="Share your thoughts or create a task..."
-            className="border-0 shadow-none bg-background dark:text-white text-black"
+            className="border-0 shadow-none"
           />
         </div>
       </Tabs>

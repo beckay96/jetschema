@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { TargetElement } from './UnifiedCommentsPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -47,20 +48,22 @@ export function EnhancedCommentPopover({
     console.log('Navigate to object:', { objectType, objectId, parentObjectId });
   };
 
-  const getTargetInfo = () => {
-    if (fieldId && fieldName) {
+  const getTargetInfo = (): TargetElement | null => {
+    if (fieldId) {
       return {
-        type: 'field' as const,
+        type: 'field',
         id: fieldId,
-        name: fieldName,
-        displayName: tableName ? `${tableName}.${fieldName}` : fieldName
+        name: fieldName || '',
+        parentId: tableId,
+        parentName: tableName
       };
-    } else if (tableId && tableName) {
+    } else if (tableId) {
       return {
-        type: 'table' as const,
+        type: 'table',
         id: tableId,
-        name: tableName,
-        displayName: tableName
+        name: tableName || '',
+        parentId: undefined,
+        parentName: undefined
       };
     }
     return null;
@@ -84,7 +87,11 @@ export function EnhancedCommentPopover({
           )}
           onClick={(e) => {
             e.stopPropagation();
-            onViewComments?.(targetInfo.type, targetInfo.id, targetInfo.name);
+            if (onViewComments) {
+              // Type assertion is safe here because we know targetInfo.type is either 'table' or 'field'
+              const elementType = targetInfo.type as 'table' | 'field';
+              onViewComments(elementType, targetInfo.id, targetInfo.name);
+            }
           }}
         >
           <MessageSquare className={compact ? "h-3 w-3" : "h-4 w-4"} />
@@ -113,7 +120,9 @@ export function EnhancedCommentPopover({
               <span className="font-medium">Comments & Tasks</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {targetInfo.displayName}
+              {targetInfo.type === 'field' && targetInfo.parentName 
+                ? `${targetInfo.parentName}.${targetInfo.name}`
+                : targetInfo.name}
             </p>
           </div>
           
@@ -122,11 +131,12 @@ export function EnhancedCommentPopover({
             <UnifiedCommentsPanel
               projectId={projectId}
               onNavigateToObject={handleNavigateToObject}
+              isOpen={isOpen}
               targetElement={{
                 type: targetInfo.type,
                 id: targetInfo.id,
                 name: targetInfo.name,
-                parentId: tableName && fieldId ? tableName : undefined,
+                parentId: tableName && fieldId ? tableId : undefined,
                 parentName: tableName && fieldId ? tableName : undefined
               }}
             />

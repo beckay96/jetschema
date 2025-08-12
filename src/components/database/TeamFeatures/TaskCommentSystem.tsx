@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +59,7 @@ export function TaskCommentSystem({
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [commentType, setCommentType] = useState<'comment' | 'task'>('comment');
+  const { user } = useAuth();
 
   const targetComments = comments.filter(c => c.targetId === targetId);
   const hasComments = targetComments.length > 0;
@@ -68,7 +70,7 @@ export function TaskCommentSystem({
     
     onAddComment({
       text: newComment,
-      author: 'Current User', // Replace with actual user
+      author: user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User',
       type: commentType,
       status: commentType === 'task' ? 'open' : undefined,
       targetType,

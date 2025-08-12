@@ -102,7 +102,7 @@ export function TeamAccessSettings({ user, loading, onNavigateToTeam }: TeamAcce
                 const { data: profile } = await supabase
                   .from('profiles')
                   .select('*')
-                  .eq('id', member.user_id)
+                  .eq('user_id', member.user_id)
                   .single();
                 
                 return {
@@ -244,10 +244,12 @@ export function TeamAccessSettings({ user, loading, onNavigateToTeam }: TeamAcce
                     </div>
                     <div>
                       <div className="font-medium text-sm">
-                        {member.profiles?.display_name || member.profiles?.email || 'Unknown User'}
+                        {member.profiles?.display_name || 
+                         (member.profiles?.email ? member.profiles.email.split('@')[0] : '') || 
+                         'Unknown User'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {member.profiles?.email || 'No email'}
+                        {member.profiles?.email || 'No email available'}
                       </div>
                     </div>
                   </div>

@@ -203,7 +203,7 @@ export function Auth() {
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground">
           <p>
-            Secure authentication powered by Supabase
+            Let's get started!
           </p>
         </div>
       </div>
